@@ -17,7 +17,7 @@ int main() {
         return -1;
     }
 
-    glfwMakeContextCurrent(window);
+
 
     std::cout << "Hello, Bird Editor!" << std::endl;
 
