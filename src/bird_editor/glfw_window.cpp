@@ -14,6 +14,10 @@ GlfwWindow::~GlfwWindow() {}
 
 void GlfwWindow::init() {
   glfwMakeContextCurrent(glfwWindow);
+
+  glfwSwapInterval(1); // Enable vsync
+
+  glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 }
 
 void GlfwWindow::update() {
