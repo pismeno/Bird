@@ -15,11 +15,16 @@ int main() {
     }
 
     std::unique_ptr<Window> window = Window::create(800, 600, "Bird Editor");
+    window->init();
 
     std::cout << "Hello, Bird Editor!" << std::endl;
 
     while (!window->shouldClose())
     {
-        window->onUpdate();
+        window->update();
     }
+
+    window->close();
+
+    glfwTerminate();
 }

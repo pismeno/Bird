@@ -19,7 +19,7 @@ class GlfwWindow : public Window {
   uint32_t getHeight() const override;
 
  private:
-  GLFWwindow* window;
+  GLFWwindow* glfwWindow;
 
   struct WindowData {
     std::string title;

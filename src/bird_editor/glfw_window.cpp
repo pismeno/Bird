@@ -7,20 +7,26 @@ GlfwWindow::GlfwWindow(int width, int height, const std::string& title) {
   this->data.height = height;
   this->data.title = title;
 
-  this->window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-
-  glfwMakeContextCurrent(window);
+  this->glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
 }
 
 GlfwWindow::~GlfwWindow() {}
 
-void GlfwWindow::onUpdate() {
+void GlfwWindow::init() {
+  glfwMakeContextCurrent(glfwWindow);
+}
+
+void GlfwWindow::update() {
   glfwPollEvents();
-  glfwSwapBuffers(window);
+  glfwSwapBuffers(glfwWindow);
+}
+
+void GlfwWindow::close() {
+  glfwDestroyWindow(glfwWindow);
 }
 
 bool GlfwWindow::shouldClose() const {
-  return glfwWindowShouldClose(window);
+  return glfwWindowShouldClose(glfwWindow);
 }
 
 uint32_t GlfwWindow::getWidth() const {
