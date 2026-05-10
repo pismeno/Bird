@@ -3,27 +3,28 @@
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
 
+#include "window.hpp"
+
 int main() {
+
+    using namespace bird::editor;
+
     if (!glfwInit()) {
         // Handle initialization failure
         return -1;
     }
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "My Title", NULL, NULL);
-
-    if (!window) {
-        std::cerr << "Failed to create window!" << std::endl;
-        glfwTerminate();
-        return -1;
-    }
-
-    glfwMakeContextCurrent(window);
+    std::unique_ptr<Window> window = Window::create(800, 600, "Bird Editor");
+    window->init();
 
     std::cout << "Hello, Bird Editor!" << std::endl;
 
-    while (!glfwWindowShouldClose(window))
+    while (!window->shouldClose())
     {
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        window->update();
     }
+
+    window->close();
+
+    glfwTerminate();
 }
