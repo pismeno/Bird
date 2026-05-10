@@ -1,0 +1,1 @@
+Specialized 2d game engine. It uses ECS system and has embedded AngelScript.
