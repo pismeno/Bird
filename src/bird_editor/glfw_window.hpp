@@ -11,7 +11,9 @@ class GlfwWindow : public Window {
   GlfwWindow(int width, int height, const std::string& title);
   virtual ~GlfwWindow();
 
-  void onUpdate() override;
+  void init() override;
+  void update() override;
+  void close() override;
   bool shouldClose() const override;
   uint32_t getWidth() const override;
   uint32_t getHeight() const override;
