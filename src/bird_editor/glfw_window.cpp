@@ -1,4 +1,5 @@
 #include "glfw_window.hpp"
+#include "inputs/glfw_inputs.hpp"
 
 namespace bird::editor {
 
@@ -18,6 +19,11 @@ void GlfwWindow::init() {
   glfwSwapInterval(1); // Enable vsync
 
   glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+
+  glfwSetKeyCallback(glfwWindow, GlfwInputs::keyCallback);
+  glfwSetMouseButtonCallback(glfwWindow, GlfwInputs::mouseButtonCallback);
+  glfwSetCursorPosCallback(glfwWindow, GlfwInputs::cursorPosCallback);
+  glfwSetScrollCallback(glfwWindow, GlfwInputs::scrollCallback);
 }
 
 void GlfwWindow::update() {
