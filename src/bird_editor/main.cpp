@@ -9,7 +9,7 @@
 
 int main() {
 
-    using namespace bird;
+    using namespace bird::inputs;
     using namespace bird::editor;
 
     if (!glfwInit()) {
