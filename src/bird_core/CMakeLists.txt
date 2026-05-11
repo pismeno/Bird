@@ -1,4 +1,8 @@
 set(CORE_SOURCES
+        "window.hpp"
+        "window.cpp"
+        "glfw_window.hpp"
+        "glfw_window.cpp"
         "inputs/inputs.hpp"
         "inputs/inputs.cpp"
         "inputs/input_codes.hpp"
