@@ -1,7 +1,7 @@
-#include "glfw_inputs.hpp"
+#include "inputs/glfw_inputs.hpp"
 #include "inputs.hpp"
 
-#include <GLFW/glfw3.h>
+#include "GLFW/glfw3.h"
 
 namespace bird {
 
