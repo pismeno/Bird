@@ -1,8 +1,12 @@
 #pragma once
 
+#include "GLFW/glfw3.h"
+
 #include "inputs.hpp"
 
-#include "GLFW/glfw3.h"
+namespace bird {
+class GlfwWindow;
+}
 
 namespace bird::inputs {
 
@@ -10,16 +14,10 @@ namespace bird::inputs {
  * @brief Class for handling GLFW inputs
  */
 class GlfwInputs : public Inputs {
- public:
-  static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-  static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
-  static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos);
-  static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-  void handleKey(int key, int scancode, int action, int mods);
-  void handleMouseButton(int button, int action, int mods);
-  void handleCursor(double xpos, double ypos);
-  void handleScroll(double xoffset, double yoffset);
 
+  friend class ::bird::GlfwWindow;
+
+ public:
   // Keyboard
   bool isKeyPressed(KeyCode key) override;    // True ONLY on the exact frame it was pressed
   bool isKeyHeld(KeyCode key) override;       // True as long as the key is down
@@ -43,6 +41,15 @@ class GlfwInputs : public Inputs {
   void endFrame() override;
 
  private:
+  static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+  static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+  static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos);
+  static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+  void handleKey(int key, int scancode, int action, int mods);
+  void handleMouseButton(int button, int action, int mods);
+  void handleCursor(double xpos, double ypos);
+  void handleScroll(double xoffset, double yoffset);
+
   // Mouse
   static const int MAX_MOUSE_BUTTONS = 16;
   bool currentMouseState[MAX_MOUSE_BUTTONS]{};
