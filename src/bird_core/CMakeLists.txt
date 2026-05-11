@@ -2,10 +2,7 @@ file(GLOB_RECURSE CORE_SOURCES "*.cpp" "*.hpp" "*.h")
 
 add_library(BirdCore STATIC ${CORE_SOURCES})
 
-target_link_libraries(BirdCore
-        PUBLIC
-        glfw
-)
+target_link_libraries(BirdCore PUBLIC glfw glm::glm)
 
 target_include_directories(BirdCore
         PUBLIC
