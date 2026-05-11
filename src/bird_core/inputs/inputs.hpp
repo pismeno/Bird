@@ -4,7 +4,7 @@
 
 #include "input_codes.hpp"
 
-namespace bird {
+namespace bird::inputs {
 
 /**
  * @brief Abstract static class for querying the engine about inputs
@@ -12,9 +12,9 @@ namespace bird {
 class Inputs {
  public:
   // Keyboard
-  static bool isKeyPressed(KeyCode key);      // True ONLY on the exact frame it was pressed
+  static bool isKeyPressed(KeyCode key);    // True ONLY on the exact frame it was pressed
   static bool isKeyHeld(KeyCode key);       // True as long as the key is down
-  static bool isKeyReleased(KeyCode key);     // True ONLY on the exact frame it was let go
+  static bool isKeyReleased(KeyCode key);   // True ONLY on the exact frame it was let go
 
   // Mouse
   static bool isMouseButtonPressed(MouseCode button);
@@ -34,4 +34,4 @@ class Inputs {
   static void endFrame();
 };
 
-} // bird
+} // bird::inputs

@@ -3,7 +3,7 @@
 
 #include "GLFW/glfw3.h"
 
-namespace bird {
+namespace bird::inputs {
 
 static const int MAX_MOUSE_BUTTONS = 16;
 static bool currentMouseState[MAX_MOUSE_BUTTONS];
@@ -114,4 +114,4 @@ void GlfwInputs::scrollCallback(GLFWwindow *window, double xoffset, double yoffs
   scrollY = y;
 }
 
-} // bird
+} // bird::inputs

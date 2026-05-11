@@ -3,7 +3,7 @@
 
 #include "GLFW/glfw3.h"
 
-namespace bird {
+namespace bird::inputs {
 
 static const int MAX_KEYS = 512;
 static bool currentKeyState[MAX_KEYS];
@@ -40,4 +40,4 @@ void GlfwInputs::keyCallback(GLFWwindow *window, int key, int scancode, int acti
   }
 }
 
-} // bird
+} // bird::inputs

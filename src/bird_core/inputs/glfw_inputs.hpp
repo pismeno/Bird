@@ -1,6 +1,6 @@
 #include "GLFW/glfw3.h"
 
-namespace bird {
+namespace bird::inputs {
 
 /**
  * @brief Class for handling GLFW inputs
@@ -16,4 +16,4 @@ class GlfwInputs {
   static void endFrameMouse();
 };
 
-}
+} // bird::inputs
