@@ -2,6 +2,9 @@
 
 namespace bird {
 
+/**
+ * @brief Class for handling GLFW inputs
+ */
 class GlfwInputs {
  public:
   static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);

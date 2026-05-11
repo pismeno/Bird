@@ -87,9 +87,10 @@ void GlfwInputs::endFrameMouse() {
 
 void GlfwInputs::mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
   if (button < 0 || action >= MAX_MOUSE_BUTTONS) {
-    return;
+    return; // Ignore out-of-bounds keys
   }
 
+  // Converting to local key codes is not needed, since GLFW codes are matching with ours
   if (action == GLFW_PRESS) {
     currentMouseState[button] = true;
   } else if (action == GLFW_RELEASE) {
@@ -98,16 +99,16 @@ void GlfwInputs::mouseButtonCallback(GLFWwindow *window, int button, int action,
 }
 
 void GlfwInputs::cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
-  float x = (float)xpos;
-  float y = (float)ypos;
+  auto x = (float)xpos;
+  auto y = (float)ypos;
 
   mouseX = x;
   mouseY = y;
 }
 
 void GlfwInputs::scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
-  float x = (float)xoffset;
-  float y = (float)yoffset;
+  auto x = (float)xoffset;
+  auto y = (float)yoffset;
 
   scrollX = x;
   scrollY = y;

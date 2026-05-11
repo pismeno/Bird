@@ -6,6 +6,9 @@
 
 namespace bird {
 
+/**
+ * @brief Abstract static class for querying the engine about inputs
+ */
 class Inputs {
  public:
   // Keyboard

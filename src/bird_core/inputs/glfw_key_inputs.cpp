@@ -32,6 +32,7 @@ void GlfwInputs::keyCallback(GLFWwindow *window, int key, int scancode, int acti
     return; // Ignore out-of-bounds keys
   }
 
+  // Converting to local key codes is not needed, since GLFW codes are matching with ours
   if (action == GLFW_PRESS) {
     currentKeyState[key] = true;
   } else if (action == GLFW_RELEASE) {
