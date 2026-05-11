@@ -1,27 +1,33 @@
 #include "glfw_window.hpp"
 #include "inputs/glfw_inputs.hpp"
 
-namespace bird::editor {
+namespace bird {
 
-using namespace bird::inputs;
+using namespace inputs;
 
-GlfwWindow::GlfwWindow(int width, int height, const std::string& title) {
-  this->data.width = width;
-  this->data.height = height;
-  this->data.title = title;
-  this->data.windowedWidth = width;
-  this->data.windowedHeight = height;
+GlfwWindow::GlfwWindow(int width, int height, const std::string& title)
+    : data{
+          .title          = title,
+          .width          = (uint32_t)width,
+          .height         = (uint32_t)height,
+          .windowedWidth  = (uint32_t)width,
+          .windowedHeight = (uint32_t)height,
+          .fullscreen     = false
+      },
+      inputs(),
+      glfwWindow(nullptr)
+{
+  glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
 
-  this->glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-  this->data.fullscreen = false;
+  // TODO probably should check for errors here
 }
 
-GlfwWindow::~GlfwWindow() {}
+GlfwWindow::~GlfwWindow() = default;
 
 void GlfwWindow::init() {
-  glfwSetWindowUserPointer(glfwWindow, this);
-
   glfwMakeContextCurrent(glfwWindow);
+
+  glfwSetWindowUserPointer(glfwWindow, this);
 
   glfwSwapInterval(1); // Enable vsync
 
@@ -39,6 +45,8 @@ void GlfwWindow::init() {
 }
 
 void GlfwWindow::update() {
+  glfwMakeContextCurrent(glfwWindow);
+
   glfwPollEvents();
   glfwSwapBuffers(glfwWindow);
 }
@@ -67,6 +75,10 @@ bool GlfwWindow::isFullscreen() const {
   return data.fullscreen;
 }
 
+Inputs& GlfwWindow::getInputs() {
+  return inputs;
+}
+
 void GlfwWindow::setFullscreen(bool fullscreen) {
   if (fullscreen) {
     glfwGetWindowPos(glfwWindow, &data.windowedX, &data.windowedY);
@@ -93,4 +105,4 @@ void GlfwWindow::windowResizeCallback(GLFWwindow *window, int width, int height)
   data.height = height;
 }
 
-} // bird::editor
+} // bird

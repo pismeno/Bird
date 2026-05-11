@@ -12,26 +12,26 @@ namespace bird::inputs {
 class Inputs {
  public:
   // Keyboard
-  static bool isKeyPressed(KeyCode key);    // True ONLY on the exact frame it was pressed
-  static bool isKeyHeld(KeyCode key);       // True as long as the key is down
-  static bool isKeyReleased(KeyCode key);   // True ONLY on the exact frame it was let go
+  virtual bool isKeyPressed(KeyCode key) = 0;    // True ONLY on the exact frame it was pressed
+  virtual bool isKeyHeld(KeyCode key) = 0;       // True as long as the key is down
+  virtual bool isKeyReleased(KeyCode key) = 0;   // True ONLY on the exact frame it was let go
 
   // Mouse
-  static bool isMouseButtonPressed(MouseCode button);
-  static bool isMouseButtonHeld(MouseCode button);
-  static bool isMouseButtonReleased(MouseCode button);
-  static glm::vec2 getMousePosition();
-  static float getMouseX();
-  static float getMouseY();
-  static glm::vec2 getMouseDelta();
-  static float getMouseDeltaX();
-  static float getMouseDeltaY();
-  static float getScrollX();
-  static float getScrollY();
-  static float getScrollDeltaX();
-  static float getScrollDeltaY();
+  virtual bool isMouseButtonPressed(MouseCode button) = 0;
+  virtual bool isMouseButtonHeld(MouseCode button) = 0;
+  virtual bool isMouseButtonReleased(MouseCode button) = 0;
+  virtual glm::vec2 getMousePosition() = 0;
+  virtual float getMouseX() = 0;
+  virtual float getMouseY() = 0;
+  virtual glm::vec2 getMouseDelta() = 0;
+  virtual float getMouseDeltaX() = 0;
+  virtual float getMouseDeltaY() = 0;
+  virtual float getScrollX() = 0;
+  virtual float getScrollY() = 0;
+  virtual float getScrollDeltaX() = 0;
+  virtual float getScrollDeltaY() = 0;
 
-  static void endFrame();
+  virtual void endFrame() = 0;
 };
 
 } // bird::inputs
