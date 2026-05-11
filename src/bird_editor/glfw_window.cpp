@@ -3,6 +3,8 @@
 
 namespace bird::editor {
 
+using namespace bird::inputs;
+
 GlfwWindow::GlfwWindow(int width, int height, const std::string& title) {
   this->data.width = width;
   this->data.height = height;
