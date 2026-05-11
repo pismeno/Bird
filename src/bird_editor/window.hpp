@@ -15,6 +15,9 @@ class Window {
   virtual bool shouldClose() const = 0;
   virtual uint32_t getWidth() const = 0;
   virtual uint32_t getHeight() const = 0;
+  virtual bool isFocused() const = 0;
+  virtual bool isFullscreen() const = 0;
+  virtual void setFullscreen(bool fullscreen) = 0;
 
   /**
    * @brief Factory method to create the specific implementation

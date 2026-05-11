@@ -34,6 +34,10 @@ int main() {
         std::cout << "Left mouse button is released!" << std::endl;
       }
 
+      if (Inputs::isKeyPressed(KeyCode::F11)) {
+        window->setFullscreen(!window->isFullscreen());
+      }
+
       Inputs::endFrame();
     }
 

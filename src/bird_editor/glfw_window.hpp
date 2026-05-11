@@ -17,6 +17,9 @@ class GlfwWindow : public Window {
   bool shouldClose() const override;
   uint32_t getWidth() const override;
   uint32_t getHeight() const override;
+  bool isFocused() const override;
+  bool isFullscreen() const override;
+  void setFullscreen(bool fullscreen) override;
 
  private:
   GLFWwindow* glfwWindow;
@@ -24,9 +27,14 @@ class GlfwWindow : public Window {
   struct WindowData {
     std::string title;
     uint32_t width, height;
+    uint32_t windowedWidth, windowedHeight;
+    int windowedX, windowedY;
+    bool fullscreen;
   };
 
   WindowData data;
+
+  void windowResizeCallback(GLFWwindow* window, int width, int height);
 };
 
 } // bird::editor
