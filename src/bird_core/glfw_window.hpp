@@ -4,9 +4,16 @@
 
 #include "GLFW/glfw3.h"
 
-namespace bird::editor {
+#include "inputs/glfw_inputs.hpp"
+
+namespace bird {
+
+using namespace inputs;
 
 class GlfwWindow : public Window {
+
+  friend class GlfwInputs;
+
  public:
   GlfwWindow(int width, int height, const std::string& title);
   virtual ~GlfwWindow();
@@ -20,6 +27,7 @@ class GlfwWindow : public Window {
   bool isFocused() const override;
   bool isFullscreen() const override;
   void setFullscreen(bool fullscreen) override;
+  Inputs& getInputs() override;
 
  private:
   GLFWwindow* glfwWindow;
@@ -34,7 +42,9 @@ class GlfwWindow : public Window {
 
   WindowData data;
 
+  GlfwInputs inputs;
+
   void windowResizeCallback(GLFWwindow* window, int width, int height);
 };
 
-} // bird::editor
+} // bird

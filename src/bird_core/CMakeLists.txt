@@ -4,11 +4,9 @@ set(CORE_SOURCES
         "glfw_window.hpp"
         "glfw_window.cpp"
         "inputs/inputs.hpp"
-        "inputs/inputs.cpp"
         "inputs/input_codes.hpp"
         "inputs/glfw_inputs.hpp"
-        "inputs/glfw_key_inputs.cpp"
-        "inputs/glfw_mouse_inputs.cpp"
+        "inputs/glfw_inputs.cpp"
 )
 
 add_library(BirdCore STATIC ${CORE_SOURCES})
