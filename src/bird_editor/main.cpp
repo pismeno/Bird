@@ -9,39 +9,38 @@
 
 int main() {
 
-    using namespace bird::inputs;
-    using namespace bird::editor;
+  using namespace bird::inputs;
+  using namespace bird::editor;
 
-    if (!glfwInit()) {
+  if (!glfwInit()) {
         // Handle initialization failure
         return -1;
+  }
+
+  std::unique_ptr<Window> window = Window::create(800, 600, "Bird Editor");
+  window->init();
+
+  std::cout << "Hello, Bird Editor!" << std::endl;
+
+  while (!window->shouldClose())
+  {
+    window->update();
+    if (Inputs::isKeyPressed(KeyCode::Space)) {
+      std::cout << "Space is pressed!" << std::endl;
     }
 
-    std::unique_ptr<Window> window = Window::create(800, 600, "Bird Editor");
-    window->init();
-
-    std::cout << "Hello, Bird Editor!" << std::endl;
-
-    while (!window->shouldClose())
-    {
-      window->update();
-
-      if (Inputs::isKeyPressed(KeyCode::Space)) {
-        std::cout << "Space is pressed!" << std::endl;
-      }
-
-      if (Inputs::isMouseButtonReleased(MouseCode::Left)) {
-        std::cout << "Left mouse button is released!" << std::endl;
-      }
-
-      if (Inputs::isKeyPressed(KeyCode::F11)) {
-        window->setFullscreen(!window->isFullscreen());
-      }
-
-      Inputs::endFrame();
+    if (Inputs::isMouseButtonReleased(MouseCode::Left)) {
+      std::cout << "Left mouse button is released!" << std::endl;
     }
 
-    window->close();
+    if (Inputs::isKeyPressed(KeyCode::F11)) {
+      window->setFullscreen(!window->isFullscreen());
+    }
 
-    glfwTerminate();
+    Inputs::endFrame();
+  }
+
+  window->close();
+
+  glfwTerminate();
 }
