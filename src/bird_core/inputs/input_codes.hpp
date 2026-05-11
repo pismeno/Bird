@@ -86,7 +86,7 @@ enum class KeyCode : uint16_t {
 
   LeftBracket   = 91,  // [
   Backslash     = 92,  // \
-        RightBracket  = 93,  // ]
+  RightBracket  = 93,  // ]
   GraveAccent   = 96,  // ` (Tilde)
 
   // Function keys

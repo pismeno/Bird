@@ -8,6 +8,9 @@ class GlfwInputs {
   static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
   static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos);
   static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
+  static void endFrameKeys();
+  static void endFrameMouse();
 };
 
 }

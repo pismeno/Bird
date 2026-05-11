@@ -28,8 +28,7 @@ class Inputs {
   static float getScrollDeltaX();
   static float getScrollDeltaY();
 
- protected:
-  static void update();
+  static void endFrame();
 };
 
 } // bird

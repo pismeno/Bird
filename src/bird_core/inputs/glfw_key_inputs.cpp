@@ -21,7 +21,7 @@ bool Inputs::isKeyReleased(KeyCode key) {
   return !currentKeyState[(uint16_t) key] && previousKeyState[(uint16_t) key];
 }
 
-void Inputs::update() {
+void GlfwInputs::endFrameKeys() {
   for (int i = 0; i < MAX_KEYS; i++) {
     previousKeyState[i] = currentKeyState[i];
   }

@@ -24,11 +24,17 @@ int main() {
 
     while (!window->shouldClose())
     {
+      window->update();
+
       if (Inputs::isKeyPressed(KeyCode::Space)) {
         std::cout << "Space is pressed!" << std::endl;
       }
 
-      window->update();
+      if (Inputs::isMouseButtonReleased(MouseCode::Left)) {
+        std::cout << "Left mouse button is released!" << std::endl;
+      }
+
+      Inputs::endFrame();
     }
 
     window->close();

@@ -71,6 +71,20 @@ float Inputs::getScrollDeltaY() {
   return scrollY - previousScrollY;
 }
 
+void GlfwInputs::endFrameMouse() {
+  for (int i = 0; i < MAX_MOUSE_BUTTONS; i++) {
+    previousMouseState[i] = currentMouseState[i];
+  }
+
+  previousMouseX = mouseX;
+  previousMouseY = mouseY;
+
+  scrollX = 0.0f;
+  scrollY = 0.0f;
+  previousScrollX = 0.0f;
+  previousScrollY = 0.0f;
+}
+
 void GlfwInputs::mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
   if (button < 0 || action >= MAX_MOUSE_BUTTONS) {
     return;
@@ -81,8 +95,6 @@ void GlfwInputs::mouseButtonCallback(GLFWwindow *window, int button, int action,
   } else if (action == GLFW_RELEASE) {
     currentMouseState[button] = false;
   }
-
-  previousMouseState[button] = currentMouseState[button];
 }
 
 void GlfwInputs::cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
@@ -91,9 +103,6 @@ void GlfwInputs::cursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 
   mouseX = x;
   mouseY = y;
-
-  previousMouseX = mouseX;
-  previousMouseY = mouseY;
 }
 
 void GlfwInputs::scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
@@ -102,9 +111,6 @@ void GlfwInputs::scrollCallback(GLFWwindow *window, double xoffset, double yoffs
 
   scrollX = x;
   scrollY = y;
-
-  previousScrollX = scrollX;
-  previousScrollY = scrollY;
 }
 
 } // bird
