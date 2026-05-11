@@ -1,4 +1,12 @@
-add_executable(BirdEditor "main.cpp")
+set(EDITOR_SOURCES
+        "main.cpp"
+        "window.hpp"
+        "window.cpp"
+        "glfw_window.hpp"
+        "glfw_window.cpp"
+)
+
+add_executable(BirdEditor ${EDITOR_SOURCES})
 
 target_link_libraries(BirdEditor PRIVATE BirdCore)
 
