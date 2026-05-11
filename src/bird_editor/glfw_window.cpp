@@ -19,9 +19,9 @@ GlfwWindow::GlfwWindow(int width, int height, const std::string& title) {
 GlfwWindow::~GlfwWindow() {}
 
 void GlfwWindow::init() {
-  glfwSetWindowUserPointer(glfwWindow, this);
-
   glfwMakeContextCurrent(glfwWindow);
+
+  glfwSetWindowUserPointer(glfwWindow, this);
 
   glfwSwapInterval(1); // Enable vsync
 
@@ -39,6 +39,8 @@ void GlfwWindow::init() {
 }
 
 void GlfwWindow::update() {
+  glfwMakeContextCurrent(glfwWindow);
+
   glfwPollEvents();
   glfwSwapBuffers(glfwWindow);
 }

@@ -18,13 +18,17 @@ int main() {
   }
 
   std::unique_ptr<Window> window = Window::create(800, 600, "Bird Editor");
+  std::unique_ptr<Window> window2 = Window::create(800, 600, "Bird Editor 2");
   window->init();
+  window2->init();
 
   std::cout << "Hello, Bird Editor!" << std::endl;
 
   while (!window->shouldClose())
   {
     window->update();
+    window2->update();
+
     if (Inputs::isKeyPressed(KeyCode::Space)) {
       std::cout << "Space is pressed!" << std::endl;
     }
