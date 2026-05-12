@@ -11,8 +11,8 @@ set(CORE_SOURCES
         "nodes/node_types.hpp"
         "nodes/node.hpp"
         "nodes/node.cpp"
-        "nodes/node_manager.hpp"
-        "nodes/node_manager.cpp"
+        "nodes/scene.hpp"
+        "nodes/scene.cpp"
 )
 
 add_library(BirdCore STATIC ${CORE_SOURCES})

@@ -10,7 +10,7 @@
 
 namespace bird::nodes {
 
-class NodeManager {
+class Scene {
  public:
   template<typename T, typename... Args>
   [[nodiscard]] NodeID createNode(NodeID parent_id, Args&&... args) {
@@ -37,7 +37,7 @@ class NodeManager {
   [[nodiscard]] Node* getNode(NodeID id);
 
  private:
-  std::atomic<NodeID> idCounter{0};
+  std::atomic<NodeID> idCounter{INVALID_NODE_ID + 1};
   std::unordered_map<NodeID, std::unique_ptr<Node>> nodes;
 };
 

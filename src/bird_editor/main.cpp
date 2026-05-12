@@ -4,7 +4,7 @@
 #include "GLFW/glfw3.h"
 
 #include "window.hpp"
-#include "nodes/node_manager.hpp"
+#include "nodes/scene.hpp"
 
 int main() {
 
@@ -24,11 +24,15 @@ int main() {
 
   std::cout << "Hello, Bird Editor!" << std::endl;
 
-  std::unique_ptr<NodeManager> nodeManager = std::make_unique<NodeManager>();
-  NodeID rootID = nodeManager->createNode<Node>(0, "new node");
+  std::unique_ptr<Scene> scene = std::make_unique<Scene>();
+  NodeID parID = scene->createNode<Node>(0, "parent");
+  NodeID childID = scene->createNode<Node>(parID, "child 1");
 
-  std::cout << "Root node ID: " << rootID << std::endl;
-  std::cout << "Root node name: " << nodeManager->getNode(rootID)->getName() << std::endl;
+  std::cout << "Parent node ID: " << parID << std::endl;
+  std::cout << "Parent node name: " << scene->getNode(parID)->getName() << std::endl;
+  std::cout << "Child node ID: " << childID << std::endl;
+  std::cout << "Child node name: " << scene->getNode(childID)->getName() << std::endl;
+  std::cout << "Child node parent name: " << scene->getNode(scene->getNode(childID)->getParentId())->getName() << std::endl;
 
   while (!window->shouldClose())
   {

@@ -8,19 +8,19 @@
 
 namespace bird::nodes {
 
-class NodeManager;
+class Scene;
 
 class Node {
 
-  friend class NodeManager;
+  friend class Scene;
 
  public:
   Node(std::string name);
 
-  inline Node* getParent(NodeManager& manager);
+  inline NodeID getParentId() const { return parentId; }
   inline NodeID getId() const { return id; }
   inline std::string_view getName() const { return name; }
-  void addChild(NodeID child_id, NodeManager& manager);
+  void addChild(NodeID child_id, Scene& scene);
 
  private:
   NodeID id = INVALID_NODE_ID;
