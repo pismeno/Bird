@@ -4,11 +4,13 @@
 #include "GLFW/glfw3.h"
 
 #include "window.hpp"
+#include "nodes/scene.hpp"
 
 int main() {
 
   using namespace bird;
   using namespace bird::inputs;
+  using namespace bird::nodes;
 
   if (!glfwInit()) {
         // Handle initialization failure
@@ -21,6 +23,16 @@ int main() {
   window2->init();
 
   std::cout << "Hello, Bird Editor!" << std::endl;
+
+  std::unique_ptr<Scene> scene = std::make_unique<Scene>();
+  NodeID parID = scene->createNode<Node>(0, "parent");
+  NodeID childID = scene->createNode<Node>(parID, "child 1");
+
+  std::cout << "Parent node ID: " << parID << std::endl;
+  std::cout << "Parent node name: " << scene->getNode(parID)->getName() << std::endl;
+  std::cout << "Child node ID: " << childID << std::endl;
+  std::cout << "Child node name: " << scene->getNode(childID)->getName() << std::endl;
+  std::cout << "Child node parent name: " << scene->getNode(scene->getNode(childID)->getParentId())->getName() << std::endl;
 
   while (!window->shouldClose())
   {

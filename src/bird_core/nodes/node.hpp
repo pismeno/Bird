@@ -1,0 +1,33 @@
+#pragma once
+
+#include <cstdint>
+#include <vector>
+#include <string>
+
+#include "node_types.hpp"
+
+namespace bird::nodes {
+
+class Scene;
+
+class Node {
+
+  friend class Scene;
+
+ public:
+  Node(std::string name);
+
+  inline NodeID getParentId() const { return parentId; }
+  inline NodeID getId() const { return id; }
+  inline std::string_view getName() const { return name; }
+  void addChild(NodeID child_id, Scene& scene);
+
+ private:
+  NodeID id = INVALID_NODE_ID;
+  NodeID parentId = INVALID_NODE_ID;
+  std::vector<NodeID> childrenIds;
+
+  std::string name;
+};
+
+} // bird::nodes
