@@ -5,6 +5,7 @@
 #include "GLFW/glfw3.h"
 
 #include "inputs/glfw_inputs.hpp"
+#include "result.hpp"
 
 namespace bird {
 
@@ -15,12 +16,12 @@ class GlfwWindow : public Window {
   friend class GlfwInputs;
 
  public:
-  GlfwWindow(int width, int height, const std::string& title);
+  GlfwWindow(WindowOptions options);
   virtual ~GlfwWindow();
 
-  void init() override;
+  Result init() override;
   void update() override;
-  void close() override;
+  Result close() override;
   bool shouldClose() const override;
   uint32_t getWidth() const override;
   uint32_t getHeight() const override;
@@ -32,15 +33,11 @@ class GlfwWindow : public Window {
  private:
   GLFWwindow* glfwWindow;
 
-  struct WindowData {
-    std::string title;
-    uint32_t width, height;
-    uint32_t windowedWidth, windowedHeight;
-    int windowedX, windowedY;
-    bool fullscreen;
-  };
+  uint32_t windowedWidth{}, windowedHeight{};
+  int windowedX{}, windowedY{};
+  bool fullscreen{};
 
-  WindowData data;
+  WindowOptions options;
 
   GlfwInputs inputs;
 

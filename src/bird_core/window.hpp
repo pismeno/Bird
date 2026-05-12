@@ -3,19 +3,26 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+
 #include "inputs/inputs.hpp"
+#include "result.hpp"
 
 namespace bird {
 
 using namespace inputs;
 
+struct WindowOptions {
+  uint32_t width, height;
+  std::string title;
+};
+
 class Window {
  public:
   virtual ~Window() = default;
 
-  virtual void init() = 0;
+  virtual Result init() = 0;
   virtual void update() = 0;
-  virtual void close() = 0;
+  virtual Result close() = 0;
 
   virtual bool shouldClose() const = 0;
 
@@ -30,7 +37,7 @@ class Window {
   /**
    * @brief Factory method to create the specific implementation
    */
-  static std::unique_ptr<Window> create(int width, int height, const std::string& title);
+  static std::unique_ptr<Window> create(const WindowOptions& options);
 };
 
 } // bird

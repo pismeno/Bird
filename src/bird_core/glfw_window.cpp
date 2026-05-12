@@ -1,30 +1,29 @@
 #include "glfw_window.hpp"
+
+#include <utility>
 #include "inputs/glfw_inputs.hpp"
 
 namespace bird {
 
 using namespace inputs;
 
-GlfwWindow::GlfwWindow(int width, int height, const std::string& title)
-    : data{
-          .title          = title,
-          .width          = (uint32_t)width,
-          .height         = (uint32_t)height,
-          .windowedWidth  = (uint32_t)width,
-          .windowedHeight = (uint32_t)height,
-          .fullscreen     = false
-      },
+GlfwWindow::GlfwWindow(WindowOptions options)
+    : options(std::move(options)),
       inputs(),
-      glfwWindow(nullptr)
-{
-  glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-
-  // TODO probably should check for errors here
-}
+      windowedWidth(options.width),
+      windowedHeight(options.height),
+      glfwWindow(nullptr),
+      fullscreen(false) {}
 
 GlfwWindow::~GlfwWindow() = default;
 
-void GlfwWindow::init() {
+Result GlfwWindow::init() {
+  glfwWindow = glfwCreateWindow(options.width, options.height, options.title.c_str(), nullptr, nullptr);
+
+  if (!glfwWindow) {
+    return Result::fail("failed to create GLFW window");
+  }
+
   glfwMakeContextCurrent(glfwWindow);
 
   glfwSetWindowUserPointer(glfwWindow, this);
@@ -42,6 +41,8 @@ void GlfwWindow::init() {
   glfwSetMouseButtonCallback(glfwWindow, GlfwInputs::mouseButtonCallback);
   glfwSetCursorPosCallback(glfwWindow, GlfwInputs::cursorPosCallback);
   glfwSetScrollCallback(glfwWindow, GlfwInputs::scrollCallback);
+
+  return Result::ok();
 }
 
 void GlfwWindow::update() {
@@ -51,8 +52,9 @@ void GlfwWindow::update() {
   glfwSwapBuffers(glfwWindow);
 }
 
-void GlfwWindow::close() {
+Result GlfwWindow::close() {
   glfwDestroyWindow(glfwWindow);
+  return Result::ok();
 }
 
 bool GlfwWindow::shouldClose() const {
@@ -60,11 +62,11 @@ bool GlfwWindow::shouldClose() const {
 }
 
 uint32_t GlfwWindow::getWidth() const {
-  return this->data.width;
+  return this->options.width;
 }
 
 uint32_t GlfwWindow::getHeight() const {
-  return this->data.height;
+  return this->options.height;
 }
 
 bool GlfwWindow::isFocused() const {
@@ -72,7 +74,7 @@ bool GlfwWindow::isFocused() const {
 }
 
 bool GlfwWindow::isFullscreen() const {
-  return data.fullscreen;
+  return fullscreen;
 }
 
 Inputs& GlfwWindow::getInputs() {
@@ -81,28 +83,28 @@ Inputs& GlfwWindow::getInputs() {
 
 void GlfwWindow::setFullscreen(bool fullscreen) {
   if (fullscreen) {
-    glfwGetWindowPos(glfwWindow, &data.windowedX, &data.windowedY);
+    glfwGetWindowPos(glfwWindow, &windowedX, &windowedY);
 
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
 
-    data.fullscreen = true;
+    fullscreen = true;
     glfwSetWindowMonitor(glfwWindow, monitor, 0, 0, vidmode->width, vidmode->height, vidmode->refreshRate);
   } else {
-    data.fullscreen = false;
-    glfwSetWindowMonitor(glfwWindow, nullptr, data.windowedX, data.windowedY,
-                         data.windowedWidth, data.windowedHeight, 0);
+    fullscreen = false;
+    glfwSetWindowMonitor(glfwWindow, nullptr, windowedX, windowedY,
+                         windowedWidth, windowedHeight, 0);
   }
 }
 
 void GlfwWindow::windowResizeCallback(GLFWwindow *window, int width, int height) {
   if (!isFullscreen()) {
-    data.windowedWidth = width;
-    data.windowedHeight = height;
+    windowedWidth = width;
+    windowedHeight = height;
   }
 
-  data.width = width;
-  data.height = height;
+  options.width = width;
+  options.height = height;
 }
 
 } // bird

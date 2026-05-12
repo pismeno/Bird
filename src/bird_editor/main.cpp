@@ -15,8 +15,8 @@ int main() {
         return -1;
   }
 
-  std::unique_ptr<Window> window = Window::create(800, 600, "Bird Editor");
-  std::unique_ptr<Window> window2 = Window::create(800, 600, "Bird Editor 2");
+  std::unique_ptr<Window> window = Window::create(WindowOptions{800, 600, "Bird Editor"});
+  std::unique_ptr<Window> window2 = Window::create(WindowOptions{800, 600, "Bird Editor 2"});
   window->init();
   window2->init();
 
