@@ -1,4 +1,5 @@
 set(CORE_SOURCES
+        "result.hpp"
         "window.hpp"
         "window.cpp"
         "glfw_window.hpp"
