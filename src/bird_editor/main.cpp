@@ -4,11 +4,13 @@
 #include "GLFW/glfw3.h"
 
 #include "window.hpp"
+#include "nodes/node_manager.hpp"
 
 int main() {
 
   using namespace bird;
   using namespace bird::inputs;
+  using namespace bird::nodes;
 
   if (!glfwInit()) {
         // Handle initialization failure
@@ -21,6 +23,11 @@ int main() {
   window2->init();
 
   std::cout << "Hello, Bird Editor!" << std::endl;
+
+  std::unique_ptr<NodeManager> nodeManager = std::make_unique<NodeManager>();
+  NodeID rootID = nodeManager->createNode<Node>(0);
+
+  std::cout << "Root node ID: " << rootID << std::endl;
 
   while (!window->shouldClose())
   {
