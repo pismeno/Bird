@@ -25,9 +25,10 @@ int main() {
   std::cout << "Hello, Bird Editor!" << std::endl;
 
   std::unique_ptr<NodeManager> nodeManager = std::make_unique<NodeManager>();
-  NodeID rootID = nodeManager->createNode<Node>(0);
+  NodeID rootID = nodeManager->createNode<Node>(0, "new node");
 
   std::cout << "Root node ID: " << rootID << std::endl;
+  std::cout << "Root node name: " << nodeManager->getNode(rootID)->getName() << std::endl;
 
   while (!window->shouldClose())
   {

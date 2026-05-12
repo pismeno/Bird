@@ -18,6 +18,7 @@ class NodeManager {
 
     auto node = std::make_unique<T>(std::forward<Args>(args)...);
     node->id = newId;
+    node->parentId = parent_id;
 
     Node* nodePtr = node.get();
     nodes[newId] = std::move(node);
