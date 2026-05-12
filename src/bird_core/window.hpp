@@ -1,11 +1,15 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 
+struct GLFWwindow;
+
 #include "inputs/inputs.hpp"
 #include "result.hpp"
+
 
 namespace bird {
 
@@ -18,6 +22,8 @@ struct WindowOptions {
 
 class Window {
  public:
+  using ResizeCallback = std::function<void(int width, int height)>;
+
   virtual ~Window() = default;
 
   virtual Result init() = 0;
@@ -33,6 +39,8 @@ class Window {
   virtual void setFullscreen(bool fullscreen) = 0;
 
   virtual Inputs& getInputs() = 0;
+  virtual GLFWwindow* getNativeWindow() const = 0;
+  virtual void setResizeCallback(ResizeCallback callback) = 0;
 
   /**
    * @brief Factory method to create the specific implementation

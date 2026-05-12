@@ -18,23 +18,25 @@ GlfwWindow::GlfwWindow(WindowOptions options)
 GlfwWindow::~GlfwWindow() = default;
 
 Result GlfwWindow::init() {
+  glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
   glfwWindow = glfwCreateWindow(options.width, options.height, options.title.c_str(), nullptr, nullptr);
 
   if (!glfwWindow) {
     return Result::fail("failed to create GLFW window");
   }
 
-  glfwMakeContextCurrent(glfwWindow);
-
   glfwSetWindowUserPointer(glfwWindow, this);
-
-  glfwSwapInterval(1); // Enable vsync
-
-  glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 
   glfwSetWindowSizeCallback(glfwWindow, [](GLFWwindow* window, int width, int height) {
     auto* birdWindow = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
     birdWindow->windowResizeCallback(birdWindow->glfwWindow, width, height);
+  });
+
+  glfwSetFramebufferSizeCallback(glfwWindow, [](GLFWwindow* window, int width, int height) {
+    auto* birdWindow = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+    birdWindow->frameBufferResizeCallback(birdWindow->glfwWindow, width, height);
   });
 
   glfwSetKeyCallback(glfwWindow, GlfwInputs::keyCallback);
@@ -46,10 +48,7 @@ Result GlfwWindow::init() {
 }
 
 void GlfwWindow::update() {
-  glfwMakeContextCurrent(glfwWindow);
-
   glfwPollEvents();
-  glfwSwapBuffers(glfwWindow);
 }
 
 Result GlfwWindow::close() {
@@ -81,6 +80,25 @@ Inputs& GlfwWindow::getInputs() {
   return inputs;
 }
 
+GLFWwindow* GlfwWindow::getNativeWindow() const {
+  return glfwWindow;
+}
+
+void GlfwWindow::setResizeCallback(ResizeCallback callback) {
+  resize_callback = std::move(callback);
+
+  if (glfwWindow && resize_callback) {
+    int framebufferWidth = 0;
+    int framebufferHeight = 0;
+    glfwGetFramebufferSize(glfwWindow, &framebufferWidth, &framebufferHeight);
+    if (framebufferWidth > 0 && framebufferHeight > 0) {
+      options.width = static_cast<uint32_t>(framebufferWidth);
+      options.height = static_cast<uint32_t>(framebufferHeight);
+      resize_callback(framebufferWidth, framebufferHeight);
+    }
+  }
+}
+
 void GlfwWindow::setFullscreen(bool fullscreen) {
   if (fullscreen) {
     glfwGetWindowPos(glfwWindow, &windowedX, &windowedY);
@@ -102,9 +120,19 @@ void GlfwWindow::windowResizeCallback(GLFWwindow *window, int width, int height)
     windowedWidth = width;
     windowedHeight = height;
   }
+}
 
-  options.width = width;
-  options.height = height;
+void GlfwWindow::frameBufferResizeCallback(GLFWwindow *window, int width, int height) {
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+
+  options.width = static_cast<uint32_t>(width);
+  options.height = static_cast<uint32_t>(height);
+
+  if (resize_callback) {
+    resize_callback(width, height);
+  }
 }
 
 } // bird

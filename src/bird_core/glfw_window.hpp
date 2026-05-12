@@ -29,6 +29,8 @@ class GlfwWindow : public Window {
   bool isFullscreen() const override;
   void setFullscreen(bool fullscreen) override;
   Inputs& getInputs() override;
+  GLFWwindow* getNativeWindow() const override;
+  void setResizeCallback(ResizeCallback callback) override;
 
  private:
   GLFWwindow* glfwWindow;
@@ -40,8 +42,10 @@ class GlfwWindow : public Window {
   WindowOptions options;
 
   GlfwInputs inputs;
+  ResizeCallback resize_callback;
 
   void windowResizeCallback(GLFWwindow* window, int width, int height);
+  void frameBufferResizeCallback(GLFWwindow* window, int width, int height);
 };
 
 } // bird

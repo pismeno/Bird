@@ -2,7 +2,7 @@
 using namespace metal;
 
 vertex float4
-vertexShader(uint vertexID [[vertex_id]],
+vertex_shader(uint vertexID [[vertex_id]],
              constant simd::float3* vertexPositions)
 {
     float4 vertexOutPositions = float4(vertexPositions[vertexID][0],
@@ -12,6 +12,6 @@ vertexShader(uint vertexID [[vertex_id]],
     return vertexOutPositions;
 }
 
-fragment float4 fragmentShader(float4 vertexOutPositions [[stage_in]]) {
+fragment float4 fragment_shader(float4 vertexOutPositions [[stage_in]]) {
     return float4(182.0f/255.0f, 240.0f/255.0f, 228.0f/255.0f, 1.0f);
 }

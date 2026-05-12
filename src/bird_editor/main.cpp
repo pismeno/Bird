@@ -1,6 +1,8 @@
 #include <iostream>
 #include <memory>
 
+#include <GLFW/glfw3.h>
+
 #include "../bird_core/rendering/renderer.hpp"
 
 
@@ -19,9 +21,14 @@ int main() {
   }
 
   std::unique_ptr<Window> window = Window::create(WindowOptions{800, 600, "Bird Editor"});
-  std::unique_ptr<Window> window2 = Window::create(WindowOptions{800, 600, "Bird Editor 2"});
   window->init();
-  window2->init();
+
+  Renderer renderer;
+  renderer.create_renderer(RendererType::Metal);
+  renderer.init(*window);
+  window->setResizeCallback([&renderer](int width, int height) {
+    renderer.handle_window_resize(width, height);
+  });
 
   std::cout << "Hello, Bird Editor!" << std::endl;
 
@@ -33,15 +40,12 @@ int main() {
   while (!window->shouldClose())
   {
     window->update();
-    window2->update();
+    renderer.render();
 
     if (window->getInputs().isKeyPressed(KeyCode::Space)) {
       std::cout << "Space is pressed!" << std::endl;
     }
 
-    if (window2->getInputs().isKeyPressed(KeyCode::Space)) {
-      std::cout << "Space is pressed in window 2!" << std::endl;
-    }
 
     if (window->getInputs().isMouseButtonReleased(MouseCode::Left)) {
       std::cout << "Left mouse button is released!" << std::endl;
@@ -52,9 +56,9 @@ int main() {
     }
 
     window->getInputs().endFrame();
-    window2->getInputs().endFrame();
   }
 
+  renderer.shutdown();
   window->close();
 
   glfwTerminate();
