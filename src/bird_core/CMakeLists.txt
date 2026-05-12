@@ -1,12 +1,26 @@
 file(GLOB_RECURSE CORE_SOURCES "*.cpp" "*.hpp" "*.h" "*.mm")
 
 set(CORE_SOURCES
-        rendering/renderer.hpp
-    rendering/renderer.cpp
-    rendering/metal_renderer.cpp
-    rendering/mtl_implementation.cpp
-    rendering/GLFWBridge.hpp
-    rendering/GLFWBridge.mm
+        "rendering/renderer.hpp"
+        "rendering/renderer.cpp"
+        "rendering/metal_renderer.cpp"
+        "rendering/mtl_implementation.cpp"
+        "rendering/GLFWBridge.hpp"
+        "rendering/GLFWBridge.mm"
+        "result.hpp"
+        "window.hpp"
+        "window.cpp"
+        "glfw_window.hpp"
+        "glfw_window.cpp"
+        "inputs/inputs.hpp"
+        "inputs/input_codes.hpp"
+        "inputs/glfw_inputs.hpp"
+        "inputs/glfw_inputs.cpp"
+        "nodes/node_types.hpp"
+        "nodes/node.hpp"
+        "nodes/node.cpp"
+        "nodes/node_manager.hpp"
+        "nodes/node_manager.cpp"
 )
 
 add_library(BirdCore STATIC ${CORE_SOURCES})
@@ -37,3 +51,7 @@ target_link_libraries(BirdCore PUBLIC
     ${QUARTZ_FRAMEWORK} 
     ${FOUNDATION_FRAMEWORK}
 )
+target_link_libraries(BirdCore PUBLIC glfw glm::glm)
+
+target_include_directories(BirdCore
+        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

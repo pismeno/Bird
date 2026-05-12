@@ -27,3 +27,11 @@ Bird Engine is a Specialized 2d game engine.
 - GLM
 - OpenGL
 - GLFW
+
+## Repository
+this repository uses the conventional commits format: https://www.conventionalcommits.org/en/v1.0.0/  
+main branch is the latest stable release.  
+dev branch is the latest working development version.  
+feat/ branches are implementations of new features.  
+fix/ branches are bugfixes.  
+docs/ branches are documentation.

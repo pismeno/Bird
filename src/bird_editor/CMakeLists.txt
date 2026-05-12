@@ -1,4 +1,8 @@
-add_executable(BirdEditor "main.cpp")
+set(EDITOR_SOURCES
+        "main.cpp"
+)
+
+add_executable(BirdEditor ${EDITOR_SOURCES})
 
 target_link_libraries(BirdEditor
     PRIVATE
