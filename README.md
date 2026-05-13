@@ -2,10 +2,9 @@
 Bird Engine is a Specialized 2d game engine. 
 
 ## Features
-### ECS System
-- GameObjects, Components
+### Nodes
+- nodes are the basic building blocks of the engine, they can be used to create anything from a simple sprite to a complex game object
 - prefabs, possibility to use them and override specific traits on them
-- 
 ### Embedded AngelScript
 - possibility to use it as a script component
 - 
@@ -22,10 +21,10 @@ Bird Engine is a Specialized 2d game engine.
 - FlatBuffers
 - AngelScript
 - Dear ImGui
-- spdlog
 - nlohmann/json
 - GLM
-- OpenGL
+- Vulkan
+- Metal
 - GLFW
 
 ## Repository
