@@ -23,12 +23,12 @@ public:
   void render() override;
   void shutdown() override;
   void resizeFrameBuffer(int width, int height);
+  void submit_quad() override;
 
 private:
   void init_device();
   void init_window(Window& shared_window);
 
-  void create_quad();
 
   void create_default_library();
   void create_command_queue();

@@ -52,6 +52,14 @@ void Renderer::render() {
   renderer_->render();
 }
 
+void Renderer::submit_quad() {
+  if (!renderer_) {
+    return;
+  }
+
+  renderer_->submit_quad();
+}
+
 void Renderer::shutdown() {
   if (!renderer_) {
     return;

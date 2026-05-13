@@ -11,6 +11,7 @@ public:
     virtual void init(Window& window) = 0;
     virtual void render() = 0;
     virtual void shutdown() = 0;
+    virtual void submit_quad() = 0;
 };
 
 } // namespace bird

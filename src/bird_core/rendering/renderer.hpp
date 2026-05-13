@@ -25,6 +25,7 @@ public:
   void init(Window& window);
   void render();
   void shutdown();
+  void submit_quad();
   void handle_window_resize(int width, int height);
 
 private:

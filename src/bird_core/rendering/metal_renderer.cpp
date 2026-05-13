@@ -14,7 +14,6 @@
 #include <sstream>
 
 #include <GLFW/glfw3.h>
-#include <simd/simd.h>
 
 
 namespace bird {
@@ -32,6 +31,7 @@ struct MetalRenderer::Impl {
   MTL::CommandBuffer* metal_command_buffer = nullptr;
   MTL::RenderPipelineState* metal_render_pso = nullptr;
   MTL::Buffer* vertex_buffer = nullptr;
+  MTL::Buffer* index_buffer = nullptr;
   MTL::SamplerState* sampler_state = nullptr;
 };
 
@@ -68,7 +68,7 @@ void MetalRenderer::init(Window& window) {
   init_device();
   init_window(window);
 
-  create_quad();
+  submit_quad();
   create_default_library();
   create_command_queue();
   create_render_pipeline();
@@ -87,30 +87,32 @@ void MetalRenderer::render() {
   frame_pool->release();
 }
 
-void MetalRenderer::shutdown() {
-  delete metal_backend_;
-  metal_backend_ = nullptr;
-}
+void MetalRenderer::submit_quad() {
+  const Vertex quad_vertices[] = {
+      {-0.5f,  0.5f, 0.0f, 1.0f},
+      { 0.5f,  0.5f, 1.0f, 1.0f},
+      {-0.5f, -0.5f, 0.0f, 0.0f},
+      { 0.5f, -0.5f, 1.0f, 0.0f}
+  };
 
-void MetalRenderer::create_quad() {
-  // vertices for two triangles in a quad (centered, normalized coordinates)
-  Vertex quad_vertices[] = {
-      {{-0.5f,  0.5f, 0.0f, 1.0f}, {0.0f, 1.0f}},  // top-left
-      {{ 0.5f,  0.5f, 0.0f, 1.0f}, {1.0f, 1.0f}},  // top-right
-      {{-0.5f, -0.5f, 0.0f, 1.0f}, {0.0f, 0.0f}},  // bottom-left
-
-      {{ 0.5f,  0.5f, 0.0f, 1.0f}, {1.0f, 1.0f}},  // top-right
-      {{ 0.5f, -0.5f, 0.0f, 1.0f}, {1.0f, 0.0f}},  // bottom-right
-      {{-0.5f, -0.5f, 0.0f, 1.0f}, {0.0f, 0.0f}}   // bottom-left
+  const std::uint16_t quad_indices[] = {
+      0, 1, 2,
+      1, 3, 2
   };
 
   metal_backend_->vertex_buffer = metal_backend_->metal_device->newBuffer(&quad_vertices, sizeof(quad_vertices), MTL::ResourceStorageModeShared);
+  metal_backend_->index_buffer = metal_backend_->metal_device->newBuffer(&quad_indices, sizeof(quad_indices), MTL::ResourceStorageModeShared);
+  // texture = new Texture2D("alpha_test.png", metal_backend_->metal_device);
+ #ifdef BIRD_TEXTURE_SOURCE_PATH
+   texture = new Texture2D(BIRD_TEXTURE_SOURCE_PATH, metal_backend_->metal_device);
+ #else
+   texture = new Texture2D("src/bird_core/rendering/alpha_test.png", metal_backend_->metal_device);
+ #endif
+}
 
-#ifdef BIRD_TEXTURE_SOURCE_PATH
-  texture = new Texture2D(BIRD_TEXTURE_SOURCE_PATH, metal_backend_->metal_device);
-#else
-  texture = new Texture2D("src/bird_core/rendering/testimg.png", metal_backend_->metal_device);
-#endif
+void MetalRenderer::shutdown() {
+  delete metal_backend_;
+  metal_backend_ = nullptr;
 }
 
 void MetalRenderer::create_default_library() {
@@ -181,13 +183,21 @@ void MetalRenderer::create_render_pipeline() {
 
   MTL::VertexDescriptor* vertex_descriptor = MTL::VertexDescriptor::vertexDescriptor();
 
-  vertex_descriptor->attributes()->object(0)->setFormat(MTL::VertexFormatFloat4);
+  vertex_descriptor->attributes()->object(0)->setFormat(MTL::VertexFormatFloat2);
   vertex_descriptor->attributes()->object(0)->setOffset(0);
   vertex_descriptor->attributes()->object(0)->setBufferIndex(0);
 
   vertex_descriptor->attributes()->object(1)->setFormat(MTL::VertexFormatFloat2);
-  vertex_descriptor->attributes()->object(1)->setOffset(16);
+  vertex_descriptor->attributes()->object(1)->setOffset(8);
   vertex_descriptor->attributes()->object(1)->setBufferIndex(0);
+
+  vertex_descriptor->attributes()->object(2)->setFormat(MTL::VertexFormatUInt);
+  vertex_descriptor->attributes()->object(2)->setOffset(16);
+  vertex_descriptor->attributes()->object(2)->setBufferIndex(0);
+
+  vertex_descriptor->attributes()->object(3)->setFormat(MTL::VertexFormatUInt);
+  vertex_descriptor->attributes()->object(3)->setOffset(20);
+  vertex_descriptor->attributes()->object(3)->setBufferIndex(0);
 
   vertex_descriptor->layouts()->object(0)->setStride(sizeof(Vertex));
   vertex_descriptor->layouts()->object(0)->setStepFunction(MTL::VertexStepFunctionPerVertex);
@@ -250,17 +260,14 @@ void MetalRenderer::send_render_command() {
 }
 
 void MetalRenderer::encode_render_command(MTL::RenderCommandEncoder* render_command_encoder) {
-  if (!render_command_encoder || !metal_backend_ || !metal_backend_->metal_render_pso) {
+  if (!render_command_encoder || !metal_backend_ || !metal_backend_->metal_render_pso || !metal_backend_->index_buffer) {
       return;
   }
   render_command_encoder->setRenderPipelineState(metal_backend_->metal_render_pso);
   render_command_encoder->setVertexBuffer(metal_backend_->vertex_buffer, 0, 0);
-  MTL::PrimitiveType type_triangle = MTL::PrimitiveTypeTriangle;
-  NS::UInteger vertex_start = 0;
-  NS::UInteger vertex_count = metal_backend_->vertex_buffer->length() / sizeof(Vertex);
   render_command_encoder->setFragmentTexture(texture->texture, 0);
   render_command_encoder->setFragmentSamplerState(metal_backend_->sampler_state, 0);
-  render_command_encoder->drawPrimitives(type_triangle, vertex_start, vertex_count);
+  render_command_encoder->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, metal_backend_->index_buffer->length() / sizeof(uint16_t), MTL::IndexTypeUInt16, metal_backend_->index_buffer, 0);
 }
 
 void MetalRenderer::resizeFrameBuffer(int width, int height) {
