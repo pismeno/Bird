@@ -20,7 +20,7 @@ int main() {
         return -1;
   }
 
-  std::unique_ptr<Window> window = Window::create(WindowOptions{800, 600, "Bird Editor"});
+  std::unique_ptr<Window> window = Window::create(WindowOptions{600, 600, "Bird Editor"});
   window->init();
 
   Renderer renderer;

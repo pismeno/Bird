@@ -1,12 +1,11 @@
 #include "metal_renderer.hpp"
 
 #include "GLFWBridge.hpp"
+#include "shader_compiler.hpp"
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <Metal/Metal.hpp>
 #include <QuartzCore/QuartzCore.hpp>
-
-#include <simd/simd.h>
 
 #include <cassert>
 #include <cstdlib>
@@ -15,6 +14,8 @@
 #include <sstream>
 
 #include <GLFW/glfw3.h>
+#include <simd/simd.h>
+
 
 namespace bird {
 
@@ -25,11 +26,13 @@ struct MetalRenderer::Impl {
   CA::MetalLayer* metal_layer = nullptr;
   CA::MetalDrawable* metal_drawable = nullptr;
 
-  MTL::Library* metal_default_library = nullptr;
+  MTL::Library* metal_vertex_library = nullptr;
+  MTL::Library* metal_fragment_library = nullptr;
   MTL::CommandQueue* metal_command_queue = nullptr;
   MTL::CommandBuffer* metal_command_buffer = nullptr;
   MTL::RenderPipelineState* metal_render_pso = nullptr;
   MTL::Buffer* vertex_buffer = nullptr;
+  MTL::SamplerState* sampler_state = nullptr;
 };
 
 void MetalRenderer::init_device() {
@@ -65,7 +68,7 @@ void MetalRenderer::init(Window& window) {
   init_device();
   init_window(window);
 
-  create_triangle();
+  create_quad();
   create_default_library();
   create_command_queue();
   create_render_pipeline();
@@ -89,51 +92,79 @@ void MetalRenderer::shutdown() {
   metal_backend_ = nullptr;
 }
 
-void MetalRenderer::create_triangle() {
-  simd::float3 triangle_vertices[] = {
-      {-0.5f, -0.5f, 0.0f},
-      { 0.5f, -0.5f, 0.0f},
-      { 0.0f,  0.5f, 0.0f}
+void MetalRenderer::create_quad() {
+  // vertices for two triangles in a quad (centered, normalized coordinates)
+  Vertex quad_vertices[] = {
+      {{-0.5f,  0.5f, 0.0f, 1.0f}, {0.0f, 1.0f}},  // top-left
+      {{ 0.5f,  0.5f, 0.0f, 1.0f}, {1.0f, 1.0f}},  // top-right
+      {{-0.5f, -0.5f, 0.0f, 1.0f}, {0.0f, 0.0f}},  // bottom-left
+
+      {{ 0.5f,  0.5f, 0.0f, 1.0f}, {1.0f, 1.0f}},  // top-right
+      {{ 0.5f, -0.5f, 0.0f, 1.0f}, {1.0f, 0.0f}},  // bottom-right
+      {{-0.5f, -0.5f, 0.0f, 1.0f}, {0.0f, 0.0f}}   // bottom-left
   };
 
-  metal_backend_->vertex_buffer = metal_backend_->metal_device->newBuffer(&triangle_vertices, sizeof(triangle_vertices), MTL::ResourceStorageModeShared);
+  metal_backend_->vertex_buffer = metal_backend_->metal_device->newBuffer(&quad_vertices, sizeof(quad_vertices), MTL::ResourceStorageModeShared);
+
+#ifdef BIRD_TEXTURE_SOURCE_PATH
+  texture = new Texture2D(BIRD_TEXTURE_SOURCE_PATH, metal_backend_->metal_device);
+#else
+  texture = new Texture2D("src/bird_core/rendering/testimg.png", metal_backend_->metal_device);
+#endif
 }
 
 void MetalRenderer::create_default_library() {
-  metal_backend_->metal_default_library = metal_backend_->metal_device->newDefaultLibrary();
-  if (metal_backend_->metal_default_library) {
-      return;
-  }
-
   NS::Error* error = nullptr;
 
-#ifdef BIRD_METAL_SHADER_SOURCE_PATH
-  const char* shader_source_path = BIRD_METAL_SHADER_SOURCE_PATH;
-#else
-  const char* shader_source_path = "src/bird_core/rendering/triangle.metal";
-#endif
+  try {
+  ShaderCompiler compiler;
 
-  std::ifstream shader_file(shader_source_path);
-  if (!shader_file.is_open()) {
-      std::cerr << "Failed to open Metal shader source: " << shader_source_path;
-      std::exit(-1);
-  }
+  std::string vert_msl = compiler.compile_glsl_file_to_msl(BIRD_SHADER_VERT_SOURCE_PATH);
+  std::string frag_msl = compiler.compile_glsl_file_to_msl(BIRD_SHADER_FRAG_SOURCE_PATH);
 
-  std::ostringstream shader_source_stream;
-  shader_source_stream << shader_file.rdbuf();
-  const std::string shader_source = shader_source_stream.str();
-
-  metal_backend_->metal_default_library = metal_backend_->metal_device->newLibrary(
-      NS::String::string(shader_source.c_str(), NS::UTF8StringEncoding),
-      nullptr,
-      &error
+  metal_backend_->metal_vertex_library = metal_backend_->metal_device->newLibrary(
+    NS::String::string(vert_msl.c_str(), NS::UTF8StringEncoding),
+    nullptr,
+    &error
   );
 
-  if (!metal_backend_->metal_default_library) {
-      std::cerr << "Failed to compile Metal library from source: " << shader_source_path;
-      if (error != nullptr) {
-          std::cerr << "\nMetal error: " << error->localizedDescription()->utf8String();
-      }
+  if (!metal_backend_->metal_vertex_library) {
+    std::cerr << "Failed to compile translated vertex shader to Metal";
+    if (error != nullptr) {
+      std::cerr << "\nMetal error: " << error->localizedDescription()->utf8String();
+    }
+    std::exit(-1);
+  }
+
+  error = nullptr;
+  metal_backend_->metal_fragment_library = metal_backend_->metal_device->newLibrary(
+    NS::String::string(frag_msl.c_str(), NS::UTF8StringEncoding),
+    nullptr,
+    &error
+  );
+
+  if (!metal_backend_->metal_fragment_library) {
+    std::cerr << "Failed to compile translated fragment shader to Metal";
+    if (error != nullptr) {
+      std::cerr << "\nMetal error: " << error->localizedDescription()->utf8String();
+    }
+    std::exit(-1);
+  }
+
+  MTL::SamplerDescriptor* sampler_descriptor = MTL::SamplerDescriptor::alloc()->init();
+  sampler_descriptor->setMinFilter(MTL::SamplerMinMagFilterNearest);
+  sampler_descriptor->setMagFilter(MTL::SamplerMinMagFilterNearest);
+  sampler_descriptor->setSAddressMode(MTL::SamplerAddressModeClampToEdge);
+  sampler_descriptor->setTAddressMode(MTL::SamplerAddressModeClampToEdge);
+  metal_backend_->sampler_state = metal_backend_->metal_device->newSamplerState(sampler_descriptor);
+  sampler_descriptor->release();
+
+  if (!metal_backend_->sampler_state) {
+    std::cerr << "Failed to create Metal sampler state" << std::endl;
+    std::exit(-1);
+  }
+  } catch (const std::exception& e) {
+      std::cerr << "Failed to compile shaders: " << e.what() << std::endl;
       std::exit(-1);
   }
 }
@@ -143,15 +174,29 @@ void MetalRenderer::create_command_queue() {
 }
 
 void MetalRenderer::create_render_pipeline() {
-  MTL::Function* vertex_shader = metal_backend_->metal_default_library->newFunction(NS::String::string("vertex_shader", NS::ASCIIStringEncoding));
+  MTL::Function* vertex_shader = metal_backend_->metal_vertex_library->newFunction(NS::String::string("main0", NS::ASCIIStringEncoding));
   assert(vertex_shader);
-  MTL::Function* fragment_shader = metal_backend_->metal_default_library->newFunction(NS::String::string("fragment_shader", NS::ASCIIStringEncoding));
+  MTL::Function* fragment_shader = metal_backend_->metal_fragment_library->newFunction(NS::String::string("main0", NS::ASCIIStringEncoding));
   assert(fragment_shader);
+
+  MTL::VertexDescriptor* vertex_descriptor = MTL::VertexDescriptor::vertexDescriptor();
+
+  vertex_descriptor->attributes()->object(0)->setFormat(MTL::VertexFormatFloat4);
+  vertex_descriptor->attributes()->object(0)->setOffset(0);
+  vertex_descriptor->attributes()->object(0)->setBufferIndex(0);
+
+  vertex_descriptor->attributes()->object(1)->setFormat(MTL::VertexFormatFloat2);
+  vertex_descriptor->attributes()->object(1)->setOffset(16);
+  vertex_descriptor->attributes()->object(1)->setBufferIndex(0);
+
+  vertex_descriptor->layouts()->object(0)->setStride(sizeof(Vertex));
+  vertex_descriptor->layouts()->object(0)->setStepFunction(MTL::VertexStepFunctionPerVertex);
 
   MTL::RenderPipelineDescriptor* render_pipeline_descriptor = MTL::RenderPipelineDescriptor::alloc()->init();
   render_pipeline_descriptor->setLabel(NS::String::string("Bird Triangle Pipeline", NS::ASCIIStringEncoding));
   render_pipeline_descriptor->setVertexFunction(vertex_shader);
   render_pipeline_descriptor->setFragmentFunction(fragment_shader);
+  render_pipeline_descriptor->setVertexDescriptor(vertex_descriptor);
   assert(render_pipeline_descriptor);
   MTL::PixelFormat pixel_format = (MTL::PixelFormat)metal_backend_->metal_layer->pixelFormat();
   render_pipeline_descriptor->colorAttachments()->object(0)->setPixelFormat(pixel_format);
@@ -160,6 +205,7 @@ void MetalRenderer::create_render_pipeline() {
   metal_backend_->metal_render_pso = metal_backend_->metal_device->newRenderPipelineState(render_pipeline_descriptor, &error);
 
   render_pipeline_descriptor->release();
+  vertex_descriptor->release();
 }
 
 void MetalRenderer::draw() {
@@ -185,7 +231,7 @@ void MetalRenderer::send_render_command() {
 
   color_descriptor->setTexture(metal_backend_->metal_drawable->texture());
   color_descriptor->setLoadAction(MTL::LoadActionClear);
-  color_descriptor->setClearColor(MTL::ClearColor(41.0f / 255.0f, 42.0f / 255.0f, 48.0f / 255.0f, 1.0));
+  color_descriptor->setClearColor(MTL::ClearColor(22.0f / 255.0f, 22.0f / 255.0f, 23.0f / 255.0f, 1.0));
   color_descriptor->setStoreAction(MTL::StoreActionStore);
 
   MTL::RenderCommandEncoder* render_command_encoder = metal_backend_->metal_command_buffer->renderCommandEncoder(render_pass_descriptor);
@@ -211,7 +257,9 @@ void MetalRenderer::encode_render_command(MTL::RenderCommandEncoder* render_comm
   render_command_encoder->setVertexBuffer(metal_backend_->vertex_buffer, 0, 0);
   MTL::PrimitiveType type_triangle = MTL::PrimitiveTypeTriangle;
   NS::UInteger vertex_start = 0;
-  NS::UInteger vertex_count = 3;
+  NS::UInteger vertex_count = metal_backend_->vertex_buffer->length() / sizeof(Vertex);
+  render_command_encoder->setFragmentTexture(texture->texture, 0);
+  render_command_encoder->setFragmentSamplerState(metal_backend_->sampler_state, 0);
   render_command_encoder->drawPrimitives(type_triangle, vertex_start, vertex_count);
 }
 
