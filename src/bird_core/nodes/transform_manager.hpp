@@ -6,7 +6,7 @@
 
 namespace bird::nodes {
 
-class TransformSystem {
+class TransformManager {
  public:
   void ensure_capacity(size_t capacity);
   void add_transform(NodeID node_id);

@@ -1,17 +1,17 @@
-#include "transform_system.hpp"
+#include "transform_manager.hpp"
 #include "transforms.hpp"
 
 #include <glm/glm.hpp>
 
 namespace bird::nodes {
 
-void TransformSystem::ensure_capacity(size_t capacity) {
+void TransformManager::ensure_capacity(size_t capacity) {
   if (node_to_transform.size() < capacity) {
     node_to_transform.resize(capacity, INVALID_TRANSFORM_INDEX);
   }
 }
 
-void TransformSystem::add_transform(NodeID node_id) {
+void TransformManager::add_transform(NodeID node_id) {
   ensure_capacity(static_cast<size_t>(node_id) + 1);
 
   transforms.push_back(Transform2D());
@@ -20,12 +20,12 @@ void TransformSystem::add_transform(NodeID node_id) {
   node_to_transform[static_cast<size_t>(node_id)] = static_cast<TransformIndex>(transforms.size() - 1);
 }
 
-bool TransformSystem::has_transform(NodeID node_id) const {
+bool TransformManager::has_transform(NodeID node_id) const {
   if (static_cast<size_t>(node_id) >= node_to_transform.size()) return false;
   return node_to_transform[static_cast<size_t>(node_id)] != INVALID_TRANSFORM_INDEX;
 }
 
-Transform2D* TransformSystem::get_transform(NodeID node_id) {
+Transform2D* TransformManager::get_transform(NodeID node_id) {
   if (static_cast<size_t>(node_id) >= node_to_transform.size()) {
     return nullptr;
   }
@@ -38,7 +38,7 @@ Transform2D* TransformSystem::get_transform(NodeID node_id) {
   return &transforms[static_cast<size_t>(index)];
 }
 
-void TransformSystem::update_dirty_transforms() {
+void TransformManager::update_dirty_transforms() {
   for (size_t i = 0; i < transforms.size(); i++) {
     Transform2D& transform = transforms[i];
 

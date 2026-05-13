@@ -10,7 +10,7 @@
 
 #include "result.hpp"
 #include "glm/vec2.hpp"
-#include "transform_system.hpp"
+#include "transform_manager.hpp"
 
 namespace bird::nodes {
 
@@ -44,13 +44,13 @@ class Scene {
   [[nodiscard]] Node* getNode(NodeID id);
   Result set_node_position(NodeID node_id, glm::vec2 pos);
   Result mark_spatial_children_dirty(NodeID parent_id);
-  inline TransformSystem& get_transform_system() { return transform_system; }
+  inline TransformManager& get_transform_system() { return transform_system; }
 
  private:
   std::atomic<NodeID> idCounter{0};
   std::unordered_map<NodeID, std::unique_ptr<Node>> nodes;
 
-  TransformSystem transform_system;
+  TransformManager transform_system;
 
   void internal_mark_spatial_children_dirty(Node* parent);
 };
