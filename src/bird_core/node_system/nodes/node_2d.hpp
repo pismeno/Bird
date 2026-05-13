@@ -1,8 +1,8 @@
 #pragma once
 
-#include "node.hpp"
+#include "../node.hpp"
 
-namespace bird::nodes {
+namespace bird::node_system {
 
 class Node2D : public Node {
   public:
@@ -11,4 +11,4 @@ class Node2D : public Node {
     void on_enter_scene(Scene& scene) override;
 };
 
-} // bird::nodes
+} // bird::node_system

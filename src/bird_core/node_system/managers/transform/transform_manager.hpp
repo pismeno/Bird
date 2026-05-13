@@ -1,10 +1,11 @@
 #pragma once
 
 #include "transforms.hpp"
+#include "../../node_types.hpp"
 
 #include <vector>
 
-namespace bird::nodes {
+namespace bird::node_system::managers {
 
 class TransformManager {
  public:
@@ -23,4 +24,4 @@ class TransformManager {
   std::vector<TransformIndex> node_to_transform;
 };
 
-} // bird::nodes
+} // bird::node_system::managers

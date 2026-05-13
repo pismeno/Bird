@@ -2,7 +2,7 @@
 #include "inputs.hpp"
 
 #include "GLFW/glfw3.h"
-#include "glfw_window.hpp"
+#include "../windowing/glfw_window.hpp"
 
 namespace bird::inputs {
 

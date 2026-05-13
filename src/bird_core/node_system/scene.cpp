@@ -1,6 +1,6 @@
 #include "scene.hpp"
 
-namespace bird::nodes {
+namespace bird::node_system {
 
 [[nodiscard]] Node* Scene::getNode(NodeID id) {
   {
@@ -10,7 +10,7 @@ namespace bird::nodes {
 }
 
 Result Scene::set_node_position(NodeID node_id, glm::vec2 pos) {
-  Transform2D *transform = transform_system.get_transform(node_id);
+  Transform2D* transform = transform_system.get_transform(node_id);
 
   if (!transform) {
     return Result::fail("Transform not found, node probably doesnt have a transform");
@@ -50,4 +50,4 @@ void Scene::internal_mark_spatial_children_dirty(Node* parent) {
   }
 }
 
-} // bird::nodes
+} // bird::node_system

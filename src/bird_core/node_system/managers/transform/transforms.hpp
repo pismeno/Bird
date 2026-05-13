@@ -3,9 +3,9 @@
 #include <glm/ext/matrix_float3x3.hpp>
 #include <glm/vec2.hpp>
 
-#include "node_types.hpp"
+#include "../../node_types.hpp"
 
-namespace bird::nodes {
+namespace bird::node_system::managers {
 
 struct Transform2D {
   glm::vec2 local_position = {0.0f, 0.0f};
@@ -19,4 +19,4 @@ struct Transform2D {
   bool is_dirty = true;
 };
 
-} // namespace bird::nodes
+} // namespace bird::node_system::managers

@@ -3,16 +3,16 @@
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
 
-#include "window.hpp"
-#include "nodes/scene.hpp"
-#include "nodes/node.hpp"
-#include "nodes/node_2d.hpp"
+#include "windowing/window.hpp"
+#include "node_system/scene.hpp"
+#include "node_system/node.hpp"
+#include "node_system/nodes/node_2d.hpp"
 
 int main() {
 
   using namespace bird;
   using namespace bird::inputs;
-  using namespace bird::nodes;
+  using namespace bird::node_system;
 
   if (!glfwInit()) {
         // Handle initialization failure

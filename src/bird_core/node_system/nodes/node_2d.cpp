@@ -1,11 +1,11 @@
 #include "node_2d.hpp"
 
-#include "scene.hpp"
+#include "../scene.hpp"
 
-namespace bird::nodes {
+namespace bird::node_system {
 
 void Node2D::on_enter_scene(Scene& scene) {
   scene.get_transform_system().add_transform(this->getId());
 }
 
-} // bird::nodes
+} // bird::node_system

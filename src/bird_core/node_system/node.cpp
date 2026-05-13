@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 
-namespace bird::nodes {
+namespace bird::node_system {
 
 Node::Node(std::string name) : name(std::move(name)) {}
 
@@ -17,4 +17,4 @@ void Node::addChild(NodeID child_id, Scene &scene) {
   }
 }
 
-} // bird::nodes
+} // bird::node_system

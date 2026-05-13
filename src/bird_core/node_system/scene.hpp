@@ -8,11 +8,13 @@
 #include <memory>
 #include <unordered_map>
 
-#include "result.hpp"
+#include "../utils/result.hpp"
 #include "glm/vec2.hpp"
-#include "transform_manager.hpp"
+#include "managers/transform/transform_manager.hpp"
 
-namespace bird::nodes {
+namespace bird::node_system {
+
+using namespace managers;
 
 class Scene {
  public:
@@ -55,4 +57,4 @@ class Scene {
   void internal_mark_spatial_children_dirty(Node* parent);
 };
 
-} // bird::nodes
+} // bird::node_system

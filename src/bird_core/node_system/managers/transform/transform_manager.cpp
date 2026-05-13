@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 
-namespace bird::nodes {
+namespace bird::node_system::managers {
 
 void TransformManager::ensure_capacity(size_t capacity) {
   if (node_to_transform.size() < capacity) {
@@ -69,4 +69,4 @@ void TransformManager::update_dirty_transforms() {
   }
 }
 
-} // bird::nodes
+} // bird::node_system::managers

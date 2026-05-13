@@ -6,7 +6,7 @@
 
 #include "node_types.hpp"
 
-namespace bird::nodes {
+namespace bird::node_system {
 
 class Scene;
 
@@ -32,4 +32,4 @@ class Node {
   std::string name;
 };
 
-} // bird::nodes
+} // bird::node_system

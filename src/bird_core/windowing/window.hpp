@@ -5,7 +5,7 @@
 #include <string>
 
 #include "inputs/inputs.hpp"
-#include "result.hpp"
+#include "../utils/result.hpp"
 
 namespace bird {
 
