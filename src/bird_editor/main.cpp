@@ -5,6 +5,8 @@
 
 #include "window.hpp"
 #include "nodes/scene.hpp"
+#include "nodes/node.hpp"
+#include "nodes/node_2d.hpp"
 
 int main() {
 
@@ -26,7 +28,7 @@ int main() {
 
   std::unique_ptr<Scene> scene = std::make_unique<Scene>();
   NodeID parID = scene->createNode<Node>(0, "parent");
-  NodeID childID = scene->createNode<Node>(parID, "child 1");
+  NodeID childID = scene->createNode<Node2D>(parID, "child 1");
 
   std::cout << "Parent node ID: " << parID << std::endl;
   std::cout << "Parent node name: " << scene->getNode(parID)->getName() << std::endl;

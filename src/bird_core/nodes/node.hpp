@@ -22,6 +22,8 @@ class Node {
   inline std::string_view getName() const { return name; }
   void addChild(NodeID child_id, Scene& scene);
 
+  virtual void on_enter_scene(Scene& scene) {}
+
  private:
   NodeID id = INVALID_NODE_ID;
   NodeID parentId = INVALID_NODE_ID;
