@@ -7,35 +7,35 @@ namespace bird::nodes {
 
 void TransformSystem::ensure_capacity(size_t capacity) {
   if (node_to_transform.size() < capacity) {
-    node_to_transform.resize(capacity, -1);
+    node_to_transform.resize(capacity, INVALID_TRANSFORM_INDEX);
   }
 }
 
 void TransformSystem::add_transform(NodeID node_id) {
-  ensure_capacity(transforms.size() + 1);
+  ensure_capacity(static_cast<size_t>(node_id) + 1);
 
   transforms.push_back(Transform2D());
   transforms.back().node_id = node_id;
 
-  node_to_transform[node_id] = transforms.size() - 1;
+  node_to_transform[static_cast<size_t>(node_id)] = static_cast<TransformIndex>(transforms.size() - 1);
 }
 
 bool TransformSystem::has_transform(NodeID node_id) const {
-  if (node_id >= node_to_transform.size()) return false;
-  return node_to_transform[node_id] != -1;
+  if (static_cast<size_t>(node_id) >= node_to_transform.size()) return false;
+  return node_to_transform[static_cast<size_t>(node_id)] != INVALID_TRANSFORM_INDEX;
 }
 
 Transform2D* TransformSystem::get_transform(NodeID node_id) {
-  if (node_id >= node_to_transform.size()) {
+  if (static_cast<size_t>(node_id) >= node_to_transform.size()) {
     return nullptr;
   }
 
-  int index = node_to_transform[node_id];
-  if (index == -1) {
+  TransformIndex index = node_to_transform[static_cast<size_t>(node_id)];
+  if (index == INVALID_TRANSFORM_INDEX || static_cast<size_t>(index) >= transforms.size()) {
     return nullptr;
   }
 
-  return &transforms[index];
+  return &transforms[static_cast<size_t>(index)];
 }
 
 void TransformSystem::update_dirty_transforms() {
@@ -50,18 +50,16 @@ void TransformSystem::update_dirty_transforms() {
 
       // GLM is Column-Major: mat3(col0, col1, col2)
       glm::mat3 local_mat(
-          cos * transform.local_scale.x,  sin * transform.local_scale.x, 0.0f,  // Column 0: X-axis
-          -sin * transform.local_scale.y,  cos * transform.local_scale.y, 0.0f,  // Column 1: Y-axis
-          transform.local_position.x,   transform.local_position.y,  1.0f   // Column 2: Translation
+          cos * transform.local_scale.x,  sin * transform.local_scale.x, 0.0f,
+          -sin * transform.local_scale.y,  cos * transform.local_scale.y, 0.0f,
+          transform.local_position.x,   transform.local_position.y,  1.0f
       );
 
       // 2. Hierarchical Composition
-      if (transform.spatial_parent_index != -1) {
-        // IMPORTANT: Parent is guaranteed to be updated already
-        // because the array is sorted Depth-First (0 to N).
-        transform.global_matrix = transforms[transform.spatial_parent_index].global_matrix * local_mat;
+      if (transform.spatial_parent_index != INVALID_TRANSFORM_INDEX &&
+          static_cast<size_t>(transform.spatial_parent_index) < transforms.size()) {
+        transform.global_matrix = transforms[static_cast<size_t>(transform.spatial_parent_index)].global_matrix * local_mat;
       } else {
-        // Root node: Global is just Local
         transform.global_matrix = local_mat;
       }
 
@@ -70,6 +68,5 @@ void TransformSystem::update_dirty_transforms() {
     }
   }
 }
-
 
 } // bird::nodes

@@ -11,8 +11,13 @@ set(CORE_SOURCES
         "nodes/node_types.hpp"
         "nodes/node.hpp"
         "nodes/node.cpp"
+        "nodes/node_2d.hpp"
+        "nodes/node_2d.cpp"
         "nodes/scene.hpp"
         "nodes/scene.cpp"
+        "nodes/transforms.hpp"
+        "nodes/transform_system.hpp"
+        "nodes/transform_system.cpp"
 )
 
 add_library(BirdCore STATIC ${CORE_SOURCES})

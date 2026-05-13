@@ -18,9 +18,9 @@ class TransformSystem {
   // The fast math array (Data)
   std::vector<Transform2D> transforms;
 
-  // The Lookup Table: index is NodeID, value is transform_index
-  // Initialize with -1 (meaning no transform)
-  std::vector<int> node_to_transform;
+  // The Lookup Table: index is NodeID, value is TransformIndex
+  // Initialize with INVALID_TRANSFORM_INDEX (meaning no transform)
+  std::vector<TransformIndex> node_to_transform;
 };
 
 } // bird::nodes

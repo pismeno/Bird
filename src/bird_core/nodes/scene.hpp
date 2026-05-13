@@ -8,6 +8,10 @@
 #include <memory>
 #include <unordered_map>
 
+#include "result.hpp"
+#include "glm/vec2.hpp"
+#include "transform_system.hpp"
+
 namespace bird::nodes {
 
 class Scene {
@@ -18,27 +22,37 @@ class Scene {
 
     auto node = std::make_unique<T>(std::forward<Args>(args)...);
     node->id = newId;
-    node->parentId = parent_id;
+    node->parentId = INVALID_NODE_ID;
 
-    Node* nodePtr = node.get();
+    node->on_enter_scene(*this);
+
     nodes[newId] = std::move(node);
 
-    if (parent_id != INVALID_NODE_ID) {
+    if (parent_id != INVALID_NODE_ID && parent_id != newId) {
       if (Node* parent = getNode(parent_id)) {
         parent->addChild(newId, *this);
+        if (Transform2D* childTransform = transform_system.get_transform(newId)) {
+          // Store parent ID as transform index (they use compatible numeric spaces)
+          childTransform->spatial_parent_index = static_cast<TransformIndex>(parent_id);
+        }
       }
     }
-
-    //nodePtr->_ready();
 
     return newId;
   }
 
   [[nodiscard]] Node* getNode(NodeID id);
+  Result set_node_position(NodeID node_id, glm::vec2 pos);
+  Result mark_spatial_children_dirty(NodeID parent_id);
+  inline TransformSystem& get_transform_system() { return transform_system; }
 
  private:
-  std::atomic<NodeID> idCounter{INVALID_NODE_ID + 1};
+  std::atomic<NodeID> idCounter{0};
   std::unordered_map<NodeID, std::unique_ptr<Node>> nodes;
+
+  TransformSystem transform_system;
+
+  void internal_mark_spatial_children_dirty(Node* parent);
 };
 
 } // bird::nodes

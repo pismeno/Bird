@@ -15,8 +15,8 @@ struct Transform2D {
   glm::mat3x3 global_matrix = glm::mat3x3(1.0f);
 
   NodeID node_id = INVALID_NODE_ID;
-  int spatial_parent_index = -1;
+  TransformIndex spatial_parent_index = INVALID_TRANSFORM_INDEX;
   bool is_dirty = true;
 };
 
-} // bird::nodes
+} // namespace bird::nodes
