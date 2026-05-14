@@ -131,7 +131,7 @@ Transform2D* TransformManager::get_transform(NodeID node_id) {
   return &transforms[static_cast<size_t>(index)];
 }
 
-void TransformManager::update_dirty_transforms() {
+void TransformManager::on_update() {
   for (size_t i = 0; i < transforms.size(); i++) {
     Transform2D& transform = transforms[i];
 
@@ -169,6 +169,10 @@ void TransformManager::update_dirty_transforms() {
   }
 }
 
+void TransformManager::on_node_created(NodeID node_id, NodeID parent_id) {
+  set_parent(node_id, parent_id);
+}
+
 void TransformManager::on_node_destroyed(NodeID node_id) {
   if (!has_transform(node_id)) return;
 
@@ -181,7 +185,7 @@ void TransformManager::on_node_destroyed(NodeID node_id) {
   node_to_transform[static_cast<size_t>(node_id)] = INVALID_TRANSFORM_INDEX;
 }
 
-void TransformManager::consolidate() {
+void TransformManager::on_frame_end() {
   // 1. Physically remove all Ghost IDs from the flat array (O(N) shift)
   transforms.erase(
       std::remove_if(transforms.begin(), transforms.end(),

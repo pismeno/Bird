@@ -34,13 +34,11 @@ class Scene {
     if (parent_id != INVALID_NODE_ID && parent_id != newId) {
       if (Node* parent = getNode(parent_id)) {
         parent->addChild(newId, *this);
-        /*
-        if (Transform2D* childTransform = transform_system.get_transform(newId)) {
-          // Store parent ID as transform index (they use compatible numeric spaces)
-          childTransform->spatial_parent_index = static_cast<TransformIndex>(parent_id);
-        }
-         */
       }
+    }
+
+    for (auto& manager : managers) {
+      manager->on_node_created(newId, parent_id);
     }
 
     return newId;
@@ -48,6 +46,8 @@ class Scene {
 
   [[nodiscard]] Node* getNode(NodeID id);
   Result destroy_node(NodeID id);
+  void update();
+  void end_frame();
 
   template <typename T, typename... Args>
   T& add_manager(Args&&... args) {

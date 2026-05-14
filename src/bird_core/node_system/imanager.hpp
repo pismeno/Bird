@@ -9,8 +9,10 @@ class IManager {
  public:
   virtual ~IManager() = default;
 
-  virtual void on_node_destroyed(NodeID node_id) = 0;
-  virtual void consolidate() = 0;
+  virtual void on_node_destroyed(NodeID node_id) {};
+  virtual void on_node_created(NodeID node_id, NodeID parent_id) {};
+  virtual void on_update() {};
+  virtual void on_frame_end() {};
 
   template <typename T>
   static std::size_t get_type_id() {

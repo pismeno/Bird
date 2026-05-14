@@ -23,10 +23,10 @@ class TransformManager : public IManager {
   Result set_node_position(NodeID node_id, glm::vec2 pos);
   void mark_spatial_children_dirty(NodeID parent_id);
 
-  void update_dirty_transforms();
-
+  void on_update() override;
+  void on_node_created(NodeID node_id, NodeID parent_id) override;
   void on_node_destroyed(NodeID node_id) override;
-  void consolidate() override;
+  void on_frame_end() override;
 
  private:
   // The fast math array (Data)

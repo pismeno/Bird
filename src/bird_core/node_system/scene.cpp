@@ -39,4 +39,16 @@ Result Scene::destroy_node(NodeID id) {
   return Result::ok();
 }
 
+void Scene::end_frame() {
+  for (auto& manager : managers) {
+    manager->on_frame_end();
+  }
+}
+
+void Scene::update() {
+  for (auto& manager : managers) {
+    manager->on_update();
+  }
+}
+
 } // bird::node_system
