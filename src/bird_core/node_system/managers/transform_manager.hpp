@@ -1,9 +1,10 @@
 #pragma once
 
-#include "node_system/node_types.hpp"
 #include "node_system/imanager.hpp"
 
 #include <vector>
+#include <cstdint>
+#include <limits>
 
 #include <glm/glm.hpp>
 
@@ -11,15 +12,17 @@
 
 namespace bird::node_system::managers {
 
+using TransformIndex = uint32_t;
+inline constexpr TransformIndex INVALID_TRANSFORM_INDEX = std::numeric_limits<uint32_t>::max();
+
 class TransformManager : public IManager {
  public:
-  void ensure_capacity(size_t capacity);
   void create_transform(NodeID node_id);
-  bool has_transform(NodeID node_id) const;
-  glm::mat3x3 get_global_matrix(NodeID node_id);
-
+  [[nodiscard]] bool has_transform(NodeID node_id) const;
   void set_parent(NodeID child_id, NodeID parent_id);
   void remove_from_parent(NodeID child_id);
+
+  glm::mat3x3 get_global_matrix(NodeID node_id);
 
   Result set_node_position(NodeID node_id, glm::vec2 pos);
   void mark_spatial_children_dirty(NodeID parent_id);
@@ -43,6 +46,7 @@ class TransformManager : public IManager {
   };
 
   Transform2D* get_transform(NodeID node_id);
+  void ensure_capacity(size_t capacity);
 
   // The fast math array (Data)
   std::vector<Transform2D> transforms;

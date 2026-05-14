@@ -16,6 +16,11 @@ set(CORE_SOURCES
         "node_system/imanager.cpp"
         "node_system/managers/transform_manager.hpp"
         "node_system/managers/transform_manager.cpp"
+        "node_system/managers/drawable_manager.hpp"
+        "node_system/managers/drawable_manager.cpp"
+        "node_system/render_gatherer.cpp"
+        "node_system/render_gatherer.hpp"
+        "rendering/render_command.hpp"
 )
 
 add_library(BirdCore STATIC ${CORE_SOURCES})
