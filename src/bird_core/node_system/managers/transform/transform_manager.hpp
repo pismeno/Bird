@@ -6,6 +6,8 @@
 
 #include <vector>
 
+#include <glm/glm.hpp>
+
 #include "utils/result.hpp"
 
 namespace bird::node_system::managers {
@@ -15,7 +17,7 @@ class TransformManager : public IManager {
   void ensure_capacity(size_t capacity);
   void create_transform(NodeID node_id);
   bool has_transform(NodeID node_id) const;
-  Transform2D* get_transform(NodeID node_id);
+  glm::mat3x3 get_global_matrix(NodeID node_id);
 
   void set_parent(NodeID child_id, NodeID parent_id);
   void remove_from_parent(NodeID child_id);
@@ -28,8 +30,11 @@ class TransformManager : public IManager {
   void on_frame_end() override;
 
  private:
+  Transform2D* get_transform(NodeID node_id);
+
   // The fast math array (Data)
   std::vector<Transform2D> transforms;
+  std::vector<glm::mat3x3> global_matrices;
 
   // The Lookup Table: index is NodeID, value is TransformIndex
   // Initialize with INVALID_TRANSFORM_INDEX (meaning no transform)

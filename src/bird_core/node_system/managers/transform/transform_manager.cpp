@@ -110,12 +110,27 @@ void TransformManager::create_transform(NodeID node_id) {
   transforms.push_back(Transform2D());
   transforms.back().node_id = node_id;
 
+  global_matrices.push_back(glm::mat3(1.0f));
+
   node_to_transform[static_cast<size_t>(node_id)] = static_cast<TransformIndex>(transforms.size() - 1);
 }
 
 bool TransformManager::has_transform(NodeID node_id) const {
   if (static_cast<size_t>(node_id) >= node_to_transform.size()) return false;
   return node_to_transform[static_cast<size_t>(node_id)] != INVALID_TRANSFORM_INDEX;
+}
+
+glm::mat3x3 TransformManager::get_global_matrix(NodeID node_id) {
+  if (static_cast<size_t>(node_id) >= node_to_transform.size()) {
+    return glm::mat3(1.0f);
+  }
+
+  TransformIndex index = node_to_transform[static_cast<size_t>(node_id)];
+  if (index == INVALID_TRANSFORM_INDEX || static_cast<size_t>(index) >= global_matrices.size()) {
+    return glm::mat3(1.0f);
+  }
+
+  return global_matrices[static_cast<size_t>(index)];
 }
 
 Transform2D* TransformManager::get_transform(NodeID node_id) {
@@ -152,15 +167,18 @@ void TransformManager::on_update() {
 
       // 2. Hierarchical Composition
       if (transform.parent_id != INVALID_NODE_ID) {
-        TransformIndex spatial_parent_id = node_to_transform[static_cast<size_t>(transform.parent_id)];
+        TransformIndex spatial_parent_id = INVALID_TRANSFORM_INDEX;
+        if (static_cast<size_t>(transform.parent_id) < node_to_transform.size()) {
+          spatial_parent_id = node_to_transform[static_cast<size_t>(transform.parent_id)];
+        }
 
-        if (spatial_parent_id != INVALID_TRANSFORM_INDEX) {
-          transform.global_matrix = transforms[static_cast<size_t>(spatial_parent_id)].global_matrix * local_mat;
+        if (spatial_parent_id != INVALID_TRANSFORM_INDEX && static_cast<size_t>(spatial_parent_id) < global_matrices.size()) {
+          global_matrices[i] = global_matrices[static_cast<size_t>(spatial_parent_id)] * local_mat;
         } else {
-          transform.global_matrix = local_mat; // A root node, so local is global
+          global_matrices[i] = local_mat; // parent has no transform or is invalid
         }
       } else {
-        transform.global_matrix = local_mat;
+        global_matrices[i] = local_mat;
       }
 
       // 3. Reset flag
@@ -182,12 +200,19 @@ void TransformManager::on_node_destroyed(NodeID node_id) {
 }
 
 void TransformManager::on_frame_end() {
-  // 1. Physically remove all Ghost IDs from the flat array (O(N) shift)
-  transforms.erase(
-      std::remove_if(transforms.begin(), transforms.end(),
-                     [](const Transform2D& t) { return t.node_id == INVALID_NODE_ID; }),
-      transforms.end()
-  );
+  // 1. Physically remove all Ghost IDs from both flat arrays
+  size_t write_idx = 0;
+  for (size_t read_idx = 0; read_idx < transforms.size(); ++read_idx) {
+    if (transforms[read_idx].node_id != INVALID_NODE_ID) {
+      if (write_idx != read_idx) {
+        transforms[write_idx] = std::move(transforms[read_idx]);
+        global_matrices[write_idx] = std::move(global_matrices[read_idx]);
+      }
+      write_idx++;
+    }
+  }
+  transforms.resize(write_idx);
+  global_matrices.resize(write_idx);
 
   // 2. Rebuild the Lookup Table
   // Since elements shifted left, all indices in node_to_transform are now wrong.

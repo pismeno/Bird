@@ -10,7 +10,6 @@ set(CORE_SOURCES
         "inputs/glfw_inputs.cpp"
         "node_system/node_types.hpp"
         "node_system/node.hpp"
-        "node_system/node.cpp"
         "node_system/scene.hpp"
         "node_system/scene.cpp"
         "node_system/imanager.hpp"

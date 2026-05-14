@@ -38,6 +38,10 @@ class Scene {
       return *static_cast<T*>(fast_lookup[id]);
     }
 
+    if (id >= fast_lookup.size()) {
+      fast_lookup.resize(id + 1);
+    }
+
     // Create the manager
     auto manager = std::make_unique<T>(std::forward<Args>(args)...);
     T* raw_ptr = manager.get();
