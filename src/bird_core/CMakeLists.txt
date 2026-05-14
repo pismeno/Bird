@@ -6,6 +6,8 @@ set(CORE_SOURCES
         "rendering/metal_renderer.cpp"
         "rendering/mtl_implementation.cpp"
         "rendering/stbi_image.cpp"
+        "rendering/texture.hpp"
+        "rendering/texture.cpp"
         "rendering/GLFWBridge.hpp"
         "rendering/GLFWBridge.mm"
         "rendering/shader_compiler.hpp"
@@ -32,14 +34,6 @@ set(CORE_SOURCES
 )
 
 add_library(BirdCore STATIC ${CORE_SOURCES})
-
-target_compile_definitions(BirdCore PUBLIC
-    BIRD_SHADER_VERT_SOURCE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/triangle.vert.glsl"
-    BIRD_SHADER_FRAG_SOURCE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/triangle.frag.glsl"
-    BIRD_METAL_SHADER_SOURCE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/rendering/triangle.metal"
-    BIRD_TEXTURE_SOURCE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/rendering/alpha_test.png"
-)
-
 
 
 target_link_libraries(BirdCore

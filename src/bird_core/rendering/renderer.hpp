@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "irenderer.hpp"
-#include "../window.hpp"
+#include "../windowing/window.hpp"
 
 namespace bird {
 
@@ -25,7 +25,7 @@ public:
   void init(Window& window);
   void render();
   void shutdown();
-  void submit_quad();
+  void submit_quad(const bird::node_system::managers::Transform2D& transform);
   void handle_window_resize(int width, int height);
 
 private:

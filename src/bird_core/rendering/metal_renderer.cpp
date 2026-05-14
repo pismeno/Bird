@@ -2,6 +2,7 @@
 
 #include "GLFWBridge.hpp"
 #include "shader_compiler.hpp"
+#include "../node_system/managers/transform/transforms.hpp"
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <Metal/Metal.hpp>
@@ -9,14 +10,24 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <cmath>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 
 #include <GLFW/glfw3.h>
 
+using namespace bird::node_system::managers;
 
 namespace bird {
+
+struct QuadTransformUniform {
+  glm::vec2 local_position;
+  glm::vec2 local_scale;
+  float local_rotation;
+  glm::vec3 padding; // Padding to make the struct size a multiple of 16 bytes for std140 alignment
+};
 
 struct MetalRenderer::Impl {
   MTL::Device* metal_device = nullptr;
@@ -32,6 +43,7 @@ struct MetalRenderer::Impl {
   MTL::RenderPipelineState* metal_render_pso = nullptr;
   MTL::Buffer* vertex_buffer = nullptr;
   MTL::Buffer* index_buffer = nullptr;
+  MTL::Buffer* transform_buffer = nullptr;
   MTL::SamplerState* sampler_state = nullptr;
 };
 
@@ -68,7 +80,6 @@ void MetalRenderer::init(Window& window) {
   init_device();
   init_window(window);
 
-  submit_quad();
   create_default_library();
   create_command_queue();
   create_render_pipeline();
@@ -87,30 +98,77 @@ void MetalRenderer::render() {
   frame_pool->release();
 }
 
-void MetalRenderer::submit_quad() {
-  const Vertex quad_vertices[] = {
-      {-0.5f,  0.5f, 0.0f, 1.0f},
-      { 0.5f,  0.5f, 1.0f, 1.0f},
-      {-0.5f, -0.5f, 0.0f, 0.0f},
-      { 0.5f, -0.5f, 1.0f, 0.0f}
+void MetalRenderer::submit_quad(const bird::node_system::managers::Transform2D& transform) {
+  const glm::vec2 local_positions[] = {
+      {-0.5f,  0.5f},  // top-left
+      { 0.5f,  0.5f},  // top-right
+      {-0.5f, -0.5f},  // bottom-left
+      { 0.5f, -0.5f}   // bottom-right
   };
 
-  const std::uint16_t quad_indices[] = {
-      0, 1, 2,
-      1, 3, 2
+  const glm::vec2 uv_coords[] = {
+      {0.0f, 1.0f},  // top-left
+      {1.0f, 1.0f},  // top-right
+      {0.0f, 0.0f},  // bottom-left
+      {1.0f, 0.0f}   // bottom-right
   };
 
-  metal_backend_->vertex_buffer = metal_backend_->metal_device->newBuffer(&quad_vertices, sizeof(quad_vertices), MTL::ResourceStorageModeShared);
-  metal_backend_->index_buffer = metal_backend_->metal_device->newBuffer(&quad_indices, sizeof(quad_indices), MTL::ResourceStorageModeShared);
-  // texture = new Texture2D("alpha_test.png", metal_backend_->metal_device);
- #ifdef BIRD_TEXTURE_SOURCE_PATH
-   texture = new Texture2D(BIRD_TEXTURE_SOURCE_PATH, metal_backend_->metal_device);
- #else
-   texture = new Texture2D("src/bird_core/rendering/alpha_test.png", metal_backend_->metal_device);
- #endif
+  if (!metal_backend_->vertex_buffer) {
+    Vertex quad_vertices[4];
+    for (int i = 0; i < 4; ++i) {
+      quad_vertices[i].x = local_positions[i].x;
+      quad_vertices[i].y = local_positions[i].y;
+      quad_vertices[i].u = uv_coords[i].x;
+      quad_vertices[i].v = uv_coords[i].y;
+      quad_vertices[i].color = 0xffffffffu;
+      quad_vertices[i].control = 0;
+    }
+
+    metal_backend_->vertex_buffer = metal_backend_->metal_device->newBuffer(&quad_vertices, sizeof(quad_vertices), MTL::ResourceStorageModeShared);
+  }
+
+  if (!metal_backend_->index_buffer) {
+    const std::uint16_t quad_indices[] = {
+        0, 1, 2,
+        1, 3, 2
+    };
+
+    metal_backend_->index_buffer = metal_backend_->metal_device->newBuffer(&quad_indices, sizeof(quad_indices), MTL::ResourceStorageModeShared);
+  }
+
+  if (!metal_backend_->transform_buffer) {
+    metal_backend_->transform_buffer = metal_backend_->metal_device->newBuffer(sizeof(QuadTransformUniform), MTL::ResourceStorageModeShared);
+  }
+
+  QuadTransformUniform quad_transform_uniform {
+    transform.local_position,
+    transform.local_scale,
+    transform.local_rotation,
+    glm::vec3(0.0f) // padding for 16 byte alignment
+  };
+
+  std::memcpy(metal_backend_->transform_buffer->contents(), &quad_transform_uniform, sizeof(quad_transform_uniform));
+  texture = new Texture2D("src/bird_core/rendering/alpha_test.png", metal_backend_->metal_device);
 }
 
 void MetalRenderer::shutdown() {
+  if (metal_backend_) {
+    if (metal_backend_->transform_buffer) {
+      metal_backend_->transform_buffer->release();
+      metal_backend_->transform_buffer = nullptr;
+    }
+
+    if (metal_backend_->vertex_buffer) {
+      metal_backend_->vertex_buffer->release();
+      metal_backend_->vertex_buffer = nullptr;
+    }
+
+    if (metal_backend_->index_buffer) {
+      metal_backend_->index_buffer->release();
+      metal_backend_->index_buffer = nullptr;
+    }
+  }
+
   delete metal_backend_;
   metal_backend_ = nullptr;
 }
@@ -121,8 +179,8 @@ void MetalRenderer::create_default_library() {
   try {
   ShaderCompiler compiler;
 
-  std::string vert_msl = compiler.compile_glsl_file_to_msl(BIRD_SHADER_VERT_SOURCE_PATH);
-  std::string frag_msl = compiler.compile_glsl_file_to_msl(BIRD_SHADER_FRAG_SOURCE_PATH);
+  std::string vert_msl = compiler.compile_glsl_file_to_msl("src/bird_core/rendering/shaders/forward_2d.vert.glsl");
+  std::string frag_msl = compiler.compile_glsl_file_to_msl("src/bird_core/rendering/shaders/forward_2d.frag.glsl");
 
   metal_backend_->metal_vertex_library = metal_backend_->metal_device->newLibrary(
     NS::String::string(vert_msl.c_str(), NS::UTF8StringEncoding),
@@ -185,22 +243,22 @@ void MetalRenderer::create_render_pipeline() {
 
   vertex_descriptor->attributes()->object(0)->setFormat(MTL::VertexFormatFloat2);
   vertex_descriptor->attributes()->object(0)->setOffset(0);
-  vertex_descriptor->attributes()->object(0)->setBufferIndex(0);
+  vertex_descriptor->attributes()->object(0)->setBufferIndex(1);
 
   vertex_descriptor->attributes()->object(1)->setFormat(MTL::VertexFormatFloat2);
   vertex_descriptor->attributes()->object(1)->setOffset(8);
-  vertex_descriptor->attributes()->object(1)->setBufferIndex(0);
+  vertex_descriptor->attributes()->object(1)->setBufferIndex(1);
 
   vertex_descriptor->attributes()->object(2)->setFormat(MTL::VertexFormatUInt);
   vertex_descriptor->attributes()->object(2)->setOffset(16);
-  vertex_descriptor->attributes()->object(2)->setBufferIndex(0);
+  vertex_descriptor->attributes()->object(2)->setBufferIndex(1);
 
   vertex_descriptor->attributes()->object(3)->setFormat(MTL::VertexFormatUInt);
   vertex_descriptor->attributes()->object(3)->setOffset(20);
-  vertex_descriptor->attributes()->object(3)->setBufferIndex(0);
+  vertex_descriptor->attributes()->object(3)->setBufferIndex(1);
 
-  vertex_descriptor->layouts()->object(0)->setStride(sizeof(Vertex));
-  vertex_descriptor->layouts()->object(0)->setStepFunction(MTL::VertexStepFunctionPerVertex);
+  vertex_descriptor->layouts()->object(1)->setStride(sizeof(Vertex));
+  vertex_descriptor->layouts()->object(1)->setStepFunction(MTL::VertexStepFunctionPerVertex);
 
   MTL::RenderPipelineDescriptor* render_pipeline_descriptor = MTL::RenderPipelineDescriptor::alloc()->init();
   render_pipeline_descriptor->setLabel(NS::String::string("Bird Triangle Pipeline", NS::ASCIIStringEncoding));
@@ -260,11 +318,14 @@ void MetalRenderer::send_render_command() {
 }
 
 void MetalRenderer::encode_render_command(MTL::RenderCommandEncoder* render_command_encoder) {
-  if (!render_command_encoder || !metal_backend_ || !metal_backend_->metal_render_pso || !metal_backend_->index_buffer) {
+  if (!render_command_encoder || !metal_backend_ || !metal_backend_->metal_render_pso || !metal_backend_->index_buffer || !metal_backend_->transform_buffer) {
       return;
   }
   render_command_encoder->setRenderPipelineState(metal_backend_->metal_render_pso);
-  render_command_encoder->setVertexBuffer(metal_backend_->vertex_buffer, 0, 0);
+    // MSL compiled from GLSL expects the uniform TransformBuffer at buffer(0).
+    render_command_encoder->setVertexBuffer(metal_backend_->transform_buffer, 0, 0);
+    // Vertex attributes are sourced from vertex buffer at buffer index 1.
+    render_command_encoder->setVertexBuffer(metal_backend_->vertex_buffer, 0, 1);
   render_command_encoder->setFragmentTexture(texture->texture, 0);
   render_command_encoder->setFragmentSamplerState(metal_backend_->sampler_state, 0);
   render_command_encoder->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, metal_backend_->index_buffer->length() / sizeof(uint16_t), MTL::IndexTypeUInt16, metal_backend_->index_buffer, 0);

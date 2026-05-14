@@ -6,14 +6,14 @@
 #include "../bird_core/rendering/renderer.hpp"
 
 
-#include "window.hpp"
-#include "nodes/node_manager.hpp"
+#include "../bird_core/windowing/window.hpp"
+#include "../bird_core/node_system/managers/transform/transforms.hpp"
 
 int main() {
 
   using namespace bird;
   using namespace bird::inputs;
-  using namespace bird::nodes;
+  using namespace bird::node_system::managers;
 
   if (!glfwInit()) {
         // Handle initialization failure
@@ -32,14 +32,16 @@ int main() {
 
   std::cout << "Hello, Bird Editor!" << std::endl;
 
-  std::unique_ptr<NodeManager> nodeManager = std::make_unique<NodeManager>();
-  NodeID rootID = nodeManager->createNode<Node>(0);
+  Transform2D quad_transform;
+  quad_transform.local_position = {0.7f, -0.9f};
+  quad_transform.local_scale = {1.0f, 1.0f};
+  quad_transform.local_rotation = 23.0f;
 
-  std::cout << "Root node ID: " << rootID << std::endl;
 
   while (!window->shouldClose())
   {
     window->update();
+    renderer.submit_quad(quad_transform);
     renderer.render();
 
     if (window->getInputs().isKeyPressed(KeyCode::Space)) {

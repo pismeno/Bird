@@ -52,12 +52,12 @@ void Renderer::render() {
   renderer_->render();
 }
 
-void Renderer::submit_quad() {
+void Renderer::submit_quad(const bird::node_system::managers::Transform2D& transform) {
   if (!renderer_) {
     return;
   }
 
-  renderer_->submit_quad();
+  renderer_->submit_quad(transform);
 }
 
 void Renderer::shutdown() {

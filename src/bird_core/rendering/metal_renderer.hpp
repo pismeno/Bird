@@ -1,12 +1,14 @@
 #pragma once
 
 #include "irenderer.hpp"
-#include "../window.hpp"
+#include "../windowing/window.hpp"
 #include <QuartzCore/CAMetalLayer.hpp>
 #include "vertex.hpp"
 #include "texture.hpp"
 #include <filesystem>
 #include <stb/stb_image.h>
+#include "../node_system/managers/transform/transforms.hpp"
+
 
 namespace MTL {
 class RenderCommandEncoder;
@@ -23,7 +25,7 @@ public:
   void render() override;
   void shutdown() override;
   void resizeFrameBuffer(int width, int height);
-  void submit_quad() override;
+  void submit_quad(const bird::node_system::managers::Transform2D& transform) override;
 
 private:
   void init_device();
@@ -33,6 +35,7 @@ private:
   void create_default_library();
   void create_command_queue();
   void create_render_pipeline();
+  void create_texture();
 
   void encode_render_command(MTL::RenderCommandEncoder* render_command_encoder);
   void send_render_command();
@@ -41,7 +44,7 @@ private:
   struct Impl;
   Impl* metal_backend_ = nullptr;
 
-  Texture2D* texture;
+  Texture2D* texture = nullptr;
 };
 
 }
