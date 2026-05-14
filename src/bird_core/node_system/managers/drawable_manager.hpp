@@ -25,6 +25,7 @@ class DrawableManager : public IManager {
   void create_drawable(NodeID node_id);
   [[nodiscard]] bool has_drawable(NodeID node_id) const;
   Drawable* get_drawable(NodeID node_id);
+  inline std::vector<Drawable>& get_drawables() { return drawables; }
 
   void on_node_destroyed(NodeID node_id) override;
 
