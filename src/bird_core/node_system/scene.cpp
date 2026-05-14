@@ -1,9 +1,11 @@
 #include "scene.hpp"
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "managers/transform_manager.hpp"
+#include "managers/drawable_manager.hpp"
 
 namespace bird::node_system {
 
@@ -11,7 +13,8 @@ using namespace managers;
 
 std::unique_ptr<Scene> Scene::create() {
   auto scene = std::make_unique<Scene>();
-  scene->add_manager<managers::TransformManager>();
+  scene->add_manager<TransformManager>();
+  scene->add_manager<DrawableManager>();
   return scene;
 }
 
@@ -36,10 +39,17 @@ std::unique_ptr<Scene> Scene::create() {
 }
 
 [[nodiscard]] NodeID Scene::createNode2D(NodeID parent_id, std::string name) {
-  NodeID node_id = createNode(parent_id, name);
+  NodeID node_id = createNode(parent_id, std::move(name));
   auto transform_manager = get_manager<TransformManager>();
   transform_manager->create_transform(node_id);
   transform_manager->set_parent(node_id, parent_id);
+  return node_id;
+}
+
+[[nodiscard]] NodeID Scene::createNode2DDrawable(NodeID parent_id, std::string name) {
+  NodeID node_id = createNode2D(parent_id, std::move(name));
+  auto drawable_manager = get_manager<DrawableManager>();
+  drawable_manager->create_drawable(node_id);
   return node_id;
 }
 

@@ -22,6 +22,7 @@ class Scene {
 
   [[nodiscard]] NodeID createNode(NodeID parent_id, std::string name);
   [[nodiscard]] NodeID createNode2D(NodeID parent_id, std::string name);
+  [[nodiscard]] NodeID createNode2DDrawable(NodeID parent_id, std::string name);
 
   [[nodiscard]] Node* getNode(NodeID node_id);
   Result destroy_node(NodeID node_id);
