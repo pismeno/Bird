@@ -104,7 +104,7 @@ void TransformManager::ensure_capacity(size_t capacity) {
   }
 }
 
-void TransformManager::add_transform(NodeID node_id) {
+void TransformManager::create_transform(NodeID node_id) {
   ensure_capacity(static_cast<size_t>(node_id) + 1);
 
   transforms.push_back(Transform2D());
@@ -167,10 +167,6 @@ void TransformManager::on_update() {
       transform.is_dirty = false;
     }
   }
-}
-
-void TransformManager::on_node_created(NodeID node_id, NodeID parent_id) {
-  set_parent(node_id, parent_id);
 }
 
 void TransformManager::on_node_destroyed(NodeID node_id) {

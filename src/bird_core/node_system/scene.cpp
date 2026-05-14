@@ -7,10 +7,42 @@
 
 namespace bird::node_system {
 
+using namespace managers;
+
 std::unique_ptr<Scene> Scene::create() {
   auto scene = std::make_unique<Scene>();
   scene->add_manager<managers::TransformManager>();
   return scene;
+}
+
+[[nodiscard]] NodeID Scene::createNode(NodeID parent_id, std::string name){
+  NodeID newId = idCounter.fetch_add(1, std::memory_order_relaxed);
+
+  auto node = std::make_unique<Node>(std::move(name));
+  node->id = newId;
+  node->parentId = INVALID_NODE_ID;
+
+  nodes[newId] = std::move(node);
+
+  if (parent_id != INVALID_NODE_ID && parent_id != newId) {
+    if (Node* parent = getNode(parent_id)) {
+      parent->addChild(newId, *this);
+    }
+  }
+
+  for (auto& manager : managers) {
+    manager->on_node_created(newId);
+  }
+
+  return newId;
+}
+
+[[nodiscard]] NodeID Scene::createNode2D(NodeID parent_id, std::string name) {
+  NodeID node_id = createNode(parent_id, name);
+  auto transform_manager = get_manager<TransformManager>();
+  transform_manager->create_transform(node_id);
+  transform_manager->set_parent(node_id, parent_id);
+  return node_id;
 }
 
 [[nodiscard]] Node* Scene::getNode(NodeID id) {

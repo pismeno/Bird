@@ -19,30 +19,8 @@ class Scene {
  public:
   static std::unique_ptr<Scene> create();
 
-  template<typename T, typename... Args>
-  [[nodiscard]] NodeID createNode(NodeID parent_id, Args&&... args) {
-    NodeID newId = idCounter.fetch_add(1, std::memory_order_relaxed);
-
-    auto node = std::make_unique<T>(std::forward<Args>(args)...);
-    node->id = newId;
-    node->parentId = INVALID_NODE_ID;
-
-    node->on_enter_scene(*this);
-
-    nodes[newId] = std::move(node);
-
-    if (parent_id != INVALID_NODE_ID && parent_id != newId) {
-      if (Node* parent = getNode(parent_id)) {
-        parent->addChild(newId, *this);
-      }
-    }
-
-    for (auto& manager : managers) {
-      manager->on_node_created(newId, parent_id);
-    }
-
-    return newId;
-  }
+  [[nodiscard]] NodeID createNode(NodeID parent_id, std::string name);
+  [[nodiscard]] NodeID createNode2D(NodeID parent_id, std::string name);
 
   [[nodiscard]] Node* getNode(NodeID id);
   Result destroy_node(NodeID id);
@@ -54,8 +32,8 @@ class Scene {
     size_t id = IManager::get_type_id<T>();
 
     // Ensure the lookup array is big enough
-    if (id >= fast_lookup.size()) {
-      fast_lookup.resize(id + 1);
+    if (id < fast_lookup.size() && fast_lookup[id] != nullptr) {
+      return *static_cast<T*>(fast_lookup[id]);
     }
 
     // Create the manager

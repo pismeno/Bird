@@ -10,7 +10,6 @@
 #include "windowing/window.hpp"
 #include "node_system/scene.hpp"
 #include "node_system/node.hpp"
-#include "node_system/nodes/node_2d.hpp"
 #include "node_system/managers/transform/transform_manager.hpp"
 
 int main() {
@@ -33,9 +32,9 @@ int main() {
   std::cout << "Hello, Bird Editor!" << std::endl;
 
   std::unique_ptr<Scene> scene = Scene::create();
-  NodeID parID = scene->createNode<Node>(0, "parent");
-  NodeID childID = scene->createNode<Node2D>(parID, "child 1");
-  NodeID childID2 = scene->createNode<Node2D>(childID, "child 2");
+  NodeID parID = scene->createNode(0, "parent");
+  NodeID childID = scene->createNode2D(parID, "child 1");
+  NodeID childID2 = scene->createNode2D(childID, "child 2");
 
   auto transform_manager = scene->get_manager<TransformManager>();
 

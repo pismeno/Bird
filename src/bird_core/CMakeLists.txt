@@ -11,8 +11,6 @@ set(CORE_SOURCES
         "node_system/node_types.hpp"
         "node_system/node.hpp"
         "node_system/node.cpp"
-        "node_system/nodes/node_2d.hpp"
-        "node_system/nodes/node_2d.cpp"
         "node_system/scene.hpp"
         "node_system/scene.cpp"
         "node_system/imanager.hpp"

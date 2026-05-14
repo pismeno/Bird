@@ -10,7 +10,7 @@ class IManager {
   virtual ~IManager() = default;
 
   virtual void on_node_destroyed(NodeID node_id) {};
-  virtual void on_node_created(NodeID node_id, NodeID parent_id) {};
+  virtual void on_node_created(NodeID node_id) {};
   virtual void on_update() {};
   virtual void on_frame_end() {};
 
