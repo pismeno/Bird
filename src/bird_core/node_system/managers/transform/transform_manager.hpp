@@ -1,19 +1,32 @@
 #pragma once
 
 #include "transforms.hpp"
-#include "../../node_types.hpp"
+#include "node_system/node_types.hpp"
+#include "node_system/imanager.hpp"
 
 #include <vector>
 
+#include "utils/result.hpp"
+
 namespace bird::node_system::managers {
 
-class TransformManager {
+class TransformManager : public IManager {
  public:
   void ensure_capacity(size_t capacity);
   void add_transform(NodeID node_id);
   bool has_transform(NodeID node_id) const;
   Transform2D* get_transform(NodeID node_id);
+
+  void set_parent(NodeID child_id, NodeID parent_id);
+  void remove_from_parent(NodeID child_id);
+
+  Result set_node_position(NodeID node_id, glm::vec2 pos);
+  void mark_spatial_children_dirty(NodeID parent_id);
+
   void update_dirty_transforms();
+
+  void on_node_destroyed(NodeID node_id) override;
+  void consolidate() override;
 
  private:
   // The fast math array (Data)

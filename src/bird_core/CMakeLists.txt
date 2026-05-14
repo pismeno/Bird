@@ -15,6 +15,8 @@ set(CORE_SOURCES
         "node_system/nodes/node_2d.cpp"
         "node_system/scene.hpp"
         "node_system/scene.cpp"
+        "node_system/imanager.hpp"
+        "node_system/imanager.cpp"
         "node_system/managers/transform/transforms.hpp"
         "node_system/managers/transform/transform_manager.hpp"
         "node_system/managers/transform/transform_manager.cpp"

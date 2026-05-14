@@ -26,7 +26,7 @@ int main() {
 
   std::cout << "Hello, Bird Editor!" << std::endl;
 
-  std::unique_ptr<Scene> scene = std::make_unique<Scene>();
+  std::unique_ptr<Scene> scene = Scene::create();
   NodeID parID = scene->createNode<Node>(0, "parent");
   NodeID childID = scene->createNode<Node2D>(parID, "child 1");
 
