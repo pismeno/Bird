@@ -10,7 +10,7 @@
 #include "windowing/window.hpp"
 #include "node_system/scene.hpp"
 #include "node_system/node.hpp"
-#include "node_system/managers/transform/transform_manager.hpp"
+#include "node_system/managers/transform_manager.hpp"
 
 int main() {
 

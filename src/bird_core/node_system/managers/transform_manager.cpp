@@ -1,5 +1,4 @@
 #include "transform_manager.hpp"
-#include "transforms.hpp"
 
 #include <algorithm>
 #include <glm/glm.hpp>
@@ -133,7 +132,7 @@ glm::mat3x3 TransformManager::get_global_matrix(NodeID node_id) {
   return global_matrices[static_cast<size_t>(index)];
 }
 
-Transform2D* TransformManager::get_transform(NodeID node_id) {
+TransformManager::Transform2D* TransformManager::get_transform(NodeID node_id) {
   if (static_cast<size_t>(node_id) >= node_to_transform.size()) {
     return nullptr;
   }

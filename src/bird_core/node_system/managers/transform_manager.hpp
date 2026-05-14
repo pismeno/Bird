@@ -1,6 +1,5 @@
 #pragma once
 
-#include "transforms.hpp"
 #include "node_system/node_types.hpp"
 #include "node_system/imanager.hpp"
 
@@ -30,6 +29,19 @@ class TransformManager : public IManager {
   void on_frame_end() override;
 
  private:
+  struct Transform2D {
+    glm::vec2 local_position = {0.0f, 0.0f};
+    glm::vec2 local_scale = {1.0f, 1.0f};
+    float local_rotation = 0.0f;
+
+    NodeID node_id = INVALID_NODE_ID;
+    NodeID parent_id = INVALID_NODE_ID;
+    NodeID first_child_id = INVALID_NODE_ID;
+    NodeID next_sibling_id = INVALID_NODE_ID;
+
+    bool is_dirty = true;
+  };
+
   Transform2D* get_transform(NodeID node_id);
 
   // The fast math array (Data)

@@ -14,9 +14,8 @@ set(CORE_SOURCES
         "node_system/scene.cpp"
         "node_system/imanager.hpp"
         "node_system/imanager.cpp"
-        "node_system/managers/transform/transforms.hpp"
-        "node_system/managers/transform/transform_manager.hpp"
-        "node_system/managers/transform/transform_manager.cpp"
+        "node_system/managers/transform_manager.hpp"
+        "node_system/managers/transform_manager.cpp"
 )
 
 add_library(BirdCore STATIC ${CORE_SOURCES})
