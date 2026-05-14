@@ -25,9 +25,7 @@ std::unique_ptr<Scene> Scene::create() {
   nodes[newId] = std::move(node);
 
   if (parent_id != INVALID_NODE_ID && parent_id != newId) {
-    if (Node* parent = getNode(parent_id)) {
-      parent->addChild(newId, *this);
-    }
+    reparent_node(newId, parent_id);
   }
 
   for (auto& manager : managers) {
@@ -45,15 +43,15 @@ std::unique_ptr<Scene> Scene::create() {
   return node_id;
 }
 
-[[nodiscard]] Node* Scene::getNode(NodeID id) {
+[[nodiscard]] Node* Scene::getNode(NodeID node_id) {
   {
-    auto it = nodes.find(id);
+    auto it = nodes.find(node_id);
     return (it != nodes.end()) ? it->second.get() : nullptr;
   }
 }
 
-Result Scene::destroy_node(NodeID id) {
-  Node* node = getNode(id);
+Result Scene::destroy_node(NodeID node_id) {
+  Node* node = getNode(node_id);
   if (!node) {
     return Result::fail("Node with provided ID not found");
   }
@@ -64,10 +62,28 @@ Result Scene::destroy_node(NodeID id) {
   }
 
   for (auto& manager : managers) {
-    manager->on_node_destroyed(id);
+    manager->on_node_destroyed(node_id);
   }
 
-  nodes.erase(id);
+  nodes.erase(node_id);
+  return Result::ok();
+}
+
+Result Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
+  Node *child = getNode(node_id);
+  Node *new_parent = getNode(new_parent_id);
+
+  if (!child) {
+    return Result::fail("Node with provided ID not found");
+  }
+
+  if (!new_parent) {
+    return Result::fail("Parent node with provided ID not found");
+  }
+
+  child->parentId = new_parent_id;
+  new_parent->childrenIds.push_back(node_id);
+
   return Result::ok();
 }
 

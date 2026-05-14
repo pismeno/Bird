@@ -17,13 +17,15 @@ namespace bird::node_system {
 
 class Scene {
  public:
+  Scene() = default;
   static std::unique_ptr<Scene> create();
 
   [[nodiscard]] NodeID createNode(NodeID parent_id, std::string name);
   [[nodiscard]] NodeID createNode2D(NodeID parent_id, std::string name);
 
-  [[nodiscard]] Node* getNode(NodeID id);
-  Result destroy_node(NodeID id);
+  [[nodiscard]] Node* getNode(NodeID node_id);
+  Result destroy_node(NodeID node_id);
+  Result reparent_node(NodeID node_id, NodeID new_parent_id);
   void update();
   void end_frame();
 
@@ -58,10 +60,7 @@ class Scene {
     return static_cast<T*>(fast_lookup[id]);
   }
 
-  Scene() = default;
-
  private:
-
   std::atomic<NodeID> idCounter{0};
   std::unordered_map<NodeID, std::unique_ptr<Node>> nodes;
 
