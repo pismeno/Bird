@@ -39,7 +39,7 @@ class TransformManager : public INodeManager {
   void remove_from_parent(NodeID child_id);
 
   /**
-   * @brief Gets the global transformation matrix of the given node, this represents scale, rotation and translation.
+   * @brief Gets the global transformation matrix of the given node, this represents scale, translation, shear and rotation.
    * @param node_id ID of the node to get the matrix for.
    * @return The 3x3 global transformation matrix.
    */
@@ -52,6 +52,9 @@ class TransformManager : public INodeManager {
   [[nodiscard]] inline const std::vector<glm::mat3x3>& get_all_matrices() const { return global_matrices; }
 
   Result set_node_position(NodeID node_id, glm::vec2 pos);
+  Result set_node_scale(NodeID node_id, glm::vec2 scale);
+  Result set_node_shear(NodeID node_id, glm::vec2 shear);
+  Result set_node_rotation(NodeID node_id, float rotation);
   void mark_spatial_children_dirty(NodeID parent_id);
 
   void on_update() override;
@@ -65,6 +68,7 @@ class TransformManager : public INodeManager {
   struct Transform2D {
     glm::vec2 local_position = {0.0f, 0.0f};
     glm::vec2 local_scale = {1.0f, 1.0f};
+    glm::vec2 local_shear = {0.0f, 0.0f};
     float local_rotation = 0.0f;
 
     NodeID node_id = INVALID_NODE_ID;

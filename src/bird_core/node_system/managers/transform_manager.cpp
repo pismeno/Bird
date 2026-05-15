@@ -69,8 +69,50 @@ Result TransformManager::set_node_position(NodeID node_id, glm::vec2 pos) {
 
   transform->local_position = pos;
   transform->is_dirty = true;
-
   mark_spatial_children_dirty(node_id);
+
+  return Result::ok();
+}
+
+Result TransformManager::set_node_scale(NodeID node_id, glm::vec2 scale) {
+  Transform2D* transform = get_transform(node_id);
+
+  if (!transform) {
+    return Result::fail("Transform not found");
+  }
+
+  transform->local_scale = scale;
+  transform->is_dirty = true;
+  mark_spatial_children_dirty(node_id);
+
+  return Result::ok();
+}
+
+Result TransformManager::set_node_shear(NodeID node_id, glm::vec2 shear) {
+  Transform2D* transform = get_transform(node_id);
+
+  if (!transform) {
+    return Result::fail("Transform not found");
+  }
+
+  transform->local_shear = shear;
+  transform->is_dirty = true;
+  mark_spatial_children_dirty(node_id);
+
+  return Result::ok();
+}
+
+Result TransformManager::set_node_rotation(NodeID node_id, float rotation) {
+  Transform2D* transform = get_transform(node_id);
+
+  if (!transform) {
+    return Result::fail("Transform not found");
+  }
+
+  transform->local_rotation = rotation;
+  transform->is_dirty = true;
+  mark_spatial_children_dirty(node_id);
+
   return Result::ok();
 }
 
@@ -143,15 +185,19 @@ void TransformManager::update_node_hierarchy(NodeID node_id, const glm::mat3& pa
     float cos = std::cos(transform->local_rotation);
     float sin = std::sin(transform->local_rotation);
 
+    float sx = transform->local_scale.x;
+    float sy = transform->local_scale.y;
+    float shx = transform->local_shear.x;
+    float shy = transform->local_shear.y;
+
     glm::mat3 local_mat(
-        cos * transform->local_scale.x,  sin * transform->local_scale.x, 0.0f,
-        -sin * transform->local_scale.y,  cos * transform->local_scale.y, 0.0f,
-        transform->local_position.x,   transform->local_position.y,  1.0f
+        sx * (cos - sin * shy), sx * (sin + cos * shy), 0.0f,  // Column 0
+        sy * (cos * shx - sin), sy * (sin * shx + cos), 0.0f,  // Column 1
+        transform->local_position.x, transform->local_position.y, 1.0f // Column 2
     );
 
     my_global_mat = parent_global_mat * local_mat;
 
-    // Write directly to the sparse array
     global_matrices[sparse_idx] = my_global_mat;
     transform->is_dirty = false;
   } else {
