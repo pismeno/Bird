@@ -67,7 +67,6 @@ int main() {
   std::cout << "Child node ID: " << childID.index() << std::endl;
   std::cout << "Child node name: " << scene->getNode(childID)->getName() << std::endl;
   std::cout << "Child node parent name: " << scene->getNode(scene->getNode(childID)->getParentId())->getName() << std::endl;
-  std::cout << "Node's z-index: " << drawable_manager->get_drawable(famChildID)->z_index << std::endl;
 
   RenderGatherer gatherer;
 
