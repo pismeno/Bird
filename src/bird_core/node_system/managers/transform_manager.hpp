@@ -1,6 +1,6 @@
 #pragma once
 
-#include "node_system/imanager.hpp"
+#include "node_system/inode_manager.hpp"
 
 #include <vector>
 #include <cstdint>
@@ -16,7 +16,7 @@ namespace bird::node_system::managers {
 using TransformIndex = uint32_t;
 inline constexpr TransformIndex INVALID_TRANSFORM_INDEX = std::numeric_limits<uint32_t>::max();
 
-class TransformManager : public IManager {
+class TransformManager : public INodeManager {
  public:
   TransformManager() {
     global_matrices.resize(MAX_ACTIVE_NODES, glm::mat3x3(1.0f));

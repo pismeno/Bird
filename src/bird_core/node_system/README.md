@@ -10,7 +10,7 @@
 - The managers are responsible for the actual node behavior.
 
 ## Managers
-- Every manager inherits from the `IManager` interface.
+- Every manager inherits from the `INodeManager` interface.
 - Managers keep NodeIDs and hold their own information about the nodes.
 - They use preferably contiguous memory to store the data, and use the NodeID as an index to access the data.
 

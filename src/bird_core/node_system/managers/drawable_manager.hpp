@@ -1,6 +1,6 @@
 #pragma once
 
-#include "node_system/imanager.hpp"
+#include "node_system/inode_manager.hpp"
 
 #include <vector>
 #include <cstdint>
@@ -17,7 +17,7 @@ struct Drawable {
   uint32_t z_index = 0;
 };
 
-class DrawableManager : public IManager {
+class DrawableManager : public INodeManager {
  public:
   DrawableManager() {
     drawables.resize(MAX_ACTIVE_NODES, Drawable{});

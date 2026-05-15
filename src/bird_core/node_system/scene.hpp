@@ -11,7 +11,7 @@
 
 #include "utils/result.hpp"
 #include "glm/vec2.hpp"
-#include "imanager.hpp"
+#include "inode_manager.hpp"
 
 namespace bird::node_system {
 
@@ -49,7 +49,7 @@ class Scene {
    */
   template <typename T, typename... Args>
   T& add_manager(Args&&... args) {
-    size_t id = IManager::get_type_id<T>();
+    size_t id = INodeManager::get_type_id<T>();
 
     // Ensure the lookup array is big enough
     if (id < fast_lookup.size() && fast_lookup[id] != nullptr) {
@@ -78,7 +78,7 @@ class Scene {
    */
   template <typename T>
   T* get_manager() {
-    size_t id = IManager::get_type_id<T>();
+    size_t id = INodeManager::get_type_id<T>();
 
     if (id >= fast_lookup.size() || !fast_lookup[id]) {
       return nullptr; // Doesn't exist
@@ -95,9 +95,9 @@ class Scene {
   std::vector<uint32_t> generations; // Index = the raw array slot, Value = the current active generation
   std::vector<Node> nodes;
 
-  std::vector<std::unique_ptr<IManager>> managers;
+  std::vector<std::unique_ptr<INodeManager>> managers;
 
-  std::vector<IManager*> fast_lookup;
+  std::vector<INodeManager*> fast_lookup;
 };
 
 } // bird::node_system
