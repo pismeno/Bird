@@ -1,7 +1,7 @@
 set(CORE_SOURCES
         "utils/result.hpp"
-        "windowing/window.hpp"
-        "windowing/window.cpp"
+        "windowing/iwindow.hpp"
+        "windowing/iwindow.cpp"
         "windowing/glfw_window.hpp"
         "windowing/glfw_window.cpp"
         "inputs/inputs.hpp"

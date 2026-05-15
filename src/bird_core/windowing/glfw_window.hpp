@@ -1,6 +1,6 @@
 #pragma once
 
-#include "window.hpp"
+#include "iwindow.hpp"
 
 #include "GLFW/glfw3.h"
 
@@ -11,7 +11,7 @@ namespace bird {
 
 using namespace inputs;
 
-class GlfwWindow : public Window {
+class GlfwWindow : public IWindow {
 
   friend class GlfwInputs;
 
