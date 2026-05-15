@@ -31,6 +31,9 @@ class Scene {
   [[nodiscard]] Node* getNode(NodeID node_id);
   Result destroy_node(NodeID node_id);
   Result reparent_node(NodeID node_id, NodeID new_parent_id);
+
+  [[nodiscard]] inline uint32_t get_highest_allocated_node_index() const { return next_unused_id.load(); }
+
   void update();
   void end_frame();
 

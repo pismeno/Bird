@@ -26,8 +26,8 @@ class TransformManager : public IManager {
   [[nodiscard]] bool has_transform(NodeID node_id) const;
   void set_parent(NodeID child_id, NodeID parent_id);
   void remove_from_parent(NodeID child_id);
-
-  inline const glm::mat3x3& get_global_matrix(NodeID node_id) const { return global_matrices[node_id.index()]; }
+  [[nodiscard]] inline const glm::mat3x3& get_global_matrix(NodeID node_id) const { return global_matrices[node_id.index()]; }
+  [[nodiscard]] inline const std::vector<glm::mat3x3>& get_all_matrices() const { return global_matrices; }
 
   Result set_node_position(NodeID node_id, glm::vec2 pos);
   void mark_spatial_children_dirty(NodeID parent_id);
