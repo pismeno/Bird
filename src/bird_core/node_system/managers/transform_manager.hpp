@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 
 #include "utils/result.hpp"
+#include "node_system/node_types.hpp"
 
 namespace bird::node_system::managers {
 
@@ -17,12 +18,16 @@ inline constexpr TransformIndex INVALID_TRANSFORM_INDEX = std::numeric_limits<ui
 
 class TransformManager : public IManager {
  public:
+  TransformManager() {
+    global_matrices.resize(MAX_ACTIVE_NODES, glm::mat3x3(1.0f));
+    node_to_transform.resize(MAX_ACTIVE_NODES, INVALID_TRANSFORM_INDEX);
+  }
   void create_transform(NodeID node_id);
   [[nodiscard]] bool has_transform(NodeID node_id) const;
   void set_parent(NodeID child_id, NodeID parent_id);
   void remove_from_parent(NodeID child_id);
-
-  glm::mat3x3 get_global_matrix(NodeID node_id);
+  [[nodiscard]] inline const glm::mat3x3& get_global_matrix(NodeID node_id) const { return global_matrices[node_id.index()]; }
+  [[nodiscard]] inline const std::vector<glm::mat3x3>& get_all_matrices() const { return global_matrices; }
 
   Result set_node_position(NodeID node_id, glm::vec2 pos);
   void mark_spatial_children_dirty(NodeID parent_id);
@@ -46,15 +51,11 @@ class TransformManager : public IManager {
   };
 
   Transform2D* get_transform(NodeID node_id);
-  void ensure_capacity(size_t capacity);
+  void update_node_hierarchy(NodeID node_id, const glm::mat3& parent_global_mat);
 
-  // The fast math array (Data)
-  std::vector<Transform2D> transforms;
-  std::vector<glm::mat3x3> global_matrices;
-
-  // The Lookup Table: index is NodeID, value is TransformIndex
-  // Initialize with INVALID_TRANSFORM_INDEX (meaning no transform)
-  std::vector<TransformIndex> node_to_transform;
+  std::vector<Transform2D> transforms;           // Indexed by NodeID
+  std::vector<glm::mat3x3> global_matrices;      // Sorted hierarchically by tree depth
+  std::vector<TransformIndex> node_to_transform; // The Lookup Table: index is NodeID, value is TransformIndex
 };
 
 } // bird::node_system::managers

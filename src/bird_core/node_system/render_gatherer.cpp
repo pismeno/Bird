@@ -17,16 +17,27 @@ std::vector<RenderCommand> RenderGatherer::gather_render_commands(Scene& scene) 
   auto drawable_manager = scene.get_manager<DrawableManager>();
   auto transform_manager = scene.get_manager<TransformManager>();
 
+  if (!drawable_manager || !transform_manager) return {};
+
+  const auto& matrices = transform_manager->get_all_matrices();
+  const auto& drawables = drawable_manager->get_all_drawables();
+
+  uint32_t max_index = scene.get_highest_allocated_node_index();
+
   std::vector<RenderCommand> commands;
 
-  for (auto& drawable : drawable_manager->get_drawables()) {
-    glm::mat3x3 transform = transform_manager->get_global_matrix(drawable.node_id);
+  commands.reserve(max_index);
 
-    commands.push_back({
-      transform,
-      //drawable.texture_id,
-      drawable.z_index
-    });
+  for (uint32_t i = 0; i < max_index; ++i) {
+    // 1. Is there an active drawable at this sparse index?
+    if (drawables[i].is_visible) {
+
+      commands.emplace_back(RenderCommand{
+          matrices[i],
+          //drawables[i].texture_id,
+          drawables[i].z_index
+      });
+    }
   }
 
   return commands;

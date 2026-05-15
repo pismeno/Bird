@@ -15,6 +15,7 @@ class Node {
   friend class Scene;
 
  public:
+  Node() = default;
   Node(std::string name) : name(std::move(name)) {};
 
   inline NodeID getParentId() const { return parentId; }
