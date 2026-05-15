@@ -14,7 +14,12 @@ class IManager {
   virtual void on_update() {};
   virtual void on_frame_end() {};
 
-  template <typename T>
+  /**
+   * @brief Get the type ID of the manager
+   * @tparam T The manager type
+   * @return id of the type
+   */
+  template <std::derived_from<IManager> T>
   static std::size_t get_type_id() {
     static std::size_t id = next_id++;
     return id;

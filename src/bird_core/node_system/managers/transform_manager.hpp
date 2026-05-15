@@ -22,11 +22,33 @@ class TransformManager : public IManager {
     global_matrices.resize(MAX_ACTIVE_NODES, glm::mat3x3(1.0f));
     node_to_transform.resize(MAX_ACTIVE_NODES, INVALID_TRANSFORM_INDEX);
   }
+
+  /**
+   * Creates a new Transform for the given NodeID.
+   * @param node_id ID of the node to create the transform for. The manager assumes that this node ID is valid and has been created in the scene.
+   */
   void create_transform(NodeID node_id);
   [[nodiscard]] bool has_transform(NodeID node_id) const;
+
+  /**
+   * Sets the parent of the given child node, in this manager, this is needed for mantaining the hierarchy.
+   * @param child_id
+   * @param parent_id
+   */
   void set_parent(NodeID child_id, NodeID parent_id);
   void remove_from_parent(NodeID child_id);
+
+  /**
+   * @brief Gets the global transformation matrix of the given node, this represents scale, rotation and translation.
+   * @param node_id ID of the node to get the matrix for.
+   * @return The 3x3 global transformation matrix.
+   */
   [[nodiscard]] inline const glm::mat3x3& get_global_matrix(NodeID node_id) const { return global_matrices[node_id.index()]; }
+
+  /**
+   * @brief Gets all the global transformation matrices of all nodes in the scene.
+   * @return reference to the vector of matrices, it is indexed by NodeID.index().
+   */
   [[nodiscard]] inline const std::vector<glm::mat3x3>& get_all_matrices() const { return global_matrices; }
 
   Result set_node_position(NodeID node_id, glm::vec2 pos);
@@ -37,6 +59,9 @@ class TransformManager : public IManager {
   void on_frame_end() override;
 
  private:
+  /**
+   * @brief private information for nodes
+   */
   struct Transform2D {
     glm::vec2 local_position = {0.0f, 0.0f};
     glm::vec2 local_scale = {1.0f, 1.0f};

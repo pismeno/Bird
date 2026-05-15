@@ -25,7 +25,18 @@ class DrawableManager : public IManager {
 
   inline void create_drawable(NodeID node_id) { drawables[node_id.index()].is_visible = true; }
   [[nodiscard]] inline bool has_drawable(NodeID node_id) const { return drawables[node_id.index()].is_visible; }
+
+  /**
+   * Gets the draw information of the given node.
+   * @param node_id ID of the node to get the draw information for.
+   * @return Drawable struct tied to this node
+   */
   [[nodiscard]] inline const Drawable& get_drawable(NodeID node_id) const { return drawables[node_id.index()]; }
+
+  /**
+   * Gets all the draw information of all nodes in the scene.
+   * @return reference to the vector of drawables, it is indexed by NodeID.index().
+   */
   [[nodiscard]] inline const std::vector<Drawable>& get_all_drawables() const { return drawables; }
 
   void on_node_destroyed(NodeID node_id) override;

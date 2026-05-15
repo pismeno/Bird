@@ -22,7 +22,7 @@ class Scene {
     generations.resize(MAX_ACTIVE_NODES);
   }
 
-  static std::unique_ptr<Scene> create();
+  static std::unique_ptr<Scene> create_scene_2d();
 
   [[nodiscard]] NodeID createNode(NodeID parent_id, std::string name);
   [[nodiscard]] NodeID createNode2D(NodeID parent_id, std::string name);
@@ -32,11 +32,21 @@ class Scene {
   Result destroy_node(NodeID node_id);
   Result reparent_node(NodeID node_id, NodeID new_parent_id);
 
+  /**
+   * @return The highest index part of NodeID of a node that exists.
+   */
   [[nodiscard]] inline uint32_t get_highest_allocated_node_index() const { return next_unused_id.load(); }
 
   void update();
   void end_frame();
 
+  /**
+   * Adds a manager to the scene.
+   * @tparam T The manager type
+   * @tparam Args Manager constructor arguments
+   * @param args Manager constructor arguments
+   * @return reference to the manager
+   */
   template <typename T, typename... Args>
   T& add_manager(Args&&... args) {
     size_t id = IManager::get_type_id<T>();
@@ -61,6 +71,11 @@ class Scene {
     return *raw_ptr;
   }
 
+  /**
+   * Gets a manager by type.
+   * @tparam T the manager type
+   * @return reference to the manager, or nullptr if it doesn't exist'
+   */
   template <typename T>
   T* get_manager() {
     size_t id = IManager::get_type_id<T>();

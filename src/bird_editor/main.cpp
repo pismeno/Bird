@@ -47,7 +47,7 @@ int main() {
 
   std::cout << "Hello, Bird Editor!" << std::endl;
 
-  std::unique_ptr<Scene> scene = Scene::create();
+  std::unique_ptr<Scene> scene = Scene::create_scene_2d();
   NodeID parID = scene->createNode(INVALID_NODE_ID, "parent");
   NodeID childID = scene->createNode2DDrawable(parID, "child 1");
   NodeID childID2 = scene->createNode2DDrawable(childID, "child 2");

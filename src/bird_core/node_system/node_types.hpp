@@ -5,6 +5,9 @@
 
 namespace bird::node_system {
 
+/**
+ * @brief Unique identifier for a node. It consists of a 32-bit index and a 32-bit generation-counter.
+ */
 struct NodeID {
   uint64_t id;
 
@@ -13,11 +16,17 @@ struct NodeID {
     return NodeID{ packed };
   }
 
-  inline uint32_t index() const {
+  /**
+   * @return the index part of the NodeID.
+   */
+  [[nodiscard]] inline uint32_t index() const {
     return static_cast<uint32_t>(id);
   }
 
-  inline uint32_t generation() const {
+  /**
+   * @return the generation-counter part of the NodeID.
+   */
+  [[nodiscard]] inline uint32_t generation() const {
     return static_cast<uint32_t>(id >> 32);
   }
 
@@ -29,7 +38,14 @@ struct NodeID {
   }
 };
 
+/**
+ * @brief Maximum number of active nodes, hard-coded for now.
+ */
 inline constexpr uint32_t MAX_ACTIVE_NODES = 50000;
-inline constexpr NodeID INVALID_NODE_ID = { std::numeric_limits<uint32_t>::max() };
+
+/**
+ * @brief Invalid NodeID. Explicitly sets both index and generation to max to avoid collisions.
+ */
+inline constexpr NodeID INVALID_NODE_ID = { std::numeric_limits<uint64_t>::max() };
 
 } // bird::node_system

@@ -14,7 +14,7 @@ namespace bird::node_system {
 
 using namespace managers;
 
-std::unique_ptr<Scene> Scene::create() {
+std::unique_ptr<Scene> Scene::create_scene_2d() {
   auto scene = std::make_unique<Scene>();
   scene->add_manager<TransformManager>();
   scene->add_manager<DrawableManager>();
