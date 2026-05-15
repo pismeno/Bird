@@ -48,13 +48,9 @@ class TransformManager : public IManager {
   Transform2D* get_transform(NodeID node_id);
   void ensure_capacity(size_t capacity);
 
-  // The fast math array (Data)
-  std::vector<Transform2D> transforms;
-  std::vector<glm::mat3x3> global_matrices;
-
-  // The Lookup Table: index is NodeID, value is TransformIndex
-  // Initialize with INVALID_TRANSFORM_INDEX (meaning no transform)
-  std::vector<TransformIndex> node_to_transform;
+  std::vector<Transform2D> transforms;           // Indexed by NodeID
+  std::vector<glm::mat3x3> global_matrices;      // Sorted hierarchically by tree depth
+  std::vector<TransformIndex> node_to_transform; // The Lookup Table: index is NodeID, value is TransformIndex
 };
 
 } // bird::node_system::managers

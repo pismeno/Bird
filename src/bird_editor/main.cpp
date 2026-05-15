@@ -48,10 +48,10 @@ int main() {
   std::cout << "Hello, Bird Editor!" << std::endl;
 
   std::unique_ptr<Scene> scene = Scene::create();
-  NodeID parID = scene->createNode(0, "parent");
+  NodeID parID = scene->createNode(INVALID_NODE_ID, "parent");
   NodeID childID = scene->createNode2DDrawable(parID, "child 1");
   NodeID childID2 = scene->createNode2DDrawable(childID, "child 2");
-  NodeID famID = scene->createNode2DDrawable(0, "fam parent");
+  NodeID famID = scene->createNode2DDrawable(INVALID_NODE_ID, "fam parent");
   NodeID famChildID = scene->createNode2DDrawable(famID, "fam child");
 
   auto transform_manager = scene->get_manager<TransformManager>();
@@ -62,9 +62,9 @@ int main() {
   transform_manager->set_node_position(famChildID, glm::vec2(400, 400));
   transform_manager->set_node_position(famID, glm::vec2(400, 400));
 
-  std::cout << "Parent node ID: " << parID << std::endl;
+  std::cout << "Parent node ID: " << parID.index()<< std::endl;
   std::cout << "Parent node name: " << scene->getNode(parID)->getName() << std::endl;
-  std::cout << "Child node ID: " << childID << std::endl;
+  std::cout << "Child node ID: " << childID.index() << std::endl;
   std::cout << "Child node name: " << scene->getNode(childID)->getName() << std::endl;
   std::cout << "Child node parent name: " << scene->getNode(scene->getNode(childID)->getParentId())->getName() << std::endl;
   std::cout << "Node's z-index: " << drawable_manager->get_drawable(famChildID)->z_index << std::endl;

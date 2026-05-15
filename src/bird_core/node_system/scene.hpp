@@ -17,7 +17,11 @@ namespace bird::node_system {
 
 class Scene {
  public:
-  Scene() = default;
+  Scene() {
+    nodes.resize(MAX_ACTIVE_NODES);
+    generations.resize(MAX_ACTIVE_NODES);
+  }
+
   static std::unique_ptr<Scene> create();
 
   [[nodiscard]] NodeID createNode(NodeID parent_id, std::string name);
@@ -66,8 +70,12 @@ class Scene {
   }
 
  private:
-  std::atomic<NodeID> idCounter{0};
-  std::unordered_map<NodeID, std::unique_ptr<Node>> nodes;
+  [[nodiscard]] NodeID generate_id();
+
+  std::atomic<uint32_t> next_unused_id {0};
+  std::vector<uint32_t> recycled_ids;
+  std::vector<uint32_t> generations; // Index = the raw array slot, Value = the current active generation
+  std::vector<Node> nodes;
 
   std::vector<std::unique_ptr<IManager>> managers;
 

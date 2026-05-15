@@ -104,27 +104,27 @@ void TransformManager::ensure_capacity(size_t capacity) {
 }
 
 void TransformManager::create_transform(NodeID node_id) {
-  ensure_capacity(static_cast<size_t>(node_id) + 1);
+  ensure_capacity(node_id.index() + 1);
 
   transforms.push_back(Transform2D());
   transforms.back().node_id = node_id;
 
   global_matrices.push_back(glm::mat3(1.0f));
 
-  node_to_transform[static_cast<size_t>(node_id)] = static_cast<TransformIndex>(transforms.size() - 1);
+  node_to_transform[node_id.index()] = static_cast<TransformIndex>(transforms.size() - 1);
 }
 
 bool TransformManager::has_transform(NodeID node_id) const {
-  if (static_cast<size_t>(node_id) >= node_to_transform.size()) return false;
-  return node_to_transform[static_cast<size_t>(node_id)] != INVALID_TRANSFORM_INDEX;
+  if (node_id.index() >= node_to_transform.size()) return false;
+  return node_to_transform[node_id.index()] != INVALID_TRANSFORM_INDEX;
 }
 
 glm::mat3x3 TransformManager::get_global_matrix(NodeID node_id) {
-  if (static_cast<size_t>(node_id) >= node_to_transform.size()) {
+  if (node_id.index() >= node_to_transform.size()) {
     return glm::mat3(1.0f);
   }
 
-  TransformIndex index = node_to_transform[static_cast<size_t>(node_id)];
+  TransformIndex index = node_to_transform[node_id.index()];
   if (index == INVALID_TRANSFORM_INDEX || static_cast<size_t>(index) >= global_matrices.size()) {
     return glm::mat3(1.0f);
   }
@@ -133,11 +133,11 @@ glm::mat3x3 TransformManager::get_global_matrix(NodeID node_id) {
 }
 
 TransformManager::Transform2D* TransformManager::get_transform(NodeID node_id) {
-  if (static_cast<size_t>(node_id) >= node_to_transform.size()) {
+  if (node_id.index() >= node_to_transform.size()) {
     return nullptr;
   }
 
-  TransformIndex index = node_to_transform[static_cast<size_t>(node_id)];
+  TransformIndex index = node_to_transform[node_id.index()];
   if (index == INVALID_TRANSFORM_INDEX || static_cast<size_t>(index) >= transforms.size()) {
     return nullptr;
   }
@@ -167,8 +167,8 @@ void TransformManager::on_update() {
       // 2. Hierarchical Composition
       if (transform.parent_id != INVALID_NODE_ID) {
         TransformIndex spatial_parent_id = INVALID_TRANSFORM_INDEX;
-        if (static_cast<size_t>(transform.parent_id) < node_to_transform.size()) {
-          spatial_parent_id = node_to_transform[static_cast<size_t>(transform.parent_id)];
+        if (transform.parent_id.index() < node_to_transform.size()) {
+          spatial_parent_id = node_to_transform[transform.parent_id.index()];
         }
 
         if (spatial_parent_id != INVALID_TRANSFORM_INDEX && static_cast<size_t>(spatial_parent_id) < global_matrices.size()) {
@@ -189,13 +189,13 @@ void TransformManager::on_update() {
 void TransformManager::on_node_destroyed(NodeID node_id) {
   if (!has_transform(node_id)) return;
 
-  TransformIndex index = node_to_transform[static_cast<size_t>(node_id)];
+  TransformIndex index = node_to_transform[node_id.index()];
 
   // 1. Invalidate the memory (Ghost ID)
   transforms[static_cast<size_t>(index)].node_id = INVALID_NODE_ID;
 
   // 2. Break the lookup link immediately
-  node_to_transform[static_cast<size_t>(node_id)] = INVALID_TRANSFORM_INDEX;
+  node_to_transform[node_id.index()] = INVALID_TRANSFORM_INDEX;
 }
 
 void TransformManager::on_frame_end() {
@@ -219,7 +219,7 @@ void TransformManager::on_frame_end() {
   std::fill(node_to_transform.begin(), node_to_transform.end(), INVALID_TRANSFORM_INDEX);
 
   for (size_t i = 0; i < transforms.size(); ++i) {
-    node_to_transform[static_cast<size_t>(transforms[i].node_id)] = static_cast<TransformIndex>(i);
+    node_to_transform[transforms[i].node_id.index()] = static_cast<TransformIndex>(i);
   }
 }
 
