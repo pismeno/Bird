@@ -7,8 +7,10 @@
 #include <cstdint>
 #include <algorithm>
 
-#include "managers/transform_manager.hpp"
-#include "managers/drawable_manager.hpp"
+#include "utils/result.hpp"
+#include "node_system/managers/transform_manager.hpp"
+#include "node_system/managers/drawable_manager.hpp"
+#include "node_system/node_handle.hpp"
 
 namespace bird::node_system {
 
@@ -73,28 +75,18 @@ std::unique_ptr<Scene> Scene::create_scene_2d() {
   return node_id;
 }
 
-[[nodiscard]] Node* Scene::getNode(NodeID node_id) {
-  uint32_t idx = node_id.index();
-
-  if (idx >= nodes.size()) {
-    return nullptr;
-  }
-
-  if (node_id.generation() != generations[idx]) {
-    return nullptr;
-  }
-
-  return &nodes[idx];
+[[nodiscard]] NodeHandle Scene::get_node(NodeID node_id) {
+  return NodeHandle(this, node_id);
 }
 
 Result Scene::destroy_node(NodeID node_id) {
-  Node* node = getNode(node_id);
+  Node* node = &nodes[node_id.index()];
   if (!node) {
     return Result::fail("Node with provided ID not found");
   }
 
   if (node->parentId != INVALID_NODE_ID) {
-    Node* parent = getNode(node->parentId);
+    Node* parent = &nodes[node->parentId.index()];
     if (parent) {
       auto& siblings = parent->childrenIds;
       siblings.erase(std::remove(siblings.begin(), siblings.end(), node_id), siblings.end());
@@ -129,14 +121,14 @@ Result Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
     return Result::fail("Cannot parent a node to itself.");
   }
 
-  Node *child = getNode(node_id);
-  Node *new_parent = getNode(new_parent_id);
+  Node *child = &nodes[node_id.index()];
+  Node *new_parent = &nodes[new_parent_id.index()];
 
   if (!child) return Result::fail("Node with provided ID not found");
   if (!new_parent) return Result::fail("Parent node with provided ID not found");
 
   if (child->parentId != INVALID_NODE_ID) {
-    Node *old_parent = getNode(child->parentId);
+    Node *old_parent = &nodes[child->parentId.index()];
     if (old_parent) {
       auto& siblings = old_parent->childrenIds;
       siblings.erase(std::remove(siblings.begin(), siblings.end(), node_id), siblings.end());

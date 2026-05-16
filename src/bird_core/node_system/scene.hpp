@@ -9,13 +9,18 @@
 #include <unordered_map>
 #include <stdexcept>
 
+#include <glm/vec2.hpp>
+
 #include "utils/result.hpp"
-#include "glm/vec2.hpp"
-#include "inode_manager.hpp"
+#include "node_system/inode_manager.hpp"
+#include "node_system/node_handle.hpp"
 
 namespace bird::node_system {
 
 class Scene {
+
+  friend class NodeHandle;
+
  public:
   Scene() {
     nodes.resize(MAX_ACTIVE_NODES);
@@ -28,7 +33,7 @@ class Scene {
   [[nodiscard]] NodeID createNode2D(NodeID parent_id, std::string name);
   [[nodiscard]] NodeID createNode2DDrawable(NodeID parent_id, std::string name);
 
-  [[nodiscard]] Node* getNode(NodeID node_id);
+  [[nodiscard]] NodeHandle get_node(NodeID node_id);
   Result destroy_node(NodeID node_id);
   Result reparent_node(NodeID node_id, NodeID new_parent_id);
 
