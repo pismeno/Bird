@@ -12,11 +12,12 @@ struct Transform2D {
   glm::vec2 local_scale = {1.0f, 1.0f};
   float local_rotation = 0.0f;
 
-  glm::mat3x3 global_matrix = glm::mat3x3(1.0f);
-
   NodeID node_id = INVALID_NODE_ID;
-  TransformIndex spatial_parent_index = INVALID_TRANSFORM_INDEX;
+  NodeID parent_id = INVALID_NODE_ID;
+  NodeID first_child_id = INVALID_NODE_ID;
+  NodeID next_sibling_id = INVALID_NODE_ID;
+
   bool is_dirty = true;
 };
 
-} // namespace bird::node_system::managers
+} // bird::node_system::managers
