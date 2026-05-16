@@ -5,129 +5,69 @@
 
 namespace bird::node_system::managers {
 
-void TransformManager::remove_from_parent(NodeID child_id) {
-  Transform2D* child = get_transform(child_id);
-  if (!child || child->parent_id == INVALID_NODE_ID) return;
-
-  Transform2D* parent = get_transform(child->parent_id);
-  if (!parent) return;
-
-  // If this child is the first child, just point the parent to the next sibling
-  if (parent->first_child_id == child_id) {
-    parent->first_child_id = child->next_sibling_id;
-  } else {
-    // Otherwise, find the sibling immediately BEFORE this child, and patch the link
-    NodeID current_sibling_id = parent->first_child_id;
-    while (current_sibling_id != INVALID_NODE_ID) {
-      Transform2D* sibling = get_transform(current_sibling_id);
-      if (!sibling) break;
-
-      if (sibling->next_sibling_id == child_id) {
-        sibling->next_sibling_id = child->next_sibling_id; // Bypass the removed child
-        break;
-      }
-      current_sibling_id = sibling->next_sibling_id;
-    }
-  }
-
-  // Clear the child's links
-  child->parent_id = INVALID_NODE_ID;
-  child->next_sibling_id = INVALID_NODE_ID;
-}
-
-void TransformManager::set_parent(NodeID child_id, NodeID new_parent_id) {
-  Transform2D* child = get_transform(child_id);
-  if (!child) return;
-
-  // 1. Unlink from current parent to avoid corrupting the list
-  if (child->parent_id != INVALID_NODE_ID) {
-    remove_from_parent(child_id);
-  }
-
-  // 2. Link to new parent
-  if (new_parent_id != INVALID_NODE_ID) {
-    Transform2D* parent = get_transform(new_parent_id);
-    if (parent) {
-      child->parent_id = new_parent_id;
-      // Prepend to the parent's linked list
-      child->next_sibling_id = parent->first_child_id;
-      parent->first_child_id = child_id;
-    }
-  }
-
-  // 3. Mark dirty since its global space just changed
-  child->is_dirty = true;
-  mark_spatial_children_dirty(child_id);
-}
-
 Result TransformManager::set_node_position(NodeID node_id, glm::vec2 pos) {
-  Transform2D* transform = get_transform(node_id);
+  TransformInfo* transform = get_transform(node_id);
 
   if (!transform) {
     return Result::fail("Transform not found");
   }
 
   transform->local_position = pos;
-  transform->is_dirty = true;
   mark_spatial_children_dirty(node_id);
 
   return Result::ok();
 }
 
 Result TransformManager::set_node_scale(NodeID node_id, glm::vec2 scale) {
-  Transform2D* transform = get_transform(node_id);
+  TransformInfo* transform = get_transform(node_id);
 
   if (!transform) {
     return Result::fail("Transform not found");
   }
 
   transform->local_scale = scale;
-  transform->is_dirty = true;
   mark_spatial_children_dirty(node_id);
 
   return Result::ok();
 }
 
 Result TransformManager::set_node_shear(NodeID node_id, glm::vec2 shear) {
-  Transform2D* transform = get_transform(node_id);
+  TransformInfo* transform = get_transform(node_id);
 
   if (!transform) {
     return Result::fail("Transform not found");
   }
 
   transform->local_shear = shear;
-  transform->is_dirty = true;
   mark_spatial_children_dirty(node_id);
 
   return Result::ok();
 }
 
 Result TransformManager::set_node_rotation(NodeID node_id, float rotation) {
-  Transform2D* transform = get_transform(node_id);
+  TransformInfo* transform = get_transform(node_id);
 
   if (!transform) {
     return Result::fail("Transform not found");
   }
 
   transform->local_rotation = rotation;
-  transform->is_dirty = true;
   mark_spatial_children_dirty(node_id);
 
   return Result::ok();
 }
 
 void TransformManager::mark_spatial_children_dirty(NodeID parent_id) {
-  Transform2D* parent = get_transform(parent_id);
-  if (!parent) return;
+  TransformInfo* parent = get_transform(parent_id);
 
-  // Jump strictly through the Intrusive Linked List
+  if (!parent || parent->is_dirty) return;
+
+  parent->is_dirty = true;
   NodeID current_child_id = parent->first_child_id;
 
   while (current_child_id != INVALID_NODE_ID) {
-    Transform2D* child = get_transform(current_child_id);
+    TransformInfo* child = get_transform(current_child_id);
     if (child) {
-      child->is_dirty = true;
-
       // Recursive call for grandchildren
       mark_spatial_children_dirty(current_child_id);
 
@@ -153,17 +93,17 @@ bool TransformManager::has_transform(NodeID node_id) const {
   return node_to_transform[node_id.index()] != INVALID_TRANSFORM_INDEX;
 }
 
-TransformManager::Transform2D* TransformManager::get_transform(NodeID node_id) {
+TransformManager::TransformInfo* TransformManager::get_transform(NodeID node_id) {
   if (node_id.index() >= node_to_transform.size()) {
     return nullptr;
   }
 
   TransformIndex index = node_to_transform[node_id.index()];
-  if (index == INVALID_TRANSFORM_INDEX || static_cast<size_t>(index) >= transforms.size()) {
+  if (index == INVALID_TRANSFORM_INDEX || index >= transforms.size()) {
     return nullptr;
   }
 
-  return &transforms[static_cast<size_t>(index)];
+  return &transforms[index];
 }
 
 void TransformManager::on_update() {
@@ -175,11 +115,11 @@ void TransformManager::on_update() {
 }
 
 void TransformManager::update_node_hierarchy(NodeID node_id, const glm::mat3& parent_global_mat) {
-  Transform2D* transform = get_transform(node_id);
+  TransformInfo* transform = get_transform(node_id);
   if (!transform) return;
 
-  uint32_t sparse_idx = node_id.index(); // Use the sparse index!
-  glm::mat3 my_global_mat = parent_global_mat;
+  uint32_t idx = node_id.index();
+  glm::mat3 my_global_mat;
 
   if (transform->is_dirty) {
     float cos = std::cos(transform->local_rotation);
@@ -191,24 +131,24 @@ void TransformManager::update_node_hierarchy(NodeID node_id, const glm::mat3& pa
     float shy = transform->local_shear.y;
 
     glm::mat3 local_mat(
-        sx * (cos - sin * shy), sx * (sin + cos * shy), 0.0f,  // Column 0
-        sy * (cos * shx - sin), sy * (sin * shx + cos), 0.0f,  // Column 1
-        transform->local_position.x, transform->local_position.y, 1.0f // Column 2
+        sx * (cos - sin * shy), sx * (sin + cos * shy), 0.0f,
+        sy * (cos * shx - sin), sy * (sin * shx + cos), 0.0f,
+        transform->local_position.x, transform->local_position.y, 1.0f
     );
 
     my_global_mat = parent_global_mat * local_mat;
 
-    global_matrices[sparse_idx] = my_global_mat;
+    global_matrices[idx] = my_global_mat;
     transform->is_dirty = false;
   } else {
-    my_global_mat = global_matrices[sparse_idx];
+    my_global_mat = global_matrices[idx];
   }
 
   // Recurse to children
   NodeID child_id = transform->first_child_id;
   while (child_id != INVALID_NODE_ID) {
     update_node_hierarchy(child_id, my_global_mat);
-    Transform2D* child_transform = get_transform(child_id);
+    TransformInfo* child_transform = get_transform(child_id);
     child_id = child_transform ? child_transform->next_sibling_id : INVALID_NODE_ID;
   }
 }
@@ -218,15 +158,14 @@ void TransformManager::on_node_destroyed(NodeID node_id) {
 
   TransformIndex index = node_to_transform[node_id.index()];
 
-  // 1. Invalidate the memory (Ghost ID)
-  transforms[static_cast<size_t>(index)].node_id = INVALID_NODE_ID;
+  // Invalidate the memory (Ghost ID)
+  transforms[index].node_id = INVALID_NODE_ID;
 
-  // 2. Break the lookup link immediately
+  // Break the lookup link immediately
   node_to_transform[node_id.index()] = INVALID_TRANSFORM_INDEX;
 }
 
-void TransformManager::on_frame_end() {
-  // 1. Physically compact ONLY the transforms array
+void TransformManager::on_frame_end() { // In this hook we compact the TransformInfo array
   size_t write_idx = 0;
   for (size_t read_idx = 0; read_idx < transforms.size(); ++read_idx) {
     if (transforms[read_idx].node_id != INVALID_NODE_ID) {
@@ -241,11 +180,63 @@ void TransformManager::on_frame_end() {
   // Resize the dense array to chop off the dead data
   transforms.resize(write_idx);
 
-  // 2. Rebuild the Lookup Table
+  // Rebuild the Lookup Table
   std::fill(node_to_transform.begin(), node_to_transform.end(), INVALID_TRANSFORM_INDEX);
   for (size_t i = 0; i < transforms.size(); ++i) {
     node_to_transform[transforms[i].node_id.index()] = i;
   }
+}
+
+void TransformManager::remove_from_parent(NodeID child_id) {
+  TransformInfo* child = get_transform(child_id);
+  if (!child || child->parent_id == INVALID_NODE_ID) return;
+
+  TransformInfo* parent = get_transform(child->parent_id);
+  if (!parent) return;
+
+  // If this child is the first child, just point the parent to the next sibling
+  if (parent->first_child_id == child_id) {
+    parent->first_child_id = child->next_sibling_id;
+  } else {
+    // Otherwise, find the sibling immediately BEFORE this child, and patch the link
+    NodeID current_sibling_id = parent->first_child_id;
+    while (current_sibling_id != INVALID_NODE_ID) {
+      TransformInfo* sibling = get_transform(current_sibling_id);
+      if (!sibling) break;
+
+      if (sibling->next_sibling_id == child_id) {
+        sibling->next_sibling_id = child->next_sibling_id; // Bypass the removed child
+        break;
+      }
+      current_sibling_id = sibling->next_sibling_id;
+    }
+  }
+
+  // Clear the child's links
+  child->parent_id = INVALID_NODE_ID;
+  child->next_sibling_id = INVALID_NODE_ID;
+}
+
+void TransformManager::set_parent(NodeID child_id, NodeID new_parent_id) {
+  TransformInfo* child = get_transform(child_id);
+  if (!child) return;
+
+  // Unlink from current parent to avoid corrupting the list
+  if (child->parent_id != INVALID_NODE_ID) {
+    remove_from_parent(child_id);
+  }
+
+  // ink to new parent
+  if (new_parent_id != INVALID_NODE_ID) {
+    TransformInfo* parent = get_transform(new_parent_id);
+    if (parent) {
+      child->parent_id = new_parent_id;
+      child->next_sibling_id = parent->first_child_id;
+      parent->first_child_id = child_id;
+    }
+  }
+
+  mark_spatial_children_dirty(child_id);
 }
 
 } // bird::node_system::managers

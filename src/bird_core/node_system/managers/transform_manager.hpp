@@ -55,7 +55,6 @@ class TransformManager : public INodeManager {
   Result set_node_scale(NodeID node_id, glm::vec2 scale);
   Result set_node_shear(NodeID node_id, glm::vec2 shear);
   Result set_node_rotation(NodeID node_id, float rotation);
-  void mark_spatial_children_dirty(NodeID parent_id);
 
   void on_update() override;
   void on_node_destroyed(NodeID node_id) override;
@@ -65,7 +64,7 @@ class TransformManager : public INodeManager {
   /**
    * @brief private information for nodes
    */
-  struct Transform2D {
+  struct TransformInfo {
     glm::vec2 local_position = {0.0f, 0.0f};
     glm::vec2 local_scale = {1.0f, 1.0f};
     glm::vec2 local_shear = {0.0f, 0.0f};
@@ -79,10 +78,11 @@ class TransformManager : public INodeManager {
     bool is_dirty = true;
   };
 
-  Transform2D* get_transform(NodeID node_id);
+  TransformInfo* get_transform(NodeID node_id);
   void update_node_hierarchy(NodeID node_id, const glm::mat3& parent_global_mat);
+  void mark_spatial_children_dirty(NodeID parent_id);
 
-  std::vector<Transform2D> transforms;           // Indexed by NodeID
+  std::vector<TransformInfo> transforms;           // Indexed by NodeID
   std::vector<glm::mat3x3> global_matrices;      // Sorted hierarchically by tree depth
   std::vector<TransformIndex> node_to_transform; // The Lookup Table: index is NodeID, value is TransformIndex
 };
