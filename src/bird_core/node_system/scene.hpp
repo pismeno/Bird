@@ -11,27 +11,45 @@
 
 #include "utils/result.hpp"
 #include "glm/vec2.hpp"
-#include "imanager.hpp"
+#include "inode_manager.hpp"
 
 namespace bird::node_system {
 
 class Scene {
  public:
-  Scene() = default;
-  static std::unique_ptr<Scene> create();
+  Scene() {
+    nodes.resize(MAX_ACTIVE_NODES);
+    generations.resize(MAX_ACTIVE_NODES);
+  }
+
+  static std::unique_ptr<Scene> create_scene_2d();
 
   [[nodiscard]] NodeID createNode(NodeID parent_id, std::string name);
   [[nodiscard]] NodeID createNode2D(NodeID parent_id, std::string name);
+  [[nodiscard]] NodeID createNode2DDrawable(NodeID parent_id, std::string name);
 
   [[nodiscard]] Node* getNode(NodeID node_id);
   Result destroy_node(NodeID node_id);
   Result reparent_node(NodeID node_id, NodeID new_parent_id);
+
+  /**
+   * @return The highest index part of NodeID of a node that exists.
+   */
+  [[nodiscard]] inline uint32_t get_highest_allocated_node_index() const { return next_unused_id.load(); }
+
   void update();
   void end_frame();
 
+  /**
+   * Adds a manager to the scene.
+   * @tparam T The manager type
+   * @tparam Args Manager constructor arguments
+   * @param args Manager constructor arguments
+   * @return reference to the manager
+   */
   template <typename T, typename... Args>
   T& add_manager(Args&&... args) {
-    size_t id = IManager::get_type_id<T>();
+    size_t id = INodeManager::get_type_id<T>();
 
     // Ensure the lookup array is big enough
     if (id < fast_lookup.size() && fast_lookup[id] != nullptr) {
@@ -53,9 +71,14 @@ class Scene {
     return *raw_ptr;
   }
 
+  /**
+   * Gets a manager by type.
+   * @tparam T the manager type
+   * @return reference to the manager, or nullptr if it doesn't exist'
+   */
   template <typename T>
   T* get_manager() {
-    size_t id = IManager::get_type_id<T>();
+    size_t id = INodeManager::get_type_id<T>();
 
     if (id >= fast_lookup.size() || !fast_lookup[id]) {
       return nullptr; // Doesn't exist
@@ -65,12 +88,16 @@ class Scene {
   }
 
  private:
-  std::atomic<NodeID> idCounter{0};
-  std::unordered_map<NodeID, std::unique_ptr<Node>> nodes;
+  [[nodiscard]] NodeID generate_id();
 
-  std::vector<std::unique_ptr<IManager>> managers;
+  std::atomic<uint32_t> next_unused_id {0};
+  std::vector<uint32_t> recycled_ids;
+  std::vector<uint32_t> generations; // Index = the raw array slot, Value = the current active generation
+  std::vector<Node> nodes;
 
-  std::vector<IManager*> fast_lookup;
+  std::vector<std::unique_ptr<INodeManager>> managers;
+
+  std::vector<INodeManager*> fast_lookup;
 };
 
 } // bird::node_system
