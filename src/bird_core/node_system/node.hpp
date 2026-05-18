@@ -16,12 +16,13 @@ class Node {
 
  public:
   Node() = default;
-  Node(std::string name) : name(std::move(name)) {};
+  Node(std::string name, std::string type) : name(std::move(name)), type(std::move(type)) {};
 
   inline const NodeID getId() const { return id; }
   inline const NodeID getParentId() const { return parentId; }
-  inline const std::string_view getName() const { return name; }
   inline const std::vector<NodeID>& getChildrenIds() const { return childrenIds; }
+  inline const std::string_view getName() const { return name; }
+  inline const std::string_view getType() const { return type; }
 
  private:
   NodeID id = INVALID_NODE_ID;
@@ -29,6 +30,7 @@ class Node {
   std::vector<NodeID> childrenIds;
 
   std::string name;
+  std::string type;
 };
 
 } // bird::node_system

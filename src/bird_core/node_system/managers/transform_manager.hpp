@@ -16,18 +16,15 @@ namespace bird::node_system::managers {
 using TransformIndex = uint32_t;
 inline constexpr TransformIndex INVALID_TRANSFORM_INDEX = std::numeric_limits<uint32_t>::max();
 
-class TransformManager : public INodeManager {
+class TransformManager : public NodeManagerBase<TransformManager> {
  public:
   TransformManager() {
     global_matrices.resize(MAX_ACTIVE_NODES, glm::mat3x3(1.0f));
     node_to_transform.resize(MAX_ACTIVE_NODES, INVALID_TRANSFORM_INDEX);
   }
 
-  /**
-   * Creates a new Transform for the given NodeID.
-   * @param node_id ID of the node to create the transform for. The manager assumes that this node ID is valid and has been created in the scene.
-   */
-  void create_transform(NodeID node_id);
+  static constexpr const char* MANAGER_NAME = "transform_manager";
+
   [[nodiscard]] bool has_transform(NodeID node_id) const;
 
   /**
@@ -59,6 +56,8 @@ class TransformManager : public INodeManager {
   void on_update() override;
   void on_node_destroyed(NodeID node_id) override;
   void on_frame_end() override;
+  void on_node_require_manager(NodeID node_id) override;
+  void on_node_reparented(NodeID node_id, NodeID new_parent_id, NodeID old_parent_id) override;
 
  private:
   /**

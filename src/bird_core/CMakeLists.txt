@@ -20,6 +20,8 @@ set(CORE_SOURCES
         "node_system/managers/drawable_manager.cpp"
         "node_system/render_gatherer.cpp"
         "node_system/render_gatherer.hpp"
+        "node_system/scene_factory.hpp"
+        "node_system/scene_factory.cpp"
         "rendering/render_command.hpp"
 )
 

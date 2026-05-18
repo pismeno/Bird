@@ -79,15 +79,6 @@ void TransformManager::mark_spatial_children_dirty(NodeID parent_id) {
   }
 }
 
-void TransformManager::create_transform(NodeID node_id) {
-  transforms.emplace_back();
-  transforms.back().node_id = node_id;
-
-  global_matrices[node_id.index()] = glm::mat3(1.0f);
-
-  node_to_transform[node_id.index()] = transforms.size() - 1;
-}
-
 bool TransformManager::has_transform(NodeID node_id) const {
   if (node_id.index() >= node_to_transform.size()) return false;
   return node_to_transform[node_id.index()] != INVALID_TRANSFORM_INDEX;
@@ -112,6 +103,15 @@ void TransformManager::on_update() {
       update_node_hierarchy(transforms[i].node_id, glm::mat3(1.0f));
     }
   }
+}
+
+void TransformManager::on_node_require_manager(NodeID node_id) {
+  transforms.emplace_back();
+  transforms.back().node_id = node_id;
+
+  global_matrices[node_id.index()] = glm::mat3(1.0f);
+
+  node_to_transform[node_id.index()] = transforms.size() - 1;
 }
 
 void TransformManager::update_node_hierarchy(NodeID node_id, const glm::mat3& parent_global_mat) {
@@ -237,6 +237,10 @@ void TransformManager::set_parent(NodeID child_id, NodeID new_parent_id) {
   }
 
   mark_spatial_children_dirty(child_id);
+}
+
+void TransformManager::on_node_reparented(NodeID node_id, NodeID new_parent_id, NodeID old_parent_id) {
+  set_parent(node_id, new_parent_id);
 }
 
 } // bird::node_system::managers

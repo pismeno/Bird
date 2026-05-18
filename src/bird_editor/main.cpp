@@ -17,6 +17,7 @@
 #include "node_system/managers/drawable_manager.hpp"
 #include "node_system/render_gatherer.hpp"
 #include "rendering/render_command.hpp"
+#include "node_system/scene_factory.hpp"
 
 void debug_print_commands(const std::vector<RenderCommand>& commands) {
   std::cout << "--- Frame Render Commands (" << commands.size() << ") ---\n";
@@ -59,20 +60,35 @@ int main() {
             << " [L-Click] Print Render Commands\n"
             << "------------------------------------------\n";
 
-  std::unique_ptr<Scene> scene = Scene::create_scene_2d();
-  NodeID parID = scene->createNode(INVALID_NODE_ID, "parent");
-  NodeID childID = scene->createNode2DDrawable(parID, "child 1");
-  NodeID childID2 = scene->createNode2DDrawable(childID, "child 2");
-  NodeID famID = scene->createNode2DDrawable(INVALID_NODE_ID, "fam parent");
-  NodeID famChildID = scene->createNode2DDrawable(famID, "fam child");
+  SceneFactory scene_factory;
 
+  scene_factory.register_manager<TransformManager>();
+  scene_factory.register_manager<DrawableManager>();
+  scene_factory.load_node_definitions_from();
+  std::cout << "Loading scene definitions..." << std::endl;
+  scene_factory.load_scene_definitions_from();
+
+  std::cout << "Creating scene..." << std::endl;
+  std::unique_ptr<Scene> scene = scene_factory.create_scene("scene_2d");
+
+  std::cout << "Creating nodes..." << std::endl;
+  NodeID parID = scene->create_node(INVALID_NODE_ID, "node", "parent");
+  NodeID childID = scene->create_node(parID, "sprite_2d" ,"child 1");
+  NodeID childID2 = scene->create_node(childID, "sprite_2d" ,"child 2");
+  NodeID famID = scene->create_node(INVALID_NODE_ID, "sprite_2d" ,"fam parent");
+  NodeID famChildID = scene->create_node(famID, "sprite_2d" ,"fam child");
+
+  std::cout << "Getting managers..." << std::endl;
   auto transform_manager = scene->get_manager<TransformManager>();
   auto drawable_manager = scene->get_manager<DrawableManager>();
 
+  std::cout << "Setting transforms..." << std::endl;
   transform_manager->set_node_position(childID, glm::vec2(100, 100));
   transform_manager->set_node_position(childID2, glm::vec2(100, 100));
   transform_manager->set_node_position(famChildID, glm::vec2(400, 400));
   transform_manager->set_node_position(famID, glm::vec2(400, 400));
+
+  std::cout << "Entering loop..." << std::endl;
 
   RenderGatherer gatherer;
   std::vector<NodeID> stress_nodes; // Keeps track of dynamically spawned nodes
@@ -131,7 +147,7 @@ int main() {
 
       auto start = std::chrono::high_resolution_clock::now();
       for (int i = 0; i < 10000; ++i) {
-        NodeID new_node = scene->createNode2DDrawable(INVALID_NODE_ID, "stress_node");
+        NodeID new_node = scene->create_node(INVALID_NODE_ID, "sprite_2d","stress_node");
         stress_nodes.push_back(new_node);
 
         transform_manager->set_node_position(new_node, glm::vec2(i * 0.1f, i * 0.1f));

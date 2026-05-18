@@ -20,6 +20,7 @@ namespace bird::node_system {
 class Scene {
 
   friend class NodeHandle;
+  friend class SceneFactory;
 
  public:
   Scene() {
@@ -27,11 +28,7 @@ class Scene {
     generations.resize(MAX_ACTIVE_NODES);
   }
 
-  static std::unique_ptr<Scene> create_scene_2d();
-
-  [[nodiscard]] NodeID createNode(NodeID parent_id, std::string name);
-  [[nodiscard]] NodeID createNode2D(NodeID parent_id, std::string name);
-  [[nodiscard]] NodeID createNode2DDrawable(NodeID parent_id, std::string name);
+  [[nodiscard]] NodeID create_node(NodeID parent_id, const std::string& node_type, std::string name);
 
   [[nodiscard]] NodeHandle get_node(NodeID node_id);
   Result destroy_node(NodeID node_id);
@@ -45,51 +42,13 @@ class Scene {
   void update();
   void end_frame();
 
-  /**
-   * Adds a manager to the scene.
-   * @tparam T The manager type
-   * @tparam Args Manager constructor arguments
-   * @param args Manager constructor arguments
-   * @return reference to the manager
-   */
-  template <typename T, typename... Args>
-  T& add_manager(Args&&... args) {
-    size_t id = INodeManager::get_type_id<T>();
-
-    // Ensure the lookup array is big enough
-    if (id < fast_lookup.size() && fast_lookup[id] != nullptr) {
-      return *static_cast<T*>(fast_lookup[id]);
-    }
-
-    if (id >= fast_lookup.size()) {
-      fast_lookup.resize(id + 1);
-    }
-
-    // Create the manager
-    auto manager = std::make_unique<T>(std::forward<Args>(args)...);
-    T* raw_ptr = manager.get();
-
-    // Store it
-    fast_lookup[id] = raw_ptr;
-    managers.push_back(std::move(manager));
-
-    return *raw_ptr;
-  }
-
-  /**
-   * Gets a manager by type.
-   * @tparam T the manager type
-   * @return reference to the manager, or nullptr if it doesn't exist'
-   */
   template <typename T>
-  T* get_manager() {
-    size_t id = INodeManager::get_type_id<T>();
-
-    if (id >= fast_lookup.size() || !fast_lookup[id]) {
-      return nullptr; // Doesn't exist
+  T* get_manager() const {
+    auto it = managers.find(T::MANAGER_NAME);
+    if (it != managers.end()) {
+      return static_cast<T*>(it->second.get());
     }
-
-    return static_cast<T*>(fast_lookup[id]);
+    return nullptr;
   }
 
  private:
@@ -100,9 +59,9 @@ class Scene {
   std::vector<uint32_t> generations; // Index = the raw array slot, Value = the current active generation
   std::vector<Node> nodes;
 
-  std::vector<std::unique_ptr<INodeManager>> managers;
+  std::unordered_map<std::string, std::unique_ptr<INodeManager>> managers;
 
-  std::vector<INodeManager*> fast_lookup;
+  std::unordered_map<std::string, NodeDefinition> node_types;
 };
 
 } // bird::node_system
