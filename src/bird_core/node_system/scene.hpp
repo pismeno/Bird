@@ -8,6 +8,7 @@
 #include <memory>
 #include <unordered_map>
 #include <stdexcept>
+#include <span>
 
 #include <glm/vec2.hpp>
 
@@ -21,7 +22,6 @@ namespace bird::node_system {
 class Scene {
 
   friend class NodeHandle;
-  friend class SceneFactory;
 
  public:
   Scene() {
@@ -43,10 +43,13 @@ class Scene {
   void update();
   void end_frame();
 
+  Result add_manager(std::unique_ptr<INodeManager> manager);
+  Result add_node_type(std::string_view node_type, std::span<const std::string> node_managers);
+
   template <typename T>
   T* get_manager() const {
-    auto it = managers.find(T::MANAGER_NAME);
-    if (it != managers.end()) {
+    auto it = managers_map.find(T::MANAGER_NAME);
+    if (it != managers_map.end()) {
       return static_cast<T*>(it->second.get());
     }
     return nullptr;
@@ -60,7 +63,7 @@ class Scene {
   std::vector<uint32_t> generations; // Index = the raw array slot, Value = the current active generation
   std::vector<Node> nodes;
 
-  std::unordered_map<std::string, std::unique_ptr<INodeManager>> managers;
+  std::unordered_map<std::string, std::unique_ptr<INodeManager>, StringHash, std::equal_to<>> managers_map;
   std::vector<INodeManager*> managers_flat_array;
 
   struct NodeDefinition {

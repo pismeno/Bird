@@ -156,6 +156,8 @@ void TransformManager::update_node_hierarchy(NodeID node_id, const glm::mat3& pa
 void TransformManager::on_node_destroyed(NodeID node_id) {
   if (!has_transform(node_id)) return;
 
+  remove_from_parent(node_id);
+
   TransformIndex index = node_to_transform[node_id.index()];
 
   // Invalidate the memory (Ghost ID)

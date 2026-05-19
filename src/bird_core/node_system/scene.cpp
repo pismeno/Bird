@@ -82,8 +82,8 @@ Result Scene::destroy_node(NodeID node_id) {
     destroy_node(child_id);
   }
 
-  for (auto& manager_pair : managers) {
-    manager_pair.second->on_node_destroyed(node_id);
+  for (auto& manager : managers_flat_array) {
+    manager->on_node_destroyed(node_id);
   }
 
   uint32_t idx = node_id.index();
@@ -139,6 +139,37 @@ void Scene::update() {
   for (auto& manager : managers_flat_array) {
     manager->on_update();
   }
+}
+
+Result Scene::add_manager(std::unique_ptr<INodeManager> manager) {
+  std::string manager_name = manager->get_name();
+  if (managers_map.find(manager_name) != managers_map.end()) {
+    return Result::fail("A manager with the name '" + manager_name + "' is already registered");
+  }
+
+  managers_flat_array.push_back(manager.get());
+  managers_map[manager_name] = std::move(manager);
+  return Result::ok();
+}
+
+Result Scene::add_node_type(std::string_view node_type, std::span<const std::string> node_managers) {
+  if (node_types.find(node_type) != node_types.end()) {
+    return Result::fail("A node type with the name '" + std::string(node_type) + "' is already registered");
+  }
+
+  NodeDefinition node_definition;
+
+  for (auto& manager_name : node_managers) {
+    auto manager_it = managers_map.find(manager_name);
+    if (manager_it == managers_map.end()) {
+      return Result::fail("Node type '" + std::string(node_type) + "' requires manager '" + std::string(manager_name) + "' which is not registered");
+    }
+
+    node_definition.managers.push_back(manager_it->second.get());
+  }
+
+  node_types.emplace(node_type, std::move(node_definition));
+  return Result::ok();
 }
 
 } // bird::node_system

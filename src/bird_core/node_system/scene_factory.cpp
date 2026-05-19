@@ -35,8 +35,7 @@ std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type)
     }
 
     ManagerFactory manager_factory = manager_factory_it->second;
-    scene->managers.emplace(manager_name, manager_factory());
-    scene->managers_flat_array.push_back(scene->managers[manager_name].get());
+    scene->add_manager(manager_factory());
   }
 
   for (auto& node_name : scene_definition.allowed_nodes) {
@@ -46,20 +45,7 @@ std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type)
       continue; // Skip the node if it's not registered
     }
 
-    Scene::NodeDefinition scene_node_definition;
-
-    for (const auto& manager_name : node_def_it->second.managers) {
-      auto it = scene->managers.find(manager_name);
-
-      if (it == scene->managers.end()) {
-        continue;
-      }
-
-      INodeManager* node_manager = it->second.get();
-      scene_node_definition.managers.push_back(node_manager);
-    }
-
-    scene->node_types.emplace(node_def_it->first, std::move(scene_node_definition));
+    scene->add_node_type(node_name, node_def_it->second.managers);
   }
 
   return scene;
