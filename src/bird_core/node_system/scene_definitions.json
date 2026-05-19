@@ -1,0 +1,12 @@
+[
+  {
+    "name": "scene_basic",
+    "managers": ["transform_manager"],
+    "allowed_nodes": ["node", "node_2d"]
+  },
+  {
+    "name": "scene_2d",
+    "managers": ["transform_manager", "drawable_manager"],
+    "allowed_nodes": ["node", "node_2d", "sprite_2d"]
+  }
+]

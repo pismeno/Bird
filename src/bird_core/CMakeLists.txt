@@ -27,7 +27,16 @@ set(CORE_SOURCES
 
 add_library(BirdCore STATIC ${CORE_SOURCES})
 
-target_link_libraries(BirdCore PUBLIC glfw glm::glm)
+target_link_libraries(BirdCore PUBLIC
+        glfw
+        glm::glm
+        nlohmann_json::nlohmann_json
+)
+
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_definitions.json"
+        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene_definitions.json"
+        DESTINATION "${CMAKE_BINARY_DIR}/node_system"
+)
 
 target_include_directories(BirdCore
         PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

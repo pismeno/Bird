@@ -17,8 +17,8 @@ class SceneFactory {
  public:
   SceneFactory() = default;
 
-  Result load_scene_definitions_from();
-  Result load_node_definitions_from();
+  Result load_scene_definitions_from(const std::string& path);
+  Result load_node_definitions_from(const std::string& path);
 
   std::unique_ptr<Scene> create_scene(const std::string& scene_type) const;
   //std::unique_ptr<Scene> load_scene_from();

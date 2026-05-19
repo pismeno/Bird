@@ -64,9 +64,8 @@ int main() {
 
   scene_factory.register_manager<TransformManager>();
   scene_factory.register_manager<DrawableManager>();
-  scene_factory.load_node_definitions_from();
-  std::cout << "Loading scene definitions..." << std::endl;
-  scene_factory.load_scene_definitions_from();
+  scene_factory.load_node_definitions_from("node_system/node_definitions.json");
+  scene_factory.load_scene_definitions_from("node_system/scene_definitions.json");
 
   std::cout << "Creating scene..." << std::endl;
   std::unique_ptr<Scene> scene = scene_factory.create_scene("scene_2d");

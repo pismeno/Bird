@@ -4,10 +4,18 @@
 
 #include <memory>
 #include <functional>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+
+#include <nlohmann/json.hpp>
 
 #include "utils/result.hpp"
 
 namespace bird::node_system {
+
+using json = nlohmann::json;
 
 std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type) const {
   auto scene_def_it = scene_definitions.find(scene_type);
@@ -43,7 +51,7 @@ std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type)
   return scene;
 }
 
-Result SceneFactory::load_scene_definitions_from() {
+Result SceneFactory::load_scene_definitions_from(const std::string& path) {
   scene_definitions.emplace(
     "scene_2d",
     SceneDefinition{
@@ -55,27 +63,40 @@ Result SceneFactory::load_scene_definitions_from() {
   return Result::ok();
 }
 
-Result SceneFactory::load_node_definitions_from() {
-  node_definitions.emplace(
-      "node",
-      NodeDefinition{
-          {}
-      }
-  );
+Result SceneFactory::load_node_definitions_from(const std::string& path) {
+  std::ifstream file(path);
 
-  node_definitions.emplace(
-      "node_2d",
-      NodeDefinition{
-          {"transform_manager"}
-      }
-  );
+  if (!file.is_open()) {
+    return Result::fail("Failed to open '" + path + "'.");
+  }
 
-  node_definitions.emplace(
-      "sprite_2d",
-      NodeDefinition{
-          {"transform_manager", "drawable_manager"}
+  json data = json::parse(file, nullptr, false);
+
+  if (data.is_discarded()) {
+    return Result::fail("Failed to parse JSON in '" + path + "'.");
+  }
+
+  if (!data.is_array()) {
+    return Result::fail("Expected an array of node definitions in '" + path + "'.");
+  }
+
+  for (const auto& item : data) {
+    if (!item.contains("name")) {
+      return Result::fail("Node definition is missing 'name' property in '" + path + "'.");
+    }
+
+    NodeDefinition node_definition;
+
+    if (item.contains("managers")) {
+      if (!item["managers"].is_array()) {
+        return Result::fail("Node definition 'managers' property is not an array in '" + path + "'.");
       }
-  );
+
+      node_definition.managers = item["managers"].get<std::vector<std::string>>();
+    }
+
+    node_definitions.emplace(item["name"].get<std::string>(), std::move(node_definition));
+  }
 
   return Result::ok();
 }
