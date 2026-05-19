@@ -8,6 +8,8 @@
 - Every node is instance of the same class `Node`, which is essentially just a `NodeID` (see `node_types.hpp`) wrapper, that holds information about who is it's parent and children.
 - The `Scene` defines, what managers will be used to manage the nodes.
 - The managers are responsible for the actual node behavior.
+- `Scene` is created using `SceneFactory::create_scene(std::string scene_type_name)`, scene types can be loaded using `SceneFactory::load_scene_definitions_from(std::string path)`.
+- `Scene` also holds node_types you can create using the factory method listed bellow.
 
 ## Managers
 - Every manager inherits from the `INodeManager` interface.
@@ -15,5 +17,5 @@
 - They use preferably contiguous memory to store the data, and use the NodeID as an index to access the data.
 
 ## Nodes
-- For now, all Nodes are instantiated using the factory methods in `Scene` like `Scene::create_node(...)` or `Scene::create_node_2d(...)`.
-- Those methods basically just create a new Node, bind the ids to the new node (like parent_id), register it for the needed systems and return it.
+- Nodes are instantiated using the factory method  `Scene::create_node(NodeID parent_id, std::string node_type)`
+- Node types can be loaded into `SceneFactory` using `SceneFactory::load_node_definitions_from(std::string path)`
