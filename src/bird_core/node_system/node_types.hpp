@@ -50,11 +50,4 @@ inline constexpr uint32_t MAX_ACTIVE_NODES = 50000;
  */
 inline constexpr NodeID INVALID_NODE_ID = { std::numeric_limits<uint64_t>::max() };
 
-/**
- * @brief Definition of a node type.
- */
-struct NodeDefinition {
-  std::vector<std::string> managers;
-};
-
 } // bird::node_system

@@ -28,7 +28,7 @@ class Scene {
     generations.resize(MAX_ACTIVE_NODES);
   }
 
-  [[nodiscard]] NodeID create_node(NodeID parent_id, const std::string& node_type, std::string name);
+  [[nodiscard]] NodeID create_node(NodeID parent_id, std::string_view node_type);
 
   [[nodiscard]] NodeHandle get_node(NodeID node_id);
   Result destroy_node(NodeID node_id);
@@ -60,6 +60,10 @@ class Scene {
   std::vector<Node> nodes;
 
   std::unordered_map<std::string, std::unique_ptr<INodeManager>> managers;
+
+  struct NodeDefinition {
+    std::vector<INodeManager*> managers;
+  };
 
   std::unordered_map<std::string, NodeDefinition> node_types;
 };

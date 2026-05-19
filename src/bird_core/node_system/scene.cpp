@@ -35,21 +35,20 @@ using namespace managers;
   return NodeID::from(new_id, 0);
 }
 
-[[nodiscard]] NodeID Scene::create_node(NodeID parent_id, const std::string& node_type ,std::string name){
+[[nodiscard]] NodeID Scene::create_node(NodeID parent_id, std::string_view node_type) {
   NodeID new_id = generate_id();
 
   nodes[new_id.index()].id = new_id;
   nodes[new_id.index()].parentId = INVALID_NODE_ID;
-  nodes[new_id.index()].name = std::move(name);
 
   for (auto& manager_entry : managers) {
     manager_entry.second->on_node_created(new_id);
   }
 
-  for (const auto& manager_name : node_types[node_type].managers) {
-    auto manager_it = managers.find(manager_name);
-    if (manager_it != managers.end()) {
-      manager_it->second->on_node_require_manager(new_id);
+  auto type_it = node_types.find(std::string(node_type));
+  if (type_it != node_types.end()) {
+    for (const auto& manager : type_it->second.managers) {
+      manager->on_node_require_manager(new_id);
     }
   }
 
@@ -96,7 +95,6 @@ Result Scene::destroy_node(NodeID node_id) {
   node->id = INVALID_NODE_ID;
   node->parentId = INVALID_NODE_ID;
   node->childrenIds.clear();
-  node->name.clear();
 
   return Result::ok();
 }

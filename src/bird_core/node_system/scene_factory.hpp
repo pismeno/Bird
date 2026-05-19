@@ -37,6 +37,10 @@ class SceneFactory {
   }
 
  private:
+  struct NodeDefinition {
+    std::vector<std::string> managers;
+  };
+
   struct SceneDefinition {
     std::vector<std::string> managers;
     std::vector<std::string> allowed_nodes;

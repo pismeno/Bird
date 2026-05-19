@@ -21,7 +21,10 @@
 
 void debug_print_commands(const std::vector<RenderCommand>& commands) {
   std::cout << "--- Frame Render Commands (" << commands.size() << ") ---\n";
-  for (size_t i = 0; i < commands.size(); ++i) {
+
+  size_t count = std::min<size_t>(commands.size(), 10);
+
+  for (size_t i = 0; i < count; ++i) {
     const auto& cmd = commands[i];
 
     std::cout << "[" << i << "] "
@@ -71,11 +74,11 @@ int main() {
   std::unique_ptr<Scene> scene = scene_factory.create_scene("scene_2d");
 
   std::cout << "Creating nodes..." << std::endl;
-  NodeID parID = scene->create_node(INVALID_NODE_ID, "node", "parent");
-  NodeID childID = scene->create_node(parID, "sprite_2d" ,"child 1");
-  NodeID childID2 = scene->create_node(childID, "sprite_2d" ,"child 2");
-  NodeID famID = scene->create_node(INVALID_NODE_ID, "sprite_2d" ,"fam parent");
-  NodeID famChildID = scene->create_node(famID, "sprite_2d" ,"fam child");
+  NodeID parID = scene->create_node(INVALID_NODE_ID, "node");
+  NodeID childID = scene->create_node(parID, "sprite_2d");
+  NodeID childID2 = scene->create_node(childID, "sprite_2d");
+  NodeID famID = scene->create_node(INVALID_NODE_ID, "sprite_2d");
+  NodeID famChildID = scene->create_node(famID, "sprite_2d");
 
   std::cout << "Getting managers..." << std::endl;
   auto transform_manager = scene->get_manager<TransformManager>();
@@ -146,7 +149,7 @@ int main() {
 
       auto start = std::chrono::high_resolution_clock::now();
       for (int i = 0; i < 10000; ++i) {
-        NodeID new_node = scene->create_node(INVALID_NODE_ID, "sprite_2d","stress_node");
+        NodeID new_node = scene->create_node(INVALID_NODE_ID, "sprite_2d");
         stress_nodes.push_back(new_node);
 
         transform_manager->set_node_position(new_node, glm::vec2(i * 0.1f, i * 0.1f));

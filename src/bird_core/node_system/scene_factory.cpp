@@ -45,20 +45,67 @@ std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type)
       continue; // Skip the node if it's not registered
     }
 
-    scene->node_types.emplace(node_def_it->first, node_def_it->second);
+    Scene::NodeDefinition scene_node_definition;
+
+    for (const auto& manager_name : node_def_it->second.managers) {
+      auto it = scene->managers.find(manager_name);
+
+      if (it == scene->managers.end()) {
+        continue;
+      }
+
+      INodeManager* node_manager = it->second.get();
+      scene_node_definition.managers.push_back(node_manager);
+    }
+
+    scene->node_types.emplace(node_def_it->first, std::move(scene_node_definition));
   }
 
   return scene;
 }
 
 Result SceneFactory::load_scene_definitions_from(const std::string& path) {
-  scene_definitions.emplace(
-    "scene_2d",
-    SceneDefinition{
-        {"transform_manager", "drawable_manager"},
-        {"node", "node_2d", "sprite_2d"}
+  std::ifstream file(path);
+
+  if (!file.is_open()) {
+    return Result::fail("Failed to open '" + path + "'.");
+  }
+
+  json data = json::parse(file, nullptr, false);
+
+  if (data.is_discarded()) {
+    return Result::fail("Failed to parse JSON in '" + path + "'.");
+  }
+
+  if (!data.is_array()) {
+    return Result::fail("Expected an array of scene definitions in '" + path + "'.");
+  }
+
+  for (const auto& item : data) {
+    if (!item.contains("name")) {
+      return Result::fail("Scene definition is missing 'name' property in '" + path + "'.");
     }
-  );
+
+    SceneDefinition scene_definition;
+
+    if (item.contains("managers")) {
+      if (!item["managers"].is_array()) {
+        return Result::fail("Scene definition 'managers' property is not an array in '" + path + "'.");
+      }
+
+      scene_definition.managers = item["managers"].get<std::vector<std::string>>();
+    }
+
+    if (item.contains("allowed_nodes")) {
+      if (!item["allowed_nodes"].is_array()) {
+        return Result::fail("Scene definition 'allowed_nodes' property is not an array in '" + path + "'.");
+      }
+
+      scene_definition.allowed_nodes = item["allowed_nodes"].get<std::vector<std::string>>();
+    }
+
+    scene_definitions.emplace(item["name"].get<std::string>(), std::move(scene_definition));
+  }
 
   return Result::ok();
 }
