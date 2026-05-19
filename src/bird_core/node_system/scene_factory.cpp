@@ -36,6 +36,7 @@ std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type)
 
     ManagerFactory manager_factory = manager_factory_it->second;
     scene->managers.emplace(manager_name, manager_factory());
+    scene->managers_flat_array.push_back(scene->managers[manager_name].get());
   }
 
   for (auto& node_name : scene_definition.allowed_nodes) {

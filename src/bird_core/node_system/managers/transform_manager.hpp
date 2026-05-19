@@ -21,6 +21,7 @@ class TransformManager : public NodeManagerBase<TransformManager> {
   TransformManager() {
     global_matrices.resize(MAX_ACTIVE_NODES, glm::mat3x3(1.0f));
     node_to_transform.resize(MAX_ACTIVE_NODES, INVALID_TRANSFORM_INDEX);
+    transforms.reserve(MAX_ACTIVE_NODES);
   }
 
   static constexpr const char* MANAGER_NAME = "transform_manager";

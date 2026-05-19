@@ -12,6 +12,7 @@
 #include <glm/vec2.hpp>
 
 #include "utils/result.hpp"
+#include "utils/string_hash.hpp"
 #include "node_system/inode_manager.hpp"
 #include "node_system/node_handle.hpp"
 
@@ -60,12 +61,13 @@ class Scene {
   std::vector<Node> nodes;
 
   std::unordered_map<std::string, std::unique_ptr<INodeManager>> managers;
+  std::vector<INodeManager*> managers_flat_array;
 
   struct NodeDefinition {
     std::vector<INodeManager*> managers;
   };
 
-  std::unordered_map<std::string, NodeDefinition> node_types;
+  std::unordered_map<std::string, NodeDefinition, StringHash, std::equal_to<>> node_types;
 };
 
 } // bird::node_system

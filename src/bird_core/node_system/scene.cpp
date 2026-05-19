@@ -41,11 +41,11 @@ using namespace managers;
   nodes[new_id.index()].id = new_id;
   nodes[new_id.index()].parentId = INVALID_NODE_ID;
 
-  for (auto& manager_entry : managers) {
-    manager_entry.second->on_node_created(new_id);
+  for (auto& manager : managers_flat_array) {
+    manager->on_node_created(new_id);
   }
 
-  auto type_it = node_types.find(std::string(node_type));
+  auto type_it = node_types.find(node_type);
   if (type_it != node_types.end()) {
     for (const auto& manager : type_it->second.managers) {
       manager->on_node_require_manager(new_id);
@@ -122,22 +122,22 @@ Result Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
   child->parentId = new_parent_id;
   new_parent->childrenIds.push_back(node_id);
 
-  for (auto& manager_pair : managers) {
-    manager_pair.second->on_node_reparented(node_id, new_parent_id, old_parent_id);
+  for (auto& manager : managers_flat_array) {
+    manager->on_node_reparented(node_id, new_parent_id, old_parent_id);
   }
 
   return Result::ok();
 }
 
 void Scene::end_frame() {
-  for (auto& manager_pair : managers) {
-    manager_pair.second->on_frame_end();
+  for (auto& manager : managers_flat_array) {
+    manager->on_frame_end();
   }
 }
 
 void Scene::update() {
-  for (auto& manager_pair : managers) {
-    manager_pair.second->on_update();
+  for (auto& manager : managers_flat_array) {
+    manager->on_update();
   }
 }
 
