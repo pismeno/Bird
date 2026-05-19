@@ -13,16 +13,41 @@ namespace bird::node_system {
 
 using ManagerFactory = std::function<std::unique_ptr<INodeManager>()>;
 
+/**
+ * @brief Factory class for creating scenes.
+ */
 class SceneFactory {
  public:
   SceneFactory() = default;
 
+  /**
+   * @brief Loads scene definitions from a json file, into this instance of SceneFactory.
+   * @param path Path to the json file.
+   * @return Result of the operation.
+   */
   Result load_scene_definitions_from(const std::string& path);
+
+  /**
+ * @brief Loads node definitions from a json file, into this instance of SceneFactory.
+ * @param path Path to the json file.
+ * @return Result of the operation.
+ */
   Result load_node_definitions_from(const std::string& path);
 
+  /**
+   * @brief Creates a scene of the given type, this method looks up scene types in this instance of SceneFactory.
+   * @param scene_type the string id of the scene type to create.
+   * @return created scene.
+   */
   std::unique_ptr<Scene> create_scene(const std::string& scene_type) const;
   //std::unique_ptr<Scene> load_scene_from();
 
+  /**
+   * @brief Registers a manager for this SceneFactory instance.
+   * @note The manager must have a static const string MANAGER_NAME.
+   * @tparam T The type of the manager to register.
+   * @return Result of the registration, it fails if a manager with the same name is already registered.
+   */
   template <typename T>
   Result register_manager() {
     std::string name = T::MANAGER_NAME;
