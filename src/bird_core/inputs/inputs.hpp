@@ -11,6 +11,8 @@ namespace bird::inputs {
  */
 class Inputs {
  public:
+  explicit Inputs() = default;
+
   // Keyboard
   virtual bool isKeyPressed(KeyCode key) = 0;    // True ONLY on the exact frame it was pressed
   virtual bool isKeyHeld(KeyCode key) = 0;       // True as long as the key is down

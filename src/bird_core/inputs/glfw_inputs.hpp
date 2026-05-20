@@ -18,6 +18,8 @@ class GlfwInputs : public Inputs {
   friend class ::bird::GlfwWindow;
 
  public:
+  explicit GlfwInputs() = default;
+
   // Keyboard
   bool isKeyPressed(KeyCode key) override;    // True ONLY on the exact frame it was pressed
   bool isKeyHeld(KeyCode key) override;       // True as long as the key is down

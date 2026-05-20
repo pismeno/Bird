@@ -18,6 +18,7 @@ struct WindowOptions {
 
 class IWindow {
  public:
+  explicit IWindow() = default;
   virtual ~IWindow() = default;
 
   virtual Result init() = 0;

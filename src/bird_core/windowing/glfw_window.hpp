@@ -16,7 +16,7 @@ class GlfwWindow : public IWindow {
   friend class GlfwInputs;
 
  public:
-  GlfwWindow(WindowOptions options);
+  explicit GlfwWindow(WindowOptions options);
   virtual ~GlfwWindow();
 
   Result init() override;
