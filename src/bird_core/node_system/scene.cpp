@@ -50,7 +50,7 @@ std::unique_ptr<Scene> Scene::create_scene_2d() {
   nodes[new_id.index()].name = std::move(name);
 
   if (parent_id != INVALID_NODE_ID && parent_id != new_id) {
-    reparent_node(new_id, parent_id);
+    (void)reparent_node(new_id, parent_id);
   }
 
   for (auto& manager : managers) {
@@ -79,10 +79,10 @@ std::unique_ptr<Scene> Scene::create_scene_2d() {
   return NodeHandle(this, node_id);
 }
 
-Result Scene::destroy_node(NodeID node_id) {
+Result<void> Scene::destroy_node(NodeID node_id) {
   Node* node = &nodes[node_id.index()];
   if (!node) {
-    return Result::fail("Node with provided ID not found");
+    return bird::fail("Node with provided ID not found");
   }
 
   if (node->parentId != INVALID_NODE_ID) {
@@ -95,7 +95,7 @@ Result Scene::destroy_node(NodeID node_id) {
 
   std::vector<NodeID> children_to_kill = node->childrenIds;
   for (NodeID child_id : children_to_kill) {
-    destroy_node(child_id);
+    (void)destroy_node(child_id);
   }
 
   for (auto& manager : managers) {
@@ -113,19 +113,19 @@ Result Scene::destroy_node(NodeID node_id) {
   node->childrenIds.clear();
   node->name.clear();
 
-  return Result::ok();
+  return bird::ok();
 }
 
-Result Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
+Result<void> Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
   if (node_id == new_parent_id) {
-    return Result::fail("Cannot parent a node to itself.");
+    return bird::fail("Cannot parent a node to itself.");
   }
 
   Node *child = &nodes[node_id.index()];
   Node *new_parent = &nodes[new_parent_id.index()];
 
-  if (!child) return Result::fail("Node with provided ID not found");
-  if (!new_parent) return Result::fail("Parent node with provided ID not found");
+  if (!child) return bird::fail("Node with provided ID not found");
+  if (!new_parent) return bird::fail("Parent node with provided ID not found");
 
   if (child->parentId != INVALID_NODE_ID) {
     Node *old_parent = &nodes[child->parentId.index()];
@@ -138,7 +138,7 @@ Result Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
   child->parentId = new_parent_id;
   new_parent->childrenIds.push_back(node_id);
 
-  return Result::ok();
+  return bird::ok();
 }
 
 void Scene::end_frame() {

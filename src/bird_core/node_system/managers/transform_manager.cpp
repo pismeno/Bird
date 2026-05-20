@@ -5,56 +5,56 @@
 
 namespace bird::node_system::managers {
 
-Result TransformManager::set_node_position(NodeID node_id, glm::vec2 pos) {
+Result<void> TransformManager::set_node_position(NodeID node_id, glm::vec2 pos) {
   TransformInfo* transform = get_transform(node_id);
 
   if (!transform) {
-    return Result::fail("Transform not found");
+    return bird::fail("Transform not found");
   }
 
   transform->local_position = pos;
   mark_spatial_children_dirty(node_id);
 
-  return Result::ok();
+  return bird::ok();
 }
 
-Result TransformManager::set_node_scale(NodeID node_id, glm::vec2 scale) {
+Result<void> TransformManager::set_node_scale(NodeID node_id, glm::vec2 scale) {
   TransformInfo* transform = get_transform(node_id);
 
   if (!transform) {
-    return Result::fail("Transform not found");
+    return bird::fail("Transform not found");
   }
 
   transform->local_scale = scale;
   mark_spatial_children_dirty(node_id);
 
-  return Result::ok();
+  return bird::ok();
 }
 
-Result TransformManager::set_node_shear(NodeID node_id, glm::vec2 shear) {
+Result<void> TransformManager::set_node_shear(NodeID node_id, glm::vec2 shear) {
   TransformInfo* transform = get_transform(node_id);
 
   if (!transform) {
-    return Result::fail("Transform not found");
+    return bird::fail("Transform not found");
   }
 
   transform->local_shear = shear;
   mark_spatial_children_dirty(node_id);
 
-  return Result::ok();
+  return bird::ok();
 }
 
-Result TransformManager::set_node_rotation(NodeID node_id, float rotation) {
+Result<void> TransformManager::set_node_rotation(NodeID node_id, float rotation) {
   TransformInfo* transform = get_transform(node_id);
 
   if (!transform) {
-    return Result::fail("Transform not found");
+    return bird::fail("Transform not found");
   }
 
   transform->local_rotation = rotation;
   mark_spatial_children_dirty(node_id);
 
-  return Result::ok();
+  return bird::ok();
 }
 
 void TransformManager::mark_spatial_children_dirty(NodeID parent_id) {

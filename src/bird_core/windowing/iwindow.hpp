@@ -21,9 +21,9 @@ class IWindow {
   explicit IWindow() = default;
   virtual ~IWindow() = default;
 
-  virtual Result init() = 0;
+  virtual Result<void> init() = 0;
   virtual void update() = 0;
-  virtual Result close() = 0;
+  virtual Result<void> close() = 0;
 
   virtual bool shouldClose() const = 0;
 

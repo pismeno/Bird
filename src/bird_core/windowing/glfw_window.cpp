@@ -17,11 +17,11 @@ GlfwWindow::GlfwWindow(WindowOptions options)
 
 GlfwWindow::~GlfwWindow() = default;
 
-Result GlfwWindow::init() {
+Result<void> GlfwWindow::init() {
   glfwWindow = glfwCreateWindow(options.width, options.height, options.title.c_str(), nullptr, nullptr);
 
   if (!glfwWindow) {
-    return Result::fail("failed to create GLFW window");
+    return bird::fail("failed to create GLFW window");
   }
 
   glfwMakeContextCurrent(glfwWindow);
@@ -42,7 +42,7 @@ Result GlfwWindow::init() {
   glfwSetCursorPosCallback(glfwWindow, GlfwInputs::cursorPosCallback);
   glfwSetScrollCallback(glfwWindow, GlfwInputs::scrollCallback);
 
-  return Result::ok();
+  return bird::ok();
 }
 
 void GlfwWindow::update() {
@@ -52,9 +52,9 @@ void GlfwWindow::update() {
   glfwSwapBuffers(glfwWindow);
 }
 
-Result GlfwWindow::close() {
+Result<void> GlfwWindow::close() {
   glfwDestroyWindow(glfwWindow);
-  return Result::ok();
+  return bird::ok();
 }
 
 bool GlfwWindow::shouldClose() const {

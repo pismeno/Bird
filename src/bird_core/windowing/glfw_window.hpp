@@ -19,9 +19,9 @@ class GlfwWindow : public IWindow {
   explicit GlfwWindow(WindowOptions options);
   virtual ~GlfwWindow();
 
-  Result init() override;
+  Result<void> init() override;
   void update() override;
-  Result close() override;
+  Result<void> close() override;
   bool shouldClose() const override;
   uint32_t getWidth() const override;
   uint32_t getHeight() const override;
