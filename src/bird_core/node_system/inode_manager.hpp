@@ -8,9 +8,14 @@
 #include <unordered_map>
 #include <string>
 
+#include <nlohmann/json.hpp>
+
 #include "node_types.hpp"
+#include "utils/result.hpp"
 
 namespace bird::node_system {
+
+using namespace bird;
 
 class INodeManager {
  public:
@@ -25,6 +30,8 @@ class INodeManager {
   virtual void on_update() {};
   virtual void on_frame_end() {};
   virtual void on_scene_clear() {};
+  virtual Result on_serialize_scene(nlohmann::json& json) const { return Result::ok(); };
+  virtual Result on_deserialize_scene(const nlohmann::json& json) { return Result::ok(); };
 
   template <std::derived_from<INodeManager> T>
   static std::size_t get_type_id() {

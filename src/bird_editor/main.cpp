@@ -71,24 +71,16 @@ int main() {
   scene_factory.load_scene_definitions_from("node_system/scene_definitions.json");
 
   std::cout << "Creating scene..." << std::endl;
-  std::unique_ptr<Scene> scene = scene_factory.create_scene("scene_2d");
+  std::unique_ptr<Scene> scene = scene_factory.load_scene_from("scene_2d2.json");
 
   std::cout << "Creating nodes..." << std::endl;
   NodeID parID = scene->create_node(INVALID_NODE_ID, "node");
-  NodeID childID = scene->create_node(parID, "sprite_2d");
-  NodeID childID2 = scene->create_node(childID, "sprite_2d");
-  NodeID famID = scene->create_node(INVALID_NODE_ID, "sprite_2d");
-  NodeID famChildID = scene->create_node(famID, "sprite_2d");
 
   std::cout << "Getting managers..." << std::endl;
   auto transform_manager = scene->get_manager<TransformManager>();
   auto drawable_manager = scene->get_manager<DrawableManager>();
 
   std::cout << "Setting transforms..." << std::endl;
-  transform_manager->set_node_position(childID, glm::vec2(100, 100));
-  transform_manager->set_node_position(childID2, glm::vec2(100, 100));
-  transform_manager->set_node_position(famChildID, glm::vec2(400, 400));
-  transform_manager->set_node_position(famID, glm::vec2(400, 400));
 
   std::cout << "Entering loop..." << std::endl;
 
@@ -117,9 +109,7 @@ int main() {
     if (inputs1.isKeyPressed(KeyCode::KP1)) {
       std::cout << "\n[Crash Test 1] Applying extreme scales, shears, and rotations..." << std::endl;
 
-      transform_manager->set_node_scale(childID, glm::vec2(0.0f, 0.0f));
-      transform_manager->set_node_shear(childID2, glm::vec2(99999.0f, -99999.0f));
-      transform_manager->set_node_rotation(famID, 1e10f);
+
 
       std::cout << "  -> [LOG] Operations dispatched safely.\n";
       print_frame_timings = true;
@@ -130,10 +120,7 @@ int main() {
       std::cout << "\n[Crash Test 2] Rapidly swapping parents..." << std::endl;
 
       auto start = std::chrono::high_resolution_clock::now();
-      transform_manager->set_parent(childID2, famChildID);
-      transform_manager->set_parent(childID2, parID);
-      transform_manager->set_parent(childID2, famID);
-      transform_manager->set_parent(childID2, childID); // Return to original
+
       auto end = std::chrono::high_resolution_clock::now();
 
       std::chrono::duration<double, std::milli> ms = end - start;
@@ -187,8 +174,6 @@ int main() {
     if (inputs1.isKeyPressed(KeyCode::KP5)) {
       std::cout << "\n[Crash Test 5] Destroying famID. Checking how famChildID handles orphan status..." << std::endl;
 
-      Result destroy_res = scene->destroy_node(famID);
-      std::cout << "  -> [LOG] famID destruction result: " << (destroy_res.success ? "SUCCESS" : "FAILED") << "\n";
       print_frame_timings = true;
     }
 
@@ -196,14 +181,6 @@ int main() {
     // STANDARD INPUTS
     // ==========================================
 
-    if (inputs1.isKeyPressed(KeyCode::Space)) {
-      transform_manager->set_node_position(famID, glm::vec2(50, 50));
-      transform_manager->set_node_shear(famID, glm::vec2(1.0f, 0.0f));
-    }
-
-    if (inputs2.isKeyPressed(KeyCode::Space)) {
-      transform_manager->set_node_position(childID, glm::vec2(200, 100));
-    }
 
     if (inputs1.isMouseButtonReleased(MouseCode::Left)) {
       auto start = std::chrono::high_resolution_clock::now();
@@ -247,7 +224,7 @@ int main() {
     }
   }
 
-  scene_factory.save_scene_to(*scene, "scene_2d.json");
+  scene_factory.save_scene_to(*scene, "scene_2d3.json");
 
   window->close();
   glfwTerminate();

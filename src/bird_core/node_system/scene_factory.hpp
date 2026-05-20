@@ -40,7 +40,7 @@ class SceneFactory {
    * @return created scene.
    */
   std::unique_ptr<Scene> create_scene(const std::string& scene_type) const;
-  //std::unique_ptr<Scene> load_scene_from();
+  std::unique_ptr<Scene> load_scene_from(const std::string& path) const;
   Result save_scene_to(const Scene& scene, const std::string& path) const;
 
   /**

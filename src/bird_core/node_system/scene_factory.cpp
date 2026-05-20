@@ -152,4 +152,36 @@ Result SceneFactory::save_scene_to(const Scene &scene, const std::string& path) 
   return Result::ok();
 }
 
+std::unique_ptr<Scene> SceneFactory::load_scene_from(const std::string& path) const {
+  std::ifstream file(path);
+
+  if (!file.is_open()) {
+    return nullptr;
+  }
+
+  nlohmann::json data = nlohmann::json::parse(file, nullptr, false);
+  if (data.is_discarded()) {
+    return nullptr;
+  }
+
+  if (!data.contains("scene") || !data["scene"].is_object()) {
+    return nullptr;
+  }
+
+  const auto& scene_json = data["scene"];
+
+  if (!scene_json.contains("type") || !scene_json["type"].is_string()) {
+    return nullptr;
+  }
+
+  auto scene = create_scene(scene_json["type"].get<std::string>());
+  if (!scene) {
+    return nullptr;
+  }
+
+  scene->deserialize(scene_json);
+
+  return scene;
+}
+
 } // bird::node_system
