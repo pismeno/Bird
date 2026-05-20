@@ -61,10 +61,10 @@ using namespace managers;
   return new_id;
 }
 
-Result Scene::destroy_node(NodeID node_id) {
+Result<void> Scene::destroy_node(NodeID node_id) {
   Node* node = &nodes[node_id.index()];
   if (!node) {
-    return Result::fail("Node with provided ID not found");
+    return bird::fail("Node with provided ID not found");
   }
 
   if (node->parentId != INVALID_NODE_ID) {
@@ -94,7 +94,7 @@ Result Scene::destroy_node(NodeID node_id) {
   node->parentId = INVALID_NODE_ID;
   node->childrenIds.clear();
 
-  return Result::ok();
+  return bird::ok();
 }
 
 [[nodiscard]] NodeHandle Scene::get_node(NodeID node_id) {
@@ -117,16 +117,16 @@ void Scene::clear() {
   next_unused_id.store(0);
 }
 
-Result Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
+Result<void> Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
   if (node_id == new_parent_id) {
-    return Result::fail("Cannot parent a node to itself.");
+    return bird::fail("Cannot parent a node to itself.");
   }
 
   Node *child = &nodes[node_id.index()];
   Node *new_parent = &nodes[new_parent_id.index()];
 
-  if (!child) return Result::fail("Node with provided ID not found");
-  if (!new_parent) return Result::fail("Parent node with provided ID not found");
+  if (!child) return bird::fail("Node with provided ID not found");
+  if (!new_parent) return bird::fail("Parent node with provided ID not found");
 
   NodeID old_parent_id = child->parentId;
   if (child->parentId != INVALID_NODE_ID) {
@@ -159,20 +159,20 @@ void Scene::update() {
   }
 }
 
-Result Scene::add_manager(std::unique_ptr<INodeManager> manager) {
+Result<void> Scene::add_manager(std::unique_ptr<INodeManager> manager) {
   std::string manager_name = manager->get_name();
   if (managers_map.find(manager_name) != managers_map.end()) {
-    return Result::fail("A manager with the name '" + manager_name + "' is already registered");
+    return bird::fail("A manager with the name '" + manager_name + "' is already registered");
   }
 
   managers_flat_array.push_back(manager.get());
   managers_map[manager_name] = std::move(manager);
-  return Result::ok();
+  return bird::ok();
 }
 
-Result Scene::add_node_type(std::string_view node_type, std::span<const std::string> node_managers) {
+Result<void> Scene::add_node_type(std::string_view node_type, std::span<const std::string> node_managers) {
   if (node_type_definitions.find(node_type) != node_type_definitions.end()) {
-    return Result::fail("A node type with the name '" + std::string(node_type) + "' is already registered");
+    return bird::fail("A node type with the name '" + std::string(node_type) + "' is already registered");
   }
 
   NodeDefinition node_definition;
@@ -180,14 +180,14 @@ Result Scene::add_node_type(std::string_view node_type, std::span<const std::str
   for (auto& manager_name : node_managers) {
     auto manager_it = managers_map.find(manager_name);
     if (manager_it == managers_map.end()) {
-      return Result::fail("Node type '" + std::string(node_type) + "' requires manager '" + std::string(manager_name) + "' which is not registered");
+      return bird::fail("Node type '" + std::string(node_type) + "' requires manager '" + std::string(manager_name) + "' which is not registered");
     }
 
     node_definition.managers.push_back(manager_it->second.get());
   }
 
   node_type_definitions.emplace(node_type, std::move(node_definition));
-  return Result::ok();
+  return bird::ok();
 }
 
 } // bird::node_system

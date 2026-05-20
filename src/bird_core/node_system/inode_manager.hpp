@@ -31,8 +31,8 @@ class INodeManager {
   virtual void on_update() {};
   virtual void on_frame_end() {};
   virtual void on_scene_clear() {};
-  virtual Result on_serialize_scene(nlohmann::json& json) const { return Result::ok(); };
-  virtual Result on_deserialize_scene(const nlohmann::json& json) { return Result::ok(); };
+  virtual Result<void> on_serialize_scene(nlohmann::json& json) const { return bird::ok(); };
+  virtual Result<void> on_deserialize_scene(const nlohmann::json& json) { return bird::ok(); };
 
   template <std::derived_from<INodeManager> T>
   static std::size_t get_type_id() {

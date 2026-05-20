@@ -49,33 +49,33 @@ std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type)
   return scene;
 }
 
-Result SceneFactory::load_scene_definitions_from(const std::string& path) {
+Result<void> SceneFactory::load_scene_definitions_from(const std::string& path) {
   std::ifstream file(path);
 
   if (!file.is_open()) {
-    return Result::fail("Failed to open '" + path + "'.");
+    return bird::fail("Failed to open '" + path + "'.");
   }
 
   nlohmann::json data = nlohmann::json::parse(file, nullptr, false);
 
   if (data.is_discarded()) {
-    return Result::fail("Failed to parse JSON in '" + path + "'.");
+    return bird::fail("Failed to parse JSON in '" + path + "'.");
   }
 
   if (!data.is_array()) {
-    return Result::fail("Expected an array of scene definitions in '" + path + "'.");
+    return bird::fail("Expected an array of scene definitions in '" + path + "'.");
   }
 
   for (const auto& item : data) {
     if (!item.contains("name")) {
-      return Result::fail("Scene definition is missing 'name' property in '" + path + "'.");
+      return bird::fail("Scene definition is missing 'name' property in '" + path + "'.");
     }
 
     SceneDefinition scene_definition;
 
     if (item.contains("managers")) {
       if (!item["managers"].is_array()) {
-        return Result::fail("Scene definition 'managers' property is not an array in '" + path + "'.");
+        return bird::fail("Scene definition 'managers' property is not an array in '" + path + "'.");
       }
 
       scene_definition.managers = item["managers"].get<std::vector<std::string>>();
@@ -83,7 +83,7 @@ Result SceneFactory::load_scene_definitions_from(const std::string& path) {
 
     if (item.contains("allowed_nodes")) {
       if (!item["allowed_nodes"].is_array()) {
-        return Result::fail("Scene definition 'allowed_nodes' property is not an array in '" + path + "'.");
+        return bird::fail("Scene definition 'allowed_nodes' property is not an array in '" + path + "'.");
       }
 
       scene_definition.allowed_nodes = item["allowed_nodes"].get<std::vector<std::string>>();
@@ -92,36 +92,36 @@ Result SceneFactory::load_scene_definitions_from(const std::string& path) {
     scene_definitions.emplace(item["name"].get<std::string>(), std::move(scene_definition));
   }
 
-  return Result::ok();
+  return bird::ok();
 }
 
-Result SceneFactory::load_node_definitions_from(const std::string& path) {
+Result<void> SceneFactory::load_node_definitions_from(const std::string& path) {
   std::ifstream file(path);
 
   if (!file.is_open()) {
-    return Result::fail("Failed to open '" + path + "'.");
+    return bird::fail("Failed to open '" + path + "'.");
   }
 
   nlohmann::json data = nlohmann::json::parse(file, nullptr, false);
 
   if (data.is_discarded()) {
-    return Result::fail("Failed to parse JSON in '" + path + "'.");
+    return bird::fail("Failed to parse JSON in '" + path + "'.");
   }
 
   if (!data.is_array()) {
-    return Result::fail("Expected an array of node definitions in '" + path + "'.");
+    return bird::fail("Expected an array of node definitions in '" + path + "'.");
   }
 
   for (const auto& item : data) {
     if (!item.contains("name")) {
-      return Result::fail("Node definition is missing 'name' property in '" + path + "'.");
+      return bird::fail("Node definition is missing 'name' property in '" + path + "'.");
     }
 
     NodeDefinition node_definition;
 
     if (item.contains("managers")) {
       if (!item["managers"].is_array()) {
-        return Result::fail("Node definition 'managers' property is not an array in '" + path + "'.");
+        return bird::fail("Node definition 'managers' property is not an array in '" + path + "'.");
       }
 
       node_definition.managers = item["managers"].get<std::vector<std::string>>();
@@ -130,10 +130,10 @@ Result SceneFactory::load_node_definitions_from(const std::string& path) {
     node_definitions.emplace(item["name"].get<std::string>(), std::move(node_definition));
   }
 
-  return Result::ok();
+  return bird::ok();
 }
 
-Result SceneFactory::save_scene_to(const Scene &scene, const std::string& path) const {
+Result<void> SceneFactory::save_scene_to(const Scene &scene, const std::string& path) const {
   nlohmann::json data;
 
   data["scene"] = nlohmann::json::object();
@@ -143,13 +143,13 @@ Result SceneFactory::save_scene_to(const Scene &scene, const std::string& path) 
   std::ofstream file(path);
 
   if (!file.is_open()) {
-    return Result::fail("Failed to open '" + path + "'.");
+    return bird::fail("Failed to open '" + path + "'.");
   }
 
   file << data.dump(2);
   file.close();
 
-  return Result::ok();
+  return bird::ok();
 }
 
 std::unique_ptr<Scene> SceneFactory::load_scene_from(const std::string& path) const {

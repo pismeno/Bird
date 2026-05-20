@@ -49,11 +49,11 @@ class Scene {
 
   void clear();
 
-  Result serialize(nlohmann::json& json) const;
-  Result deserialize(const nlohmann::json& json);
+  Result<void> serialize(nlohmann::json& json) const;
+  Result<void> deserialize(const nlohmann::json& json);
 
-  Result add_manager(std::unique_ptr<INodeManager> manager);
-  Result add_node_type(std::string_view node_type, std::span<const std::string> node_managers);
+  Result<void> add_manager(std::unique_ptr<INodeManager> manager);
+  Result<void> add_node_type(std::string_view node_type, std::span<const std::string> node_managers);
 
   template <typename T>
   T* get_manager() const {

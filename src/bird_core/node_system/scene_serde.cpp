@@ -6,7 +6,7 @@
 
 namespace bird::node_system {
 
-Result Scene::serialize(nlohmann::json &json) const {
+Result<void> Scene::serialize(nlohmann::json &json) const {
 
   json["nodes"] = nlohmann::json::array(); // creates a blank JSON list on key "nodes"
 
@@ -27,31 +27,31 @@ Result Scene::serialize(nlohmann::json &json) const {
     json["managers"][manager_name] = nlohmann::json::object();
     Result result = manager->on_serialize_scene(json["managers"][manager_name]);
 
-    if (!result.success) {
+    if (!result.is_ok()) {
       return result;
     }
   }
 
-  return Result::ok();
+  return bird::ok();
 }
 
-Result Scene::deserialize(const nlohmann::json &json) {
+Result<void> Scene::deserialize(const nlohmann::json &json) {
 
   clear();
 
   if (!json.contains("nodes") || !json["nodes"].is_array()) {
-    return Result::fail("Invalid scene JSON: missing 'nodes' array");
+    return bird::fail("Invalid scene JSON: missing 'nodes' array");
   }
 
   for (const auto& node_json : json["nodes"]) {
     if (!node_json.contains("type") || !node_json["type"].is_string()) {
-      return Result::fail("Invalid scene JSON: node missing 'type' string");
+      return bird::fail("Invalid scene JSON: node missing 'type' string");
     }
 
     const auto& node_type = node_json["type"].get<std::string>();
 
     if (!node_json.contains("id") || !node_json["id"].is_number_integer()) {
-      return Result::fail("Invalid scene JSON: node missing 'id' integer");
+      return bird::fail("Invalid scene JSON: node missing 'id' integer");
     }
 
     NodeID id = NodeID::from(node_json["id"].get<uint32_t>(), 0);
@@ -79,7 +79,7 @@ Result Scene::deserialize(const nlohmann::json &json) {
     }
 
     if (!node_json.contains("parent_id") || !node_json["parent_id"].is_number_integer()) {
-      return Result::fail("Invalid scene JSON: node missing 'parent_id' integer");
+      return bird::fail("Invalid scene JSON: node missing 'parent_id' integer");
     }
 
     uint32_t raw_parent = node_json["parent_id"].get<uint32_t>();
@@ -96,14 +96,14 @@ Result Scene::deserialize(const nlohmann::json &json) {
       if (json["managers"].contains(manager_name)) {
         Result result = manager->on_deserialize_scene(json["managers"][manager_name]);
 
-        if (!result.success) {
+        if (!result.is_ok()) {
           return result;
         }
       }
     }
   }
 
-  return Result::ok();
+  return bird::ok();
 }
 
 } // bird::node_system

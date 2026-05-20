@@ -25,14 +25,14 @@ class SceneFactory {
    * @param path Path to the json file.
    * @return Result of the operation.
    */
-  Result load_scene_definitions_from(const std::string& path);
+  Result<void> load_scene_definitions_from(const std::string& path);
 
   /**
  * @brief Loads node definitions from a json file, into this instance of SceneFactory.
  * @param path Path to the json file.
  * @return Result of the operation.
  */
-  Result load_node_definitions_from(const std::string& path);
+  Result<void> load_node_definitions_from(const std::string& path);
 
   /**
    * @brief Creates a scene of the given type, this method looks up scene types in this instance of SceneFactory.
@@ -41,7 +41,7 @@ class SceneFactory {
    */
   std::unique_ptr<Scene> create_scene(const std::string& scene_type) const;
   std::unique_ptr<Scene> load_scene_from(const std::string& path) const;
-  Result save_scene_to(const Scene& scene, const std::string& path) const;
+  Result<void> save_scene_to(const Scene& scene, const std::string& path) const;
 
   /**
    * @brief Registers a manager for this SceneFactory instance.
@@ -50,16 +50,16 @@ class SceneFactory {
    * @return Result of the registration, it fails if a manager with the same name is already registered.
    */
   template <typename T>
-  Result register_manager() {
+  Result<void> register_manager() {
     std::string name = T::MANAGER_NAME;
 
     if (manager_registry.find(name) != manager_registry.end()) {
-      return Result::fail("a manager with the name '" + name + "' is already registered");
+      return bird::fail("a manager with the name '" + name + "' is already registered");
     }
 
     manager_registry[name] = []() -> std::unique_ptr<INodeManager> { return std::make_unique<T>(); };
 
-    return Result::ok();
+    return bird::ok();
   }
 
  private:

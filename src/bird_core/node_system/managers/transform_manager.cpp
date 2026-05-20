@@ -6,7 +6,7 @@
 namespace bird::node_system::managers {
 
 Result<void> TransformManager::set_node_position(NodeID node_id, glm::vec2 pos) {
-  TransformInfo* transform = get_transform(node_id);
+  TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
     return bird::fail("Transform not found");
@@ -19,7 +19,7 @@ Result<void> TransformManager::set_node_position(NodeID node_id, glm::vec2 pos) 
 }
 
 Result<void> TransformManager::set_node_scale(NodeID node_id, glm::vec2 scale) {
-  TransformInfo* transform = get_transform(node_id);
+  TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
     return bird::fail("Transform not found");
@@ -32,7 +32,7 @@ Result<void> TransformManager::set_node_scale(NodeID node_id, glm::vec2 scale) {
 }
 
 Result<void> TransformManager::set_node_shear(NodeID node_id, glm::vec2 shear) {
-  TransformInfo* transform = get_transform(node_id);
+  TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
     return bird::fail("Transform not found");
@@ -45,7 +45,7 @@ Result<void> TransformManager::set_node_shear(NodeID node_id, glm::vec2 shear) {
 }
 
 Result<void> TransformManager::set_node_rotation(NodeID node_id, float rotation) {
-  TransformInfo* transform = get_transform(node_id);
+  TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
     return bird::fail("Transform not found");
@@ -248,7 +248,7 @@ void TransformManager::on_scene_clear() {
   std::fill(node_to_transform.begin(), node_to_transform.end(), INVALID_TRANSFORM_INDEX);
 }
 
-Result TransformManager::on_serialize_scene(nlohmann::json& json) const {
+Result<void> TransformManager::on_serialize_scene(nlohmann::json& json) const {
   json["nodes"] = nlohmann::json::array();
 
   for (const auto& transform : transforms) {
@@ -281,12 +281,12 @@ Result TransformManager::on_serialize_scene(nlohmann::json& json) const {
     json["nodes"].push_back(transform_json);
   }
 
-  return Result::ok();
+  return bird::ok();
 }
 
-Result TransformManager::on_deserialize_scene(const nlohmann::json& json) {
+Result<void> TransformManager::on_deserialize_scene(const nlohmann::json& json) {
   if (!json.contains("nodes") || !json["nodes"].is_array()) {
-    return Result::fail("Invalid scene JSON: missing 'nodes' array");
+    return bird::fail("Invalid scene JSON: missing 'nodes' array");
   }
 
   for (const auto& node_json : json["nodes"]) {
@@ -341,7 +341,7 @@ Result TransformManager::on_deserialize_scene(const nlohmann::json& json) {
     transform->is_dirty = true;
   }
 
-  return Result::ok();
+  return bird::ok();
 }
 
 } // bird::node_system::managers
