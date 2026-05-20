@@ -19,6 +19,7 @@ using namespace bird;
 
 class INodeManager {
  public:
+  explicit INodeManager() = default;
   virtual ~INodeManager() = default;
 
   [[nodiscard]] virtual std::string get_name() const = 0;

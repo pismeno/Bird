@@ -19,7 +19,7 @@ inline constexpr TransformIndex INVALID_TRANSFORM_INDEX = std::numeric_limits<ui
 
 class TransformManager : public NodeManagerBase<TransformManager> {
  public:
-  TransformManager() {
+  explicit TransformManager() {
     global_matrices.resize(MAX_ACTIVE_NODES, glm::mat3x3(1.0f));
     node_to_transform.resize(MAX_ACTIVE_NODES, INVALID_TRANSFORM_INDEX);
     transforms.reserve(MAX_ACTIVE_NODES);

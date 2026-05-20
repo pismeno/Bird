@@ -19,7 +19,7 @@ struct Drawable {
 
 class DrawableManager : public NodeManagerBase<DrawableManager> {
  public:
-  DrawableManager() {
+  explicit DrawableManager() {
     drawables.resize(MAX_ACTIVE_NODES, Drawable{});
   }
 

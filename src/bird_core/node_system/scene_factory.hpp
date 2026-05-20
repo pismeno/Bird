@@ -18,7 +18,7 @@ using ManagerFactory = std::function<std::unique_ptr<INodeManager>()>;
  */
 class SceneFactory {
  public:
-  SceneFactory() = default;
+  explicit SceneFactory() = default;
 
   /**
    * @brief Loads scene definitions from a json file, into this instance of SceneFactory.
