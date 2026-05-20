@@ -144,7 +144,7 @@ Result Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
     manager->on_node_reparented(node_id, new_parent_id, old_parent_id);
   }
 
-  return Result::ok();
+  return bird::ok();
 }
 
 void Scene::end_frame() {

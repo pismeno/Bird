@@ -36,8 +36,8 @@ class Scene {
   [[nodiscard]] NodeID create_node(NodeID parent_id, std::string_view node_type);
 
   [[nodiscard]] NodeHandle get_node(NodeID node_id);
-  Result destroy_node(NodeID node_id);
-  Result reparent_node(NodeID node_id, NodeID new_parent_id);
+  Result<void> destroy_node(NodeID node_id);
+  Result<void> reparent_node(NodeID node_id, NodeID new_parent_id);
 
   /**
    * @return The highest index part of NodeID of a node that exists.

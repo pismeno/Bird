@@ -48,8 +48,8 @@ int main() {
 
   std::unique_ptr<IWindow> window = IWindow::create(WindowOptions{800, 600, "Bird Editor - CRASH TEST"});
   std::unique_ptr<IWindow> window2 = IWindow::create(WindowOptions{800, 600, "Bird Editor 2"});
-  window->init();
-  window2->init();
+  (void)window->init();
+  (void)window2->init();
 
   std::cout << "Hello, Bird Editor Crash Tests!" << std::endl;
   std::cout << "Controls:\n"
@@ -75,12 +75,22 @@ int main() {
 
   std::cout << "Creating nodes..." << std::endl;
   NodeID parID = scene->create_node(INVALID_NODE_ID, "node");
+  NodeID childID = scene->create_node(parID, "sprite_2d");
+  NodeID childID2 = scene->create_node(childID, "sprite_2d");
+  NodeID famID = scene->create_node(INVALID_NODE_ID, "sprite_2d");
+  NodeID famChildID = scene->create_node(famID, "sprite_2d");
+
+
 
   std::cout << "Getting managers..." << std::endl;
   auto transform_manager = scene->get_manager<TransformManager>();
   auto drawable_manager = scene->get_manager<DrawableManager>();
 
   std::cout << "Setting transforms..." << std::endl;
+  (void)transform_manager->set_node_position(childID, glm::vec2(100, 100));
+  (void)transform_manager->set_node_position(childID2, glm::vec2(100, 100));
+  (void)transform_manager->set_node_position(famChildID, glm::vec2(400, 400));
+  (void)transform_manager->set_node_position(famID, glm::vec2(400, 400));
 
   std::cout << "Entering loop..." << std::endl;
 
@@ -109,7 +119,9 @@ int main() {
     if (inputs1.isKeyPressed(KeyCode::KP1)) {
       std::cout << "\n[Crash Test 1] Applying extreme scales, shears, and rotations..." << std::endl;
 
-
+      (void)transform_manager->set_node_scale(childID, glm::vec2(0.0f, 0.0f));
+      (void)transform_manager->set_node_shear(childID2, glm::vec2(99999.0f, -99999.0f));
+      (void)transform_manager->set_node_rotation(famID, 1e10f);
 
       std::cout << "  -> [LOG] Operations dispatched safely.\n";
       print_frame_timings = true;
@@ -120,7 +132,10 @@ int main() {
       std::cout << "\n[Crash Test 2] Rapidly swapping parents..." << std::endl;
 
       auto start = std::chrono::high_resolution_clock::now();
-
+      (void)transform_manager->set_parent(childID2, famChildID);
+      (void)transform_manager->set_parent(childID2, parID);
+      (void)transform_manager->set_parent(childID2, famID);
+      (void)transform_manager->set_parent(childID2, childID); // Return to original
       auto end = std::chrono::high_resolution_clock::now();
 
       std::chrono::duration<double, std::milli> ms = end - start;
@@ -139,8 +154,8 @@ int main() {
         NodeID new_node = scene->create_node(INVALID_NODE_ID, "sprite_2d");
         stress_nodes.push_back(new_node);
 
-        transform_manager->set_node_position(new_node, glm::vec2(i * 0.1f, i * 0.1f));
-        transform_manager->set_node_shear(new_node, glm::vec2(1.5f, -0.5f));
+        (void)transform_manager->set_node_position(new_node, glm::vec2(i * 0.1f, i * 0.1f));
+        (void)transform_manager->set_node_shear(new_node, glm::vec2(1.5f, -0.5f));
       }
       auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> ms = end - start;
@@ -158,7 +173,7 @@ int main() {
 
       auto start = std::chrono::high_resolution_clock::now();
       for (NodeID id : stress_nodes) {
-        if (scene->destroy_node(id).success) {
+        if (scene->destroy_node(id).is_ok()) {
           successful_destructions++;
         }
       }
@@ -174,6 +189,8 @@ int main() {
     if (inputs1.isKeyPressed(KeyCode::KP5)) {
       std::cout << "\n[Crash Test 5] Destroying famID. Checking how famChildID handles orphan status..." << std::endl;
 
+      Result destroy_res = scene->destroy_node(famID);
+      std::cout << "  -> [LOG] famID destruction result: " << (destroy_res.is_ok() ? "SUCCESS" : "FAILED") << "\n";
       print_frame_timings = true;
     }
 
@@ -181,6 +198,14 @@ int main() {
     // STANDARD INPUTS
     // ==========================================
 
+    if (inputs1.isKeyPressed(KeyCode::Space)) {
+      (void)transform_manager->set_node_position(famID, glm::vec2(50, 50));
+      (void)transform_manager->set_node_shear(famID, glm::vec2(1.0f, 0.0f));
+    }
+
+    if (inputs2.isKeyPressed(KeyCode::Space)) {
+      (void)transform_manager->set_node_position(childID, glm::vec2(200, 100));
+    }
 
     if (inputs1.isMouseButtonReleased(MouseCode::Left)) {
       auto start = std::chrono::high_resolution_clock::now();
@@ -194,7 +219,7 @@ int main() {
     }
 
     if (inputs1.isKeyPressed(KeyCode::F11)) {
-      window->setFullscreen(!window->isFullscreen());
+      (void)window->setFullscreen(!window->isFullscreen());
     }
 
     // ==========================================
@@ -224,9 +249,9 @@ int main() {
     }
   }
 
+  (void)window->close();
   scene_factory.save_scene_to(*scene, "scene_2d3.json");
 
-  window->close();
   glfwTerminate();
   return 0;
 }

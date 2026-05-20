@@ -50,10 +50,10 @@ class TransformManager : public NodeManagerBase<TransformManager> {
    */
   [[nodiscard]] inline const std::vector<glm::mat3x3>& get_all_matrices() const { return global_matrices; }
 
-  Result set_node_position(NodeID node_id, glm::vec2 pos);
-  Result set_node_scale(NodeID node_id, glm::vec2 scale);
-  Result set_node_shear(NodeID node_id, glm::vec2 shear);
-  Result set_node_rotation(NodeID node_id, float rotation);
+  Result<void> set_node_position(NodeID node_id, glm::vec2 pos);
+  Result<void> set_node_scale(NodeID node_id, glm::vec2 scale);
+  Result<void> set_node_shear(NodeID node_id, glm::vec2 shear);
+  Result<void> set_node_rotation(NodeID node_id, float rotation);
 
   void on_update() override;
   void on_node_destroyed(NodeID node_id) override;
