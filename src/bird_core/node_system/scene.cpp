@@ -45,8 +45,8 @@ using namespace managers;
     manager->on_node_created(new_id);
   }
 
-  auto type_it = node_types.find(node_type);
-  if (type_it != node_types.end()) {
+  auto type_it = node_type_definitions.find(node_type);
+  if (type_it != node_type_definitions.end()) {
     for (const auto& manager : type_it->second.managers) {
       manager->on_node_require_manager(new_id);
     }
@@ -56,11 +56,9 @@ using namespace managers;
     reparent_node(new_id, parent_id);
   }
 
-  return new_id;
-}
+  node_types[new_id.index()] = node_type;
 
-[[nodiscard]] NodeHandle Scene::get_node(NodeID node_id) {
-  return {this, node_id};
+  return new_id;
 }
 
 Result Scene::destroy_node(NodeID node_id) {
@@ -97,6 +95,26 @@ Result Scene::destroy_node(NodeID node_id) {
   node->childrenIds.clear();
 
   return Result::ok();
+}
+
+[[nodiscard]] NodeHandle Scene::get_node(NodeID node_id) {
+  return {this, node_id};
+}
+
+void Scene::clear() {
+  for (auto& manager : managers_flat_array) {
+    manager->on_scene_clear();
+  }
+
+  for (uint32_t i = 0; i < get_highest_allocated_node_index(); ++i) {
+    generations[i]++; // Invalidates all existing handles globally
+    nodes[i].id = INVALID_NODE_ID;
+    nodes[i].parentId = INVALID_NODE_ID;
+    nodes[i].childrenIds.clear();
+  }
+
+  recycled_ids.clear();
+  next_unused_id.store(0);
 }
 
 Result Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
@@ -153,7 +171,7 @@ Result Scene::add_manager(std::unique_ptr<INodeManager> manager) {
 }
 
 Result Scene::add_node_type(std::string_view node_type, std::span<const std::string> node_managers) {
-  if (node_types.find(node_type) != node_types.end()) {
+  if (node_type_definitions.find(node_type) != node_type_definitions.end()) {
     return Result::fail("A node type with the name '" + std::string(node_type) + "' is already registered");
   }
 
@@ -168,7 +186,7 @@ Result Scene::add_node_type(std::string_view node_type, std::span<const std::str
     node_definition.managers.push_back(manager_it->second.get());
   }
 
-  node_types.emplace(node_type, std::move(node_definition));
+  node_type_definitions.emplace(node_type, std::move(node_definition));
   return Result::ok();
 }
 

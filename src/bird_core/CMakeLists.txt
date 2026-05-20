@@ -12,6 +12,7 @@ set(CORE_SOURCES
         "node_system/node.hpp"
         "node_system/scene.hpp"
         "node_system/scene.cpp"
+        "node_system/scene_serde.cpp"
         "node_system/inode_manager.hpp"
         "node_system/inode_manager.cpp"
         "node_system/managers/transform_manager.hpp"

@@ -24,6 +24,7 @@ class INodeManager {
   virtual void on_node_reparented(NodeID node_id, NodeID new_parent_id, NodeID old_parent_id) {};
   virtual void on_update() {};
   virtual void on_frame_end() {};
+  virtual void on_scene_clear() {};
 
   template <std::derived_from<INodeManager> T>
   static std::size_t get_type_id() {

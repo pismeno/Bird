@@ -5,11 +5,11 @@
 - The node system is built on top of ECS-like architecture.
 
 ## Architecture
-- Every node is instance of the same class `Node`, which is essentially just a `NodeID` (see `node_types.hpp`) wrapper, that holds information about who is it's parent and children.
+- Every node is instance of the same class `Node`, which is essentially just a `NodeID` (see `node_type_definitions.hpp`) wrapper, that holds information about who is it's parent and children.
 - The `Scene` defines, what managers will be used to manage the nodes.
 - The managers are responsible for the actual node behavior.
 - `Scene` is created using `SceneFactory::create_scene(std::string scene_type_name)`, scene types can be loaded using `SceneFactory::load_scene_definitions_from(std::string path)`.
-- `Scene` also holds node_types you can create using the factory method listed bellow.
+- `Scene` also holds node_type_definitions you can create using the factory method listed bellow.
 
 ## Managers
 - Every manager inherits from the `INodeManager` interface.

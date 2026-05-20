@@ -41,6 +41,7 @@ class SceneFactory {
    */
   std::unique_ptr<Scene> create_scene(const std::string& scene_type) const;
   //std::unique_ptr<Scene> load_scene_from();
+  Result save_scene_to(const Scene& scene, const std::string& path) const;
 
   /**
    * @brief Registers a manager for this SceneFactory instance.

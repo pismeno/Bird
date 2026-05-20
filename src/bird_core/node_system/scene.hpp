@@ -11,6 +11,7 @@
 #include <span>
 
 #include <glm/vec2.hpp>
+#include <nlohmann/json.hpp>
 
 #include "utils/result.hpp"
 #include "utils/string_hash.hpp"
@@ -24,10 +25,13 @@ class Scene {
   friend class NodeHandle;
 
  public:
-  Scene() {
+  Scene(std::string scene_type_name) : scene_type_name(std::move(scene_type_name)) {
     nodes.resize(MAX_ACTIVE_NODES);
     generations.resize(MAX_ACTIVE_NODES);
+    node_types.resize(MAX_ACTIVE_NODES);
   }
+
+  [[nodiscard]] inline const std::string_view get_scene_type() const { return scene_type_name; }
 
   [[nodiscard]] NodeID create_node(NodeID parent_id, std::string_view node_type);
 
@@ -43,6 +47,11 @@ class Scene {
   void update();
   void end_frame();
 
+  void clear();
+
+  Result serialize(nlohmann::json& json) const;
+  Result deserialize(const nlohmann::json& json);
+
   Result add_manager(std::unique_ptr<INodeManager> manager);
   Result add_node_type(std::string_view node_type, std::span<const std::string> node_managers);
 
@@ -56,12 +65,15 @@ class Scene {
   }
 
  private:
+  std::string scene_type_name;
+
   [[nodiscard]] NodeID generate_id();
 
   std::atomic<uint32_t> next_unused_id {0};
   std::vector<uint32_t> recycled_ids;
   std::vector<uint32_t> generations; // Index = the raw array slot, Value = the current active generation
   std::vector<Node> nodes;
+  std::vector<std::string> node_types;
 
   std::unordered_map<std::string, std::unique_ptr<INodeManager>, StringHash, std::equal_to<>> managers_map;
   std::vector<INodeManager*> managers_flat_array;
@@ -70,7 +82,7 @@ class Scene {
     std::vector<INodeManager*> managers;
   };
 
-  std::unordered_map<std::string, NodeDefinition, StringHash, std::equal_to<>> node_types;
+  std::unordered_map<std::string, NodeDefinition, StringHash, std::equal_to<>> node_type_definitions;
 };
 
 } // bird::node_system

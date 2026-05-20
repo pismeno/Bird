@@ -247,6 +247,8 @@ int main() {
     }
   }
 
+  scene_factory.save_scene_to(*scene, "scene_2d.json");
+
   window->close();
   glfwTerminate();
   return 0;

@@ -15,8 +15,6 @@
 
 namespace bird::node_system {
 
-using json = nlohmann::json;
-
 std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type) const {
   auto scene_def_it = scene_definitions.find(scene_type);
 
@@ -24,7 +22,7 @@ std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type)
     return nullptr; // no scene with that name is registered
   }
 
-  auto scene = std::make_unique<Scene>();
+  auto scene = std::make_unique<Scene>(scene_type);
   SceneDefinition scene_definition = scene_def_it->second;
 
   for (auto& manager_name : scene_definition.managers) {
@@ -58,7 +56,7 @@ Result SceneFactory::load_scene_definitions_from(const std::string& path) {
     return Result::fail("Failed to open '" + path + "'.");
   }
 
-  json data = json::parse(file, nullptr, false);
+  nlohmann::json data = nlohmann::json::parse(file, nullptr, false);
 
   if (data.is_discarded()) {
     return Result::fail("Failed to parse JSON in '" + path + "'.");
@@ -104,7 +102,7 @@ Result SceneFactory::load_node_definitions_from(const std::string& path) {
     return Result::fail("Failed to open '" + path + "'.");
   }
 
-  json data = json::parse(file, nullptr, false);
+  nlohmann::json data = nlohmann::json::parse(file, nullptr, false);
 
   if (data.is_discarded()) {
     return Result::fail("Failed to parse JSON in '" + path + "'.");
@@ -131,6 +129,25 @@ Result SceneFactory::load_node_definitions_from(const std::string& path) {
 
     node_definitions.emplace(item["name"].get<std::string>(), std::move(node_definition));
   }
+
+  return Result::ok();
+}
+
+Result SceneFactory::save_scene_to(const Scene &scene, const std::string& path) const {
+  nlohmann::json data;
+
+  data["scene"] = nlohmann::json::object();
+  data["scene"]["type"] = scene.get_scene_type();
+  scene.serialize(data["scene"]);
+
+  std::ofstream file(path);
+
+  if (!file.is_open()) {
+    return Result::fail("Failed to open '" + path + "'.");
+  }
+
+  file << data.dump(2);
+  file.close();
 
   return Result::ok();
 }
