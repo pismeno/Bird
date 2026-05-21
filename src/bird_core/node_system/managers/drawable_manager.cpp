@@ -45,7 +45,7 @@ Result<void> DrawableManager::on_serialize_scene(nlohmann::json &json) const {
 
 Result<void> DrawableManager::on_deserialize_scene(const nlohmann::json &json) {
   if (!json.contains("nodes") || !json["nodes"].is_array()) {
-    return bird::fail("Invalid scene JSON: missing 'nodes' array");
+    return bird::ok();
   }
 
   for (const auto& drawable_json : json["nodes"]) {
@@ -61,7 +61,7 @@ Result<void> DrawableManager::on_deserialize_scene(const nlohmann::json &json) {
 
 
     if (!drawable_json.contains("z_index")) {
-      return bird::fail("Invalid scene JSON: node missing 'z_index' integer");
+      continue;
     }
 
     drawables[node_idx].z_index = drawable_json["z_index"].get<uint32_t>();

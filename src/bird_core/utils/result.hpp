@@ -8,6 +8,10 @@
 
 namespace bird {
 
+struct Failure {
+  std::string message;
+};
+
 /**
  * @brief A class that is to be used instead of throwing errors. If successfull it holds the passed down value,
  * otherwise it holds an error message.
@@ -17,8 +21,7 @@ template <typename T>
 class [[nodiscard]] Result {
  public:
   Result(T value) : data(std::move(value)) {} // Accept by value and move, works for both copyable and move-only types
-
-  Result(const std::string& error_message) : data(error_message) {}
+  Result(bird::Failure failure) : data(std::move(failure.message)) {}
 
   Result(Result&& other) noexcept = default; // moving the Result itself
   Result& operator=(Result&& other) noexcept = default;
@@ -73,22 +76,18 @@ template <>
 class [[nodiscard]] Result<void> {
  public:
   Result() : success(true) {}
-  Result(const std::string& error) : error_(error), success(false) {}
+  Result(Failure failure) : error_message(std::move(failure.message)), success(false) {}
 
   bool is_ok() const noexcept { return success; }
   explicit operator bool() const noexcept { return success; }
 
-  const std::string& error() const noexcept { return error_; }
-
-  static Result ok() { return Result(); }
-  static Result fail(const std::string& error_message) { return Result(error_message); }
+  const std::string& error() const noexcept { return error_message; }
 
  private:
-  std::string error_ = "";
+  std::string error_message = "";
   bool success;
 };
 
-static inline Result<void> ok() { return Result<void>::ok(); }
-static inline Result<void> fail(const std::string& error_message) { return Result<void>::fail(error_message); }
-
+static inline Result<void> ok() { return Result<void>(); }
+static inline Failure fail(std::string error_message) { return Failure{std::move(error_message)}; }
 } // bird

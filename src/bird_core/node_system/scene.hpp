@@ -36,8 +36,8 @@ class Scene {
   [[nodiscard]] NodeID create_node(NodeID parent_id, std::string_view node_type);
 
   [[nodiscard]] NodeHandle get_node(NodeID node_id);
-  Result<void> destroy_node(NodeID node_id);
-  Result<void> reparent_node(NodeID node_id, NodeID new_parent_id);
+  void destroy_node(NodeID node_id);
+  void reparent_node(NodeID node_id, NodeID new_parent_id);
 
   /**
    * @return The highest index part of NodeID of a node that exists.
@@ -52,8 +52,8 @@ class Scene {
   Result<void> serialize(nlohmann::json& json) const;
   Result<void> deserialize(const nlohmann::json& json);
 
-  Result<void> add_manager(std::unique_ptr<INodeManager> manager);
-  Result<void> add_node_type(std::string_view node_type, std::span<const std::string> node_managers);
+  void add_manager(std::unique_ptr<INodeManager> manager);
+  void add_node_type(std::string_view node_type, std::span<const std::string> node_managers);
 
   template <typename T>
   T* get_manager() const {

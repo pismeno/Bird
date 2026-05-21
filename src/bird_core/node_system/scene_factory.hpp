@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <functional>
+#include <cassert>
 
 #include "node_system/node_types.hpp"
 #include "utils/result.hpp"
@@ -40,26 +41,20 @@ class SceneFactory {
    * @return created scene.
    */
   std::unique_ptr<Scene> create_scene(const std::string& scene_type) const;
-  std::unique_ptr<Scene> load_scene_from(const std::string& path) const;
+  Result<std::unique_ptr<Scene>> load_scene_from(const std::string& path) const;
   Result<void> save_scene_to(const Scene& scene, const std::string& path) const;
 
   /**
-   * @brief Registers a manager for this SceneFactory instance.
-   * @note The manager must have a static const string MANAGER_NAME.
-   * @tparam T The type of the manager to register.
-   * @return Result of the registration, it fails if a manager with the same name is already registered.
-   */
+ * @brief Registers a manager for this SceneFactory instance.
+ * @note Asserts that the manager name must be unique.
+ */
   template <typename T>
-  Result<void> register_manager() {
+  void register_manager() {
     std::string name = T::MANAGER_NAME;
 
-    if (manager_registry.find(name) != manager_registry.end()) {
-      return bird::fail("a manager with the name '" + name + "' is already registered");
-    }
+    assert(manager_registry.find(name) == manager_registry.end() && "Manager name already registered!");
 
     manager_registry[name] = []() -> std::unique_ptr<INodeManager> { return std::make_unique<T>(); };
-
-    return bird::ok();
   }
 
  private:

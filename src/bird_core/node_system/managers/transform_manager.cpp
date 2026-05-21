@@ -286,7 +286,7 @@ Result<void> TransformManager::on_serialize_scene(nlohmann::json& json) const {
 
 Result<void> TransformManager::on_deserialize_scene(const nlohmann::json& json) {
   if (!json.contains("nodes") || !json["nodes"].is_array()) {
-    return bird::fail("Invalid scene JSON: missing 'nodes' array");
+    return bird::ok();
   }
 
   for (const auto& node_json : json["nodes"]) {

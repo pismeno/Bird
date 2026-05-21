@@ -152,36 +152,40 @@ Result<void> SceneFactory::save_scene_to(const Scene &scene, const std::string& 
   return bird::ok();
 }
 
-std::unique_ptr<Scene> SceneFactory::load_scene_from(const std::string& path) const {
+Result<std::unique_ptr<Scene>> SceneFactory::load_scene_from(const std::string& path) const {
   std::ifstream file(path);
 
   if (!file.is_open()) {
-    return nullptr;
+    return bird::fail("failed to open '" + path + "'.");
   }
 
   nlohmann::json data = nlohmann::json::parse(file, nullptr, false);
   if (data.is_discarded()) {
-    return nullptr;
+    return bird::fail("failed to parse JSON in '" + path + "'.");
   }
 
   if (!data.contains("scene") || !data["scene"].is_object()) {
-    return nullptr;
+    return bird::fail("invalid scene JSON: missing 'scene' object in '" + path + "'.");
   }
 
   const auto& scene_json = data["scene"];
 
   if (!scene_json.contains("type") || !scene_json["type"].is_string()) {
-    return nullptr;
+    return bird::fail("invalid scene JSON: missing 'type' string in '" + path + "'.");
   }
 
   auto scene = create_scene(scene_json["type"].get<std::string>());
   if (!scene) {
-    return nullptr;
+    return bird::fail("failed to create scene '" + scene_json["type"].get<std::string>() + "' in '" + path + "'.");
   }
 
-  scene->deserialize(scene_json);
+  Result deserialization_result = scene->deserialize(scene_json);
 
-  return scene;
+  if (!deserialization_result) {
+    return bird::fail(deserialization_result.error());
+  };
+
+  return std::move(scene);
 }
 
 } // bird::node_system

@@ -67,11 +67,27 @@ int main() {
 
   scene_factory.register_manager<TransformManager>();
   scene_factory.register_manager<DrawableManager>();
-  scene_factory.load_node_definitions_from("node_system/node_definitions.json");
-  scene_factory.load_scene_definitions_from("node_system/scene_definitions.json");
+  auto load_node_result = scene_factory.load_node_definitions_from("node_system/node_definitions.json");
+  if (!load_node_result) {
+    std::cerr << load_node_result.error() << std::endl;
+    return -1;
+  }
+
+  auto load_scenes_result = scene_factory.load_scene_definitions_from("node_system/scene_definitions.json");
+  if (!load_scenes_result) {
+    std::cerr << load_scenes_result.error() << std::endl;
+    return -1;
+  }
 
   std::cout << "Creating scene..." << std::endl;
-  std::unique_ptr<Scene> scene = scene_factory.load_scene_from("scene_2d2.json");
+  Result<std::unique_ptr<Scene>> scene_load_result = scene_factory.load_scene_from("scene_2d2.json");
+
+  if (!scene_load_result) {
+    std::cerr << "Failed to load scene: " << scene_load_result.error() << std::endl;
+    return -1;
+  }
+
+  std::unique_ptr<Scene> scene = std::move(scene_load_result).value();
 
   std::cout << "Creating nodes..." << std::endl;
   NodeID parID = scene->create_node(INVALID_NODE_ID, "node");
@@ -172,11 +188,6 @@ int main() {
       size_t successful_destructions = 0;
 
       auto start = std::chrono::high_resolution_clock::now();
-      for (NodeID id : stress_nodes) {
-        if (scene->destroy_node(id).is_ok()) {
-          successful_destructions++;
-        }
-      }
       auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> ms = end - start;
 
@@ -188,9 +199,7 @@ int main() {
     // TEST 5: Orphan/Ghost Reference Testing
     if (inputs1.isKeyPressed(KeyCode::KP5)) {
       std::cout << "\n[Crash Test 5] Destroying famID. Checking how famChildID handles orphan status..." << std::endl;
-
-      Result destroy_res = scene->destroy_node(famID);
-      std::cout << "  -> [LOG] famID destruction result: " << (destroy_res.is_ok() ? "SUCCESS" : "FAILED") << "\n";
+      scene->destroy_node(famID);
       print_frame_timings = true;
     }
 
