@@ -5,6 +5,7 @@
 #include <variant>
 #include <iostream>
 #include <utility>
+#include <cassert>
 
 namespace bird {
 
@@ -36,10 +37,7 @@ class [[nodiscard]] Result {
    * @brief If the result is successful, returns the value, otherwise terminates the program. Only call this if the result is successful.
    */
   [[nodiscard]] const T& value() const & noexcept {
-    if (!is_ok()) {
-      std::cerr << "Error: tried to access value of a Result that is failed." << std::endl;
-      std::terminate();
-    }
+    assert(!is_ok() && "Error: tried to access value of a Result that is failed.");
     return std::get<T>(data);
   }
 
@@ -47,10 +45,7 @@ class [[nodiscard]] Result {
    * @brief If the result is successful, returns the value, otherwise terminates the program. Only call this if the result is successful.
    */
   [[nodiscard]] T&& value() && noexcept {
-    if (!is_ok()) {
-      std::cerr << "Error: tried to access value of a Result that is failed." << std::endl;
-      std::terminate();
-    }
+    assert(!is_ok() && "Error: tried to access value of a Result that is failed.");
     return std::get<T>(std::move(data));
   }
 
@@ -58,10 +53,7 @@ class [[nodiscard]] Result {
  * @brief If the result is failed, returns the error message, otherwise terminates the program. Only call this if the result is failed.
  */
   [[nodiscard]] const std::string& error() const {
-    if (is_ok()) {
-      std::cerr << "Error: tried to access error of a Result that is successful." << std::endl;
-      std::terminate();
-    }
+    assert(is_ok() && "Error: tried to access error of a Result that is successful.");
     return std::get<std::string>(data);
   }
 
