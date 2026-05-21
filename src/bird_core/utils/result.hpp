@@ -37,7 +37,7 @@ class [[nodiscard]] Result {
    * @brief If the result is successful, returns the value, otherwise terminates the program. Only call this if the result is successful.
    */
   [[nodiscard]] const T& value() const & noexcept {
-    assert(!is_ok() && "Error: tried to access value of a Result that is failed.");
+    assert(is_ok() && "Error: tried to access value of a Result that is failed.");
     return std::get<T>(data);
   }
 
@@ -45,7 +45,7 @@ class [[nodiscard]] Result {
    * @brief If the result is successful, returns the value, otherwise terminates the program. Only call this if the result is successful.
    */
   [[nodiscard]] T&& value() && noexcept {
-    assert(!is_ok() && "Error: tried to access value of a Result that is failed.");
+    assert(is_ok() && "Error: tried to access value of a Result that is failed.");
     return std::get<T>(std::move(data));
   }
 
@@ -53,7 +53,7 @@ class [[nodiscard]] Result {
  * @brief If the result is failed, returns the error message, otherwise terminates the program. Only call this if the result is failed.
  */
   [[nodiscard]] const std::string& error() const {
-    assert(is_ok() && "Error: tried to access error of a Result that is successful.");
+    assert(!is_ok() && "Error: tried to access error of a Result that is successful.");
     return std::get<std::string>(data);
   }
 
