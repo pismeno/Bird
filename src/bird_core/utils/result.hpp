@@ -4,6 +4,7 @@
 #include <source_location>
 #include <variant>
 #include <iostream>
+#include <utility>
 
 namespace bird {
 
@@ -15,8 +16,15 @@ namespace bird {
 template <typename T>
 class [[nodiscard]] Result {
  public:
-  Result(T&& value) : data(std::move(value)) {}
+  Result(T value) : data(std::move(value)) {} // Accept by value and move, works for both copyable and move-only types
+
   Result(const std::string& error_message) : data(error_message) {}
+
+  Result(Result&& other) noexcept = default; // moving the Result itself
+  Result& operator=(Result&& other) noexcept = default;
+
+  Result(const Result&) = default; // Disable copying if T is move-only
+  Result& operator=(const Result&) = default;
 
   [[nodiscard]] inline bool is_ok() const noexcept { return std::holds_alternative<T>(data); }
   explicit operator bool() const noexcept { return is_ok(); }
@@ -24,7 +32,7 @@ class [[nodiscard]] Result {
   /**
    * @brief If the result is successful, returns the value, otherwise terminates the program. Only call this if the result is successful.
    */
-  [[nodiscard]] const T& value() const {
+  [[nodiscard]] const T& value() const & {
     if (!is_ok()) {
       std::cerr << "Error: tried to access value of a Result that is failed." << std::endl;
       std::terminate();
@@ -33,8 +41,19 @@ class [[nodiscard]] Result {
   }
 
   /**
-   * @brief If the result is failed, returns the error message, otherwise terminates the program. Only call this if the result is failed.
+   * @brief If the result is successful, returns the value, otherwise terminates the program. Only call this if the result is successful.
    */
+  [[nodiscard]] T&& value() && {
+    if (!is_ok()) {
+      std::cerr << "Error: tried to access value of a Result that is failed." << std::endl;
+      std::terminate();
+    }
+    return std::get<T>(std::move(data));
+  }
+
+  /**
+ * @brief If the result is failed, returns the error message, otherwise terminates the program. Only call this if the result is failed.
+ */
   [[nodiscard]] const std::string& error() const {
     if (is_ok()) {
       std::cerr << "Error: tried to access error of a Result that is successful." << std::endl;
@@ -44,7 +63,7 @@ class [[nodiscard]] Result {
   }
 
  private:
-  std::variant<T, std::string> data; // Either the value if successful, or an error message
+  std::variant<T, std::string> data;
 };
 
 /**
