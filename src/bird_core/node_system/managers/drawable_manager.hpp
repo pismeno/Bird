@@ -17,13 +17,14 @@ struct Drawable {
   uint32_t z_index = 0;
 };
 
-class DrawableManager : public INodeManager {
+class DrawableManager : public NodeManagerBase<DrawableManager> {
  public:
-  DrawableManager() {
+  explicit DrawableManager() {
     drawables.resize(MAX_ACTIVE_NODES, Drawable{});
   }
 
-  inline void create_drawable(NodeID node_id) { drawables[node_id.index()].is_visible = true; }
+  static constexpr const char* MANAGER_NAME = "drawable_manager";
+
   [[nodiscard]] inline bool has_drawable(NodeID node_id) const { return drawables[node_id.index()].is_visible; }
 
   /**
@@ -40,6 +41,10 @@ class DrawableManager : public INodeManager {
   [[nodiscard]] inline const std::vector<Drawable>& get_all_drawables() const { return drawables; }
 
   void on_node_destroyed(NodeID node_id) override;
+  void on_node_require_manager(NodeID node_id) override;
+  void on_scene_clear() override;
+  Result<void> on_serialize_scene(nlohmann::json& json) const override;
+  Result<void> on_deserialize_scene(const nlohmann::json& json) override;
 
  private:
   std::vector<Drawable> drawables;

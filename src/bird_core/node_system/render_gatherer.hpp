@@ -7,6 +7,8 @@ namespace bird::node_system {
 
 class RenderGatherer {
  public:
+  explicit RenderGatherer() = default;
+
   /**
    * @brief Generates render commands for the given scene.
    * @param scene reference to the scene

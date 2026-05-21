@@ -12,6 +12,7 @@ set(CORE_SOURCES
         "node_system/node.hpp"
         "node_system/scene.hpp"
         "node_system/scene.cpp"
+        "node_system/scene_serde.cpp"
         "node_system/inode_manager.hpp"
         "node_system/inode_manager.cpp"
         "node_system/managers/transform_manager.hpp"
@@ -20,12 +21,23 @@ set(CORE_SOURCES
         "node_system/managers/drawable_manager.cpp"
         "node_system/render_gatherer.cpp"
         "node_system/render_gatherer.hpp"
+        "node_system/scene_factory.hpp"
+        "node_system/scene_factory.cpp"
         "rendering/render_command.hpp"
 )
 
 add_library(BirdCore STATIC ${CORE_SOURCES})
 
-target_link_libraries(BirdCore PUBLIC glfw glm::glm)
+target_link_libraries(BirdCore PUBLIC
+        glfw
+        glm::glm
+        nlohmann_json::nlohmann_json
+)
+
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_definitions.json"
+        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene_definitions.json"
+        DESTINATION "${CMAKE_BINARY_DIR}/node_system"
+)
 
 target_include_directories(BirdCore
         PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

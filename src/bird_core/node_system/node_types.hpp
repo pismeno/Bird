@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <limits>
+#include <vector>
+#include <string>
 
 namespace bird::node_system {
 

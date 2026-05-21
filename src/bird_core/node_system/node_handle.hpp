@@ -9,7 +9,7 @@ class Node;
 
 class NodeHandle {
  public:
-  NodeHandle() : scene(nullptr), node_id(INVALID_NODE_ID) {}
+  explicit NodeHandle() : scene(nullptr), node_id(INVALID_NODE_ID) {}
   NodeHandle(Scene* scene, NodeID node_id) : scene(scene), node_id(node_id) {}
 
   /**

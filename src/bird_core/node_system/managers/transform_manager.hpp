@@ -7,6 +7,7 @@
 #include <limits>
 
 #include <glm/glm.hpp>
+#include <nlohmann/json.hpp>
 
 #include "utils/result.hpp"
 #include "node_system/node_types.hpp"
@@ -16,18 +17,16 @@ namespace bird::node_system::managers {
 using TransformIndex = uint32_t;
 inline constexpr TransformIndex INVALID_TRANSFORM_INDEX = std::numeric_limits<uint32_t>::max();
 
-class TransformManager : public INodeManager {
+class TransformManager : public NodeManagerBase<TransformManager> {
  public:
-  TransformManager() {
+  explicit TransformManager() {
     global_matrices.resize(MAX_ACTIVE_NODES, glm::mat3x3(1.0f));
     node_to_transform.resize(MAX_ACTIVE_NODES, INVALID_TRANSFORM_INDEX);
+    transforms.reserve(MAX_ACTIVE_NODES);
   }
 
-  /**
-   * Creates a new Transform for the given NodeID.
-   * @param node_id ID of the node to create the transform for. The manager assumes that this node ID is valid and has been created in the scene.
-   */
-  void create_transform(NodeID node_id);
+  static constexpr const char* MANAGER_NAME = "transform_manager";
+
   [[nodiscard]] bool has_transform(NodeID node_id) const;
 
   /**
@@ -59,6 +58,11 @@ class TransformManager : public INodeManager {
   void on_update() override;
   void on_node_destroyed(NodeID node_id) override;
   void on_frame_end() override;
+  void on_node_require_manager(NodeID node_id) override;
+  void on_node_reparented(NodeID node_id, NodeID new_parent_id, NodeID old_parent_id) override;
+  void on_scene_clear() override;
+  Result<void> on_serialize_scene(nlohmann::json& json) const override;
+  Result<void> on_deserialize_scene(const nlohmann::json& json) override;
 
  private:
   /**
@@ -70,15 +74,15 @@ class TransformManager : public INodeManager {
     glm::vec2 local_shear = {0.0f, 0.0f};
     float local_rotation = 0.0f;
 
-    NodeID node_id = INVALID_NODE_ID;
-    NodeID parent_id = INVALID_NODE_ID;
-    NodeID first_child_id = INVALID_NODE_ID;
-    NodeID next_sibling_id = INVALID_NODE_ID;
+    uint32_t node_idx = INVALID_NODE_ID.index();
+    uint32_t parent_idx = INVALID_NODE_ID.index();
+    uint32_t first_child_idx = INVALID_NODE_ID.index();
+    uint32_t next_sibling_idx = INVALID_NODE_ID.index();
 
     bool is_dirty = true;
   };
 
-  TransformInfo* get_transform(NodeID node_id);
+  TransformInfo* get_transform(uint32_t node_idx);
   void update_node_hierarchy(NodeID node_id, const glm::mat3& parent_global_mat);
   void mark_spatial_children_dirty(NodeID parent_id);
 

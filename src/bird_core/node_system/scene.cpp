@@ -16,13 +16,6 @@ namespace bird::node_system {
 
 using namespace managers;
 
-std::unique_ptr<Scene> Scene::create_scene_2d() {
-  auto scene = std::make_unique<Scene>();
-  scene->add_manager<TransformManager>();
-  scene->add_manager<DrawableManager>();
-  return scene;
-}
-
 [[nodiscard]] NodeID Scene::generate_id() {
   if (!recycled_ids.empty()) {
     uint32_t recycled = recycled_ids.back();
@@ -42,41 +35,30 @@ std::unique_ptr<Scene> Scene::create_scene_2d() {
   return NodeID::from(new_id, 0);
 }
 
-[[nodiscard]] NodeID Scene::createNode(NodeID parent_id, std::string name){
+[[nodiscard]] NodeID Scene::create_node(NodeID parent_id, std::string_view node_type) {
   NodeID new_id = generate_id();
 
   nodes[new_id.index()].id = new_id;
   nodes[new_id.index()].parentId = INVALID_NODE_ID;
-  nodes[new_id.index()].name = std::move(name);
 
-  if (parent_id != INVALID_NODE_ID && parent_id != new_id) {
-    (void)reparent_node(new_id, parent_id);
-  }
-
-  for (auto& manager : managers) {
+  for (auto& manager : managers_flat_array) {
     manager->on_node_created(new_id);
   }
 
+  auto type_it = node_type_definitions.find(node_type);
+  if (type_it != node_type_definitions.end()) {
+    for (const auto& manager : type_it->second.managers) {
+      manager->on_node_require_manager(new_id);
+    }
+  }
+
+  if (parent_id != INVALID_NODE_ID && parent_id != new_id) {
+    reparent_node(new_id, parent_id);
+  }
+
+  node_types[new_id.index()] = node_type;
+
   return new_id;
-}
-
-[[nodiscard]] NodeID Scene::createNode2D(NodeID parent_id, std::string name) {
-  NodeID node_id = createNode(parent_id, std::move(name));
-  auto transform_manager = get_manager<TransformManager>();
-  transform_manager->create_transform(node_id);
-  transform_manager->set_parent(node_id, parent_id);
-  return node_id;
-}
-
-[[nodiscard]] NodeID Scene::createNode2DDrawable(NodeID parent_id, std::string name) {
-  NodeID node_id = createNode2D(parent_id, std::move(name));
-  auto drawable_manager = get_manager<DrawableManager>();
-  drawable_manager->create_drawable(node_id);
-  return node_id;
-}
-
-[[nodiscard]] NodeHandle Scene::get_node(NodeID node_id) {
-  return NodeHandle(this, node_id);
 }
 
 Result<void> Scene::destroy_node(NodeID node_id) {
@@ -95,10 +77,10 @@ Result<void> Scene::destroy_node(NodeID node_id) {
 
   std::vector<NodeID> children_to_kill = node->childrenIds;
   for (NodeID child_id : children_to_kill) {
-    (void)destroy_node(child_id);
+    destroy_node(child_id);
   }
 
-  for (auto& manager : managers) {
+  for (auto& manager : managers_flat_array) {
     manager->on_node_destroyed(node_id);
   }
 
@@ -111,9 +93,28 @@ Result<void> Scene::destroy_node(NodeID node_id) {
   node->id = INVALID_NODE_ID;
   node->parentId = INVALID_NODE_ID;
   node->childrenIds.clear();
-  node->name.clear();
 
   return bird::ok();
+}
+
+[[nodiscard]] NodeHandle Scene::get_node(NodeID node_id) {
+  return {this, node_id};
+}
+
+void Scene::clear() {
+  for (auto& manager : managers_flat_array) {
+    manager->on_scene_clear();
+  }
+
+  for (uint32_t i = 0; i < get_highest_allocated_node_index(); ++i) {
+    generations[i]++; // Invalidates all existing handles globally
+    nodes[i].id = INVALID_NODE_ID;
+    nodes[i].parentId = INVALID_NODE_ID;
+    nodes[i].childrenIds.clear();
+  }
+
+  recycled_ids.clear();
+  next_unused_id.store(0);
 }
 
 Result<void> Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
@@ -127,6 +128,7 @@ Result<void> Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
   if (!child) return bird::fail("Node with provided ID not found");
   if (!new_parent) return bird::fail("Parent node with provided ID not found");
 
+  NodeID old_parent_id = child->parentId;
   if (child->parentId != INVALID_NODE_ID) {
     Node *old_parent = &nodes[child->parentId.index()];
     if (old_parent) {
@@ -138,19 +140,54 @@ Result<void> Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
   child->parentId = new_parent_id;
   new_parent->childrenIds.push_back(node_id);
 
+  for (auto& manager : managers_flat_array) {
+    manager->on_node_reparented(node_id, new_parent_id, old_parent_id);
+  }
+
   return bird::ok();
 }
 
 void Scene::end_frame() {
-  for (auto& manager : managers) {
+  for (auto& manager : managers_flat_array) {
     manager->on_frame_end();
   }
 }
 
 void Scene::update() {
-  for (auto& manager : managers) {
+  for (auto& manager : managers_flat_array) {
     manager->on_update();
   }
+}
+
+Result<void> Scene::add_manager(std::unique_ptr<INodeManager> manager) {
+  std::string manager_name = manager->get_name();
+  if (managers_map.find(manager_name) != managers_map.end()) {
+    return bird::fail("A manager with the name '" + manager_name + "' is already registered");
+  }
+
+  managers_flat_array.push_back(manager.get());
+  managers_map[manager_name] = std::move(manager);
+  return bird::ok();
+}
+
+Result<void> Scene::add_node_type(std::string_view node_type, std::span<const std::string> node_managers) {
+  if (node_type_definitions.find(node_type) != node_type_definitions.end()) {
+    return bird::fail("A node type with the name '" + std::string(node_type) + "' is already registered");
+  }
+
+  NodeDefinition node_definition;
+
+  for (auto& manager_name : node_managers) {
+    auto manager_it = managers_map.find(manager_name);
+    if (manager_it == managers_map.end()) {
+      return bird::fail("Node type '" + std::string(node_type) + "' requires manager '" + std::string(manager_name) + "' which is not registered");
+    }
+
+    node_definition.managers.push_back(manager_it->second.get());
+  }
+
+  node_type_definitions.emplace(node_type, std::move(node_definition));
+  return bird::ok();
 }
 
 } // bird::node_system
