@@ -8,15 +8,15 @@
 
 namespace bird::node_system::managers {
 
-void DrawableManager::on_node_destroyed(NodeID node_id) {
+void DrawableManager::on_node_destroyed(NodeID node_id) noexcept {
   drawables[node_id.index()].is_visible = false;
 }
 
-void DrawableManager::on_node_require_manager(NodeID node_id) {
+void DrawableManager::on_node_require_manager(NodeID node_id) noexcept {
   drawables[node_id.index()].is_visible = true;
 }
 
-void DrawableManager::on_scene_clear() {
+void DrawableManager::on_scene_clear() noexcept {
   for (auto &drawable: drawables) {
     drawable.is_visible = false;
   }

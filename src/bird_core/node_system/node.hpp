@@ -17,9 +17,9 @@ class Node {
  public:
   Node() = default;
 
-  inline const NodeID getId() const { return id; }
-  inline const NodeID getParentId() const { return parentId; }
-  inline const std::vector<NodeID>& getChildrenIds() const { return childrenIds; }
+  inline const NodeID getId() const noexcept { return id; }
+  inline const NodeID getParentId() const noexcept { return parentId; }
+  inline const std::vector<NodeID>& getChildrenIds() const noexcept { return childrenIds; }
 
  private:
   NodeID id = INVALID_NODE_ID;

@@ -79,7 +79,7 @@ void TransformManager::mark_spatial_children_dirty(NodeID parent_id) {
   }
 }
 
-bool TransformManager::has_transform(NodeID node_id) const {
+bool TransformManager::has_transform(NodeID node_id) const noexcept {
   if (node_id.index() >= node_to_transform.size()) return false;
   return node_to_transform[node_id.index()] != INVALID_TRANSFORM_INDEX;
 }
@@ -98,7 +98,7 @@ TransformManager::TransformInfo* TransformManager::get_transform(uint32_t node_i
   return &transforms[index];
 }
 
-void TransformManager::on_update() {
+void TransformManager::on_update() noexcept {
   for (size_t i = 0; i < transforms.size(); i++) {
     if (transforms[i].parent_idx == INVALID_NODE_ID.index() && transforms[i].node_idx != INVALID_NODE_ID.index()) {
       update_node_hierarchy(NodeID::from(transforms[i].node_idx, 0), glm::mat3(1.0f));
@@ -106,7 +106,7 @@ void TransformManager::on_update() {
   }
 }
 
-void TransformManager::on_node_require_manager(NodeID node_id) {
+void TransformManager::on_node_require_manager(NodeID node_id) noexcept {
   transforms.emplace_back();
   transforms.back().node_idx = node_id.index();
 
@@ -154,7 +154,7 @@ void TransformManager::update_node_hierarchy(NodeID node_id, const glm::mat3& pa
   }
 }
 
-void TransformManager::on_node_destroyed(NodeID node_id) {
+void TransformManager::on_node_destroyed(NodeID node_id) noexcept {
   if (!has_transform(node_id)) return;
 
   remove_from_parent(node_id);
@@ -168,7 +168,7 @@ void TransformManager::on_node_destroyed(NodeID node_id) {
   node_to_transform[node_id.index()] = INVALID_TRANSFORM_INDEX;
 }
 
-void TransformManager::on_frame_end() {
+void TransformManager::on_frame_end() noexcept {
   size_t write_idx = 0;
   for (size_t read_idx = 0; read_idx < transforms.size(); ++read_idx) {
     if (transforms[read_idx].node_idx != INVALID_NODE_ID.index()) {
@@ -187,7 +187,7 @@ void TransformManager::on_frame_end() {
   }
 }
 
-void TransformManager::remove_from_parent(NodeID child_id) {
+void TransformManager::remove_from_parent(NodeID child_id) noexcept {
   TransformInfo* child = get_transform(child_id.index());
   if (!child || child->parent_idx == INVALID_NODE_ID.index()) return;
 
@@ -217,7 +217,7 @@ void TransformManager::remove_from_parent(NodeID child_id) {
   child->next_sibling_idx = INVALID_NODE_ID.index();
 }
 
-void TransformManager::set_parent(NodeID child_id, NodeID new_parent_id) {
+void TransformManager::set_parent(NodeID child_id, NodeID new_parent_id) noexcept {
   TransformInfo* child = get_transform(child_id.index());
   if (!child) return;
 
@@ -239,11 +239,11 @@ void TransformManager::set_parent(NodeID child_id, NodeID new_parent_id) {
   mark_spatial_children_dirty(child_id);
 }
 
-void TransformManager::on_node_reparented(NodeID node_id, NodeID new_parent_id, NodeID old_parent_id) {
+void TransformManager::on_node_reparented(NodeID node_id, NodeID new_parent_id, NodeID old_parent_id) noexcept {
   set_parent(node_id, new_parent_id);
 }
 
-void TransformManager::on_scene_clear() {
+void TransformManager::on_scene_clear() noexcept {
   transforms.clear();
   std::fill(node_to_transform.begin(), node_to_transform.end(), INVALID_TRANSFORM_INDEX);
 }

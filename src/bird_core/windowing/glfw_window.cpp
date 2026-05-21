@@ -15,7 +15,7 @@ GlfwWindow::GlfwWindow(WindowOptions options)
       glfwWindow(nullptr),
       fullscreen(false) {}
 
-GlfwWindow::~GlfwWindow() = default;
+GlfwWindow::~GlfwWindow() noexcept = default;
 
 Result<void> GlfwWindow::init() {
   glfwWindow = glfwCreateWindow(options.width, options.height, options.title.c_str(), nullptr, nullptr);
@@ -57,31 +57,31 @@ Result<void> GlfwWindow::close() {
   return bird::ok();
 }
 
-bool GlfwWindow::shouldClose() const {
+bool GlfwWindow::shouldClose() const noexcept {
   return glfwWindowShouldClose(glfwWindow);
 }
 
-uint32_t GlfwWindow::getWidth() const {
+uint32_t GlfwWindow::getWidth() const noexcept {
   return this->options.width;
 }
 
-uint32_t GlfwWindow::getHeight() const {
+uint32_t GlfwWindow::getHeight() const noexcept {
   return this->options.height;
 }
 
-bool GlfwWindow::isFocused() const {
+bool GlfwWindow::isFocused() const noexcept {
   return glfwGetWindowAttrib(glfwWindow, GLFW_FOCUSED);
 }
 
-bool GlfwWindow::isFullscreen() const {
+bool GlfwWindow::isFullscreen() const noexcept {
   return fullscreen;
 }
 
-Inputs& GlfwWindow::getInputs() {
+Inputs& GlfwWindow::getInputs() noexcept {
   return inputs;
 }
 
-void GlfwWindow::setFullscreen(bool fullscreen) {
+void GlfwWindow::setFullscreen(bool fullscreen) noexcept {
   if (fullscreen) {
     glfwGetWindowPos(glfwWindow, &windowedX, &windowedY);
 
@@ -97,7 +97,7 @@ void GlfwWindow::setFullscreen(bool fullscreen) {
   }
 }
 
-void GlfwWindow::windowResizeCallback(GLFWwindow *window, int width, int height) {
+void GlfwWindow::windowResizeCallback(GLFWwindow *window, int width, int height) noexcept {
   if (!isFullscreen()) {
     windowedWidth = width;
     windowedHeight = height;

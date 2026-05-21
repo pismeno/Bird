@@ -9,15 +9,15 @@ class Node;
 
 class NodeHandle {
  public:
-  explicit NodeHandle() : scene(nullptr), node_id(INVALID_NODE_ID) {}
-  NodeHandle(Scene* scene, NodeID node_id) : scene(scene), node_id(node_id) {}
+  explicit NodeHandle() noexcept : scene(nullptr), node_id(INVALID_NODE_ID) {}
+  NodeHandle(Scene* scene, NodeID node_id) noexcept : scene(scene), node_id(node_id) {}
 
   /**
    * @brief safely checks if the node still exists in the current generation.
    */
   [[nodiscard]] bool is_valid() const;
 
-  explicit operator bool() const {
+  explicit operator bool() const noexcept {
     return is_valid();
   }
 
@@ -26,7 +26,7 @@ class NodeHandle {
    */
   [[nodiscard]] Node* get() const;
 
-  Node* operator->() const { return get(); }
+  Node* operator->() const noexcept { return get(); }
  private:
   Scene* scene;
   NodeID node_id;

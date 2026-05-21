@@ -17,18 +17,18 @@ class GlfwWindow : public IWindow {
 
  public:
   explicit GlfwWindow(WindowOptions options);
-  virtual ~GlfwWindow();
+  virtual ~GlfwWindow() noexcept;
 
   Result<void> init() override;
   void update() override;
   Result<void> close() override;
-  bool shouldClose() const override;
-  uint32_t getWidth() const override;
-  uint32_t getHeight() const override;
-  bool isFocused() const override;
-  bool isFullscreen() const override;
-  void setFullscreen(bool fullscreen) override;
-  Inputs& getInputs() override;
+  bool shouldClose() const noexcept override;
+  uint32_t getWidth() const noexcept override;
+  uint32_t getHeight() const noexcept override;
+  bool isFocused() const noexcept override;
+  bool isFullscreen() const noexcept override;
+  void setFullscreen(bool fullscreen) noexcept override;
+  Inputs& getInputs() noexcept override;
 
  private:
   GLFWwindow* glfwWindow;
@@ -41,7 +41,7 @@ class GlfwWindow : public IWindow {
 
   GlfwInputs inputs;
 
-  void windowResizeCallback(GLFWwindow* window, int width, int height);
+  void windowResizeCallback(GLFWwindow* window, int width, int height) noexcept;
 };
 
 } // bird

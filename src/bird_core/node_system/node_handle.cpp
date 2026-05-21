@@ -4,11 +4,11 @@
 
 namespace bird::node_system {
 
-[[nodiscard]] bool NodeHandle::is_valid() const {
+[[nodiscard]] bool NodeHandle::is_valid() const noexcept {
   return scene->generations[node_id.index()] == node_id.generation();
 }
 
-[[nodiscard]] Node* NodeHandle::get() const {
+[[nodiscard]] Node* NodeHandle::get() const noexcept {
   if (!is_valid()) return nullptr;
   return &scene->nodes[node_id.index()];
 }

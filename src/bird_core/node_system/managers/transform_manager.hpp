@@ -27,40 +27,40 @@ class TransformManager : public NodeManagerBase<TransformManager> {
 
   static constexpr const char* MANAGER_NAME = "transform_manager";
 
-  [[nodiscard]] bool has_transform(NodeID node_id) const;
+  [[nodiscard]] bool has_transform(NodeID node_id) const noexcept;
 
   /**
    * Sets the parent of the given child node, in this manager, this is needed for mantaining the hierarchy.
    * @param child_id
    * @param parent_id
    */
-  void set_parent(NodeID child_id, NodeID parent_id);
-  void remove_from_parent(NodeID child_id);
+  void set_parent(NodeID child_id, NodeID parent_id) noexcept;
+  void remove_from_parent(NodeID child_id) noexcept;
 
   /**
    * @brief Gets the global transformation matrix of the given node, this represents scale, translation, shear and rotation.
    * @param node_id ID of the node to get the matrix for.
    * @return The 3x3 global transformation matrix.
    */
-  [[nodiscard]] inline const glm::mat3x3& get_global_matrix(NodeID node_id) const { return global_matrices[node_id.index()]; }
+  [[nodiscard]] inline const glm::mat3x3& get_global_matrix(NodeID node_id) const noexcept { return global_matrices[node_id.index()]; }
 
   /**
    * @brief Gets all the global transformation matrices of all nodes in the scene.
    * @return reference to the vector of matrices, it is indexed by NodeID.index().
    */
-  [[nodiscard]] inline const std::vector<glm::mat3x3>& get_all_matrices() const { return global_matrices; }
+  [[nodiscard]] inline const std::vector<glm::mat3x3>& get_all_matrices() const noexcept { return global_matrices; }
 
   Result<void> set_node_position(NodeID node_id, glm::vec2 pos);
   Result<void> set_node_scale(NodeID node_id, glm::vec2 scale);
   Result<void> set_node_shear(NodeID node_id, glm::vec2 shear);
   Result<void> set_node_rotation(NodeID node_id, float rotation);
 
-  void on_update() override;
-  void on_node_destroyed(NodeID node_id) override;
-  void on_frame_end() override;
-  void on_node_require_manager(NodeID node_id) override;
-  void on_node_reparented(NodeID node_id, NodeID new_parent_id, NodeID old_parent_id) override;
-  void on_scene_clear() override;
+  void on_update() noexcept override;
+  void on_node_destroyed(NodeID node_id) noexcept override;
+  void on_frame_end() noexcept override;
+  void on_node_require_manager(NodeID node_id) noexcept override;
+  void on_node_reparented(NodeID node_id, NodeID new_parent_id, NodeID old_parent_id) noexcept override;
+  void on_scene_clear() noexcept override;
   Result<void> on_serialize_scene(nlohmann::json& json) const override;
   Result<void> on_deserialize_scene(const nlohmann::json& json) override;
 

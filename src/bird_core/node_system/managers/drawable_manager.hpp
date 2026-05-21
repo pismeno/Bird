@@ -25,24 +25,24 @@ class DrawableManager : public NodeManagerBase<DrawableManager> {
 
   static constexpr const char* MANAGER_NAME = "drawable_manager";
 
-  [[nodiscard]] inline bool has_drawable(NodeID node_id) const { return drawables[node_id.index()].is_visible; }
+  [[nodiscard]] inline bool has_drawable(NodeID node_id) const noexcept { return drawables[node_id.index()].is_visible; }
 
   /**
    * Gets the draw information of the given node.
    * @param node_id ID of the node to get the draw information for.
    * @return Drawable struct tied to this node
    */
-  [[nodiscard]] inline const Drawable& get_drawable(NodeID node_id) const { return drawables[node_id.index()]; }
+  [[nodiscard]] inline const Drawable& get_drawable(NodeID node_id) const noexcept { return drawables[node_id.index()]; }
 
   /**
    * Gets all the draw information of all nodes in the scene.
    * @return reference to the vector of drawables, it is indexed by NodeID.index().
    */
-  [[nodiscard]] inline const std::vector<Drawable>& get_all_drawables() const { return drawables; }
+  [[nodiscard]] inline const std::vector<Drawable>& get_all_drawables() const noexcept { return drawables; }
 
-  void on_node_destroyed(NodeID node_id) override;
-  void on_node_require_manager(NodeID node_id) override;
-  void on_scene_clear() override;
+  void on_node_destroyed(NodeID node_id) noexcept override;
+  void on_node_require_manager(NodeID node_id) noexcept override;
+  void on_scene_clear() noexcept override;
   Result<void> on_serialize_scene(nlohmann::json& json) const override;
   Result<void> on_deserialize_scene(const nlohmann::json& json) override;
 

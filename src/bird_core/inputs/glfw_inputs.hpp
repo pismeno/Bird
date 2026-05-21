@@ -21,36 +21,36 @@ class GlfwInputs : public Inputs {
   explicit GlfwInputs() = default;
 
   // Keyboard
-  bool isKeyPressed(KeyCode key) override;    // True ONLY on the exact frame it was pressed
-  bool isKeyHeld(KeyCode key) override;       // True as long as the key is down
-  bool isKeyReleased(KeyCode key) override;   // True ONLY on the exact frame it was let go
+  bool isKeyPressed(KeyCode key) noexcept override;    // True ONLY on the exact frame it was pressed
+  bool isKeyHeld(KeyCode key) noexcept override;       // True as long as the key is down
+  bool isKeyReleased(KeyCode key) noexcept override;   // True ONLY on the exact frame it was let go
 
   // Mouse
-  bool isMouseButtonPressed(MouseCode button) override;
-  bool isMouseButtonHeld(MouseCode button) override;
-  bool isMouseButtonReleased(MouseCode button) override;
-  glm::vec2 getMousePosition() override;
-  float getMouseX() override;
-  float getMouseY() override;
-  glm::vec2 getMouseDelta() override;
-  float getMouseDeltaX() override;
-  float getMouseDeltaY() override;
-  float getScrollX() override;
-  float getScrollY() override;
-  float getScrollDeltaX() override;
-  float getScrollDeltaY() override;
+  bool isMouseButtonPressed(MouseCode button) noexcept override;
+  bool isMouseButtonHeld(MouseCode button) noexcept override;
+  bool isMouseButtonReleased(MouseCode button) noexcept override;
+  glm::vec2 getMousePosition() noexcept override;
+  float getMouseX() noexcept override;
+  float getMouseY() noexcept override;
+  glm::vec2 getMouseDelta() noexcept override;
+  float getMouseDeltaX() noexcept override;
+  float getMouseDeltaY() noexcept override;
+  float getScrollX() noexcept override;
+  float getScrollY() noexcept override;
+  float getScrollDeltaX() noexcept override;
+  float getScrollDeltaY() noexcept override;
 
-  void endFrame() override;
+  void endFrame() noexcept override;
 
  private:
   static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
   static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
   static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos);
   static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-  void handleKey(int key, int scancode, int action, int mods);
-  void handleMouseButton(int button, int action, int mods);
-  void handleCursor(double xpos, double ypos);
-  void handleScroll(double xoffset, double yoffset);
+  void handleKey(int key, int scancode, int action, int mods) noexcept;
+  void handleMouseButton(int button, int action, int mods) noexcept;
+  void handleCursor(double xpos, double ypos) noexcept;
+  void handleScroll(double xoffset, double yoffset) noexcept;
 
   // Mouse
   static const int MAX_MOUSE_BUTTONS = 16;
@@ -72,8 +72,8 @@ class GlfwInputs : public Inputs {
   bool currentKeyState[MAX_KEYS]{};
   bool previousKeyState[MAX_KEYS]{};
 
-  inline void endFrameKeys();
-  inline void endFrameMouse();
+  inline void endFrameKeys() noexcept;
+  inline void endFrameMouse() noexcept;
 };
 
 } // bird::inputs

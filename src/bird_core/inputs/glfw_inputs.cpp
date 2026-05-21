@@ -6,82 +6,82 @@
 
 namespace bird::inputs {
 
-bool GlfwInputs::isKeyHeld(KeyCode key) {
+bool GlfwInputs::isKeyHeld(KeyCode key) noexcept {
   return currentKeyState[(uint16_t) key];
 }
 
-bool GlfwInputs::isKeyPressed(KeyCode key) {
+bool GlfwInputs::isKeyPressed(KeyCode key) noexcept {
   return currentKeyState[(uint16_t) key] && !previousKeyState[(uint16_t) key];
 }
 
-bool GlfwInputs::isKeyReleased(KeyCode key) {
+bool GlfwInputs::isKeyReleased(KeyCode key) noexcept {
   return !currentKeyState[(uint16_t) key] && previousKeyState[(uint16_t) key];
 }
 
-bool GlfwInputs::isMouseButtonHeld(MouseCode button) {
+bool GlfwInputs::isMouseButtonHeld(MouseCode button) noexcept {
   return currentMouseState[(uint16_t)button];
 }
 
-bool GlfwInputs::isMouseButtonPressed(MouseCode button) {
+bool GlfwInputs::isMouseButtonPressed(MouseCode button) noexcept {
   return currentMouseState[(uint16_t)button] && !previousMouseState[(uint16_t)button];
 }
 
-bool GlfwInputs::isMouseButtonReleased(MouseCode button) {
+bool GlfwInputs::isMouseButtonReleased(MouseCode button) noexcept {
   return !currentMouseState[(uint16_t)button] && previousMouseState[(uint16_t)button];
 }
 
-glm::vec2 GlfwInputs::getMousePosition() {
+glm::vec2 GlfwInputs::getMousePosition() noexcept {
   return glm::vec2(mouseX, mouseY);
 }
 
-float GlfwInputs::getMouseX() {
+float GlfwInputs::getMouseX() noexcept {
   return mouseX;
 }
 
-float GlfwInputs::getMouseY() {
+float GlfwInputs::getMouseY() noexcept {
   return mouseY;
 }
 
-glm::vec2 GlfwInputs::getMouseDelta() {
+glm::vec2 GlfwInputs::getMouseDelta() noexcept {
   return glm::vec2(getMouseDeltaX(), getMouseDeltaY());
 }
 
-float GlfwInputs::getMouseDeltaY() {
+float GlfwInputs::getMouseDeltaY() noexcept {
   return mouseY - previousMouseY;
 }
 
-float GlfwInputs::getMouseDeltaX() {
+float GlfwInputs::getMouseDeltaX() noexcept {
   return mouseX - previousMouseX;
 }
 
-float GlfwInputs::getScrollX() {
+float GlfwInputs::getScrollX() noexcept {
   return scrollX;
 }
 
-float GlfwInputs::getScrollY() {
+float GlfwInputs::getScrollY() noexcept {
   return scrollY;
 }
 
-float GlfwInputs::getScrollDeltaX() {
+float GlfwInputs::getScrollDeltaX() noexcept {
   return scrollX - previousScrollX;
 }
 
-float GlfwInputs::getScrollDeltaY() {
+float GlfwInputs::getScrollDeltaY() noexcept {
   return scrollY - previousScrollY;
 }
 
-void GlfwInputs::endFrame() {
+void GlfwInputs::endFrame() noexcept {
   endFrameKeys();
   endFrameMouse();
 }
 
-inline void GlfwInputs::endFrameKeys() {
+inline void GlfwInputs::endFrameKeys() noexcept {
   for (int i = 0; i < MAX_KEYS; i++) {
     previousKeyState[i] = currentKeyState[i];
   }
 }
 
-inline void GlfwInputs::endFrameMouse() {
+inline void GlfwInputs::endFrameMouse() noexcept {
   for (int i = 0; i < MAX_MOUSE_BUTTONS; i++) {
     previousMouseState[i] = currentMouseState[i];
   }
@@ -127,7 +127,7 @@ void GlfwInputs::scrollCallback(GLFWwindow *window, double xoffset, double yoffs
   }
 }
 
-void GlfwInputs::handleKey(int key, int scancode, int action, int mods) {
+void GlfwInputs::handleKey(int key, int scancode, int action, int mods) noexcept {
   if (key < 0 || key >= MAX_KEYS) {
     return; // Ignore out-of-bounds keys
   }
@@ -140,7 +140,7 @@ void GlfwInputs::handleKey(int key, int scancode, int action, int mods) {
   }
 }
 
-void GlfwInputs::handleMouseButton(int button, int action, int mods) {
+void GlfwInputs::handleMouseButton(int button, int action, int mods) noexcept {
   if (button < 0 || action >= MAX_MOUSE_BUTTONS) {
     return; // Ignore out-of-bounds keys
   }
@@ -153,7 +153,7 @@ void GlfwInputs::handleMouseButton(int button, int action, int mods) {
   }
 }
 
-void GlfwInputs::handleCursor(double xpos, double ypos) {
+void GlfwInputs::handleCursor(double xpos, double ypos) noexcept {
   auto x = (float)xpos;
   auto y = (float)ypos;
 
@@ -161,7 +161,7 @@ void GlfwInputs::handleCursor(double xpos, double ypos) {
   mouseY = y;
 }
 
-void GlfwInputs::handleScroll(double xoffset, double yoffset) {
+void GlfwInputs::handleScroll(double xoffset, double yoffset) noexcept {
   auto x = (float)xoffset;
   auto y = (float)yoffset;
 

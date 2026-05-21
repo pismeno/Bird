@@ -31,7 +31,7 @@ class Scene {
     node_types.resize(MAX_ACTIVE_NODES);
   }
 
-  [[nodiscard]] inline const std::string_view get_scene_type() const { return scene_type_name; }
+  [[nodiscard]] inline const std::string_view get_scene_type() const noexcept { return scene_type_name; }
 
   [[nodiscard]] NodeID create_node(NodeID parent_id, std::string_view node_type);
 
@@ -42,7 +42,7 @@ class Scene {
   /**
    * @return The highest index part of NodeID of a node that exists.
    */
-  [[nodiscard]] inline uint32_t get_highest_allocated_node_index() const { return next_unused_id.load(); }
+  [[nodiscard]] inline uint32_t get_highest_allocated_node_index() const noexcept { return next_unused_id.load(); }
 
   void update();
   void end_frame();
