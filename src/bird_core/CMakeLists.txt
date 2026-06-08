@@ -19,7 +19,7 @@ if (APPLE)
             "${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal_renderer.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/rendering/mtl_implementation.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/rendering/mtl_implementation.mm"
-            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/GLFWBridge.mm"
+            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/CocoaBridge.mm"
     )
     # Define macro for conditional preprocessor guarding in C++
     add_compile_definitions(BIRD_PLATFORM_APPLE)

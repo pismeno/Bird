@@ -1,6 +1,16 @@
 #include "glfw_window.hpp"
 
 #include <utility>
+
+#if defined(BIRD_PLATFORM_WINDOWS)
+#define GLFW_EXPOSE_NATIVE_WIN32
+#elif defined(BIRD_PLATFORM_APPLE)
+#define  GLFW_EXPOSE_NATIVE_COCOA
+#endif
+
+#include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
+
 #include "inputs/glfw_inputs.hpp"
 
 namespace bird {
@@ -80,10 +90,6 @@ Inputs& GlfwWindow::getInputs() {
   return inputs;
 }
 
-GLFWwindow* GlfwWindow::getNativeWindow() const {
-  return glfwWindow;
-}
-
 void GlfwWindow::setResizeCallback(ResizeCallback callback) {
   resize_callback = std::move(callback);
 
@@ -133,6 +139,16 @@ void GlfwWindow::frameBufferResizeCallback(GLFWwindow *window, int width, int he
   if (resize_callback) {
     resize_callback(width, height);
   }
+}
+
+void* GlfwWindow::getNativeHandle() const {
+#if defined(BIRD_PLATFORM_WINDOWS)
+  return (void*) glfwGetWin32Window(glfwWindow);
+#elif defined(BIRD_PLATFOWM_APPLE)
+  return (void*) glfwGetCocoaWindow(glfwWindow);
+#else
+  return nullptr;
+#endif
 }
 
 } // bird

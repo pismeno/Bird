@@ -1,6 +1,6 @@
 #include "metal_renderer.hpp"
 
-#include "GLFWBridge.hpp"
+#include "CocoaBridge.hpp"
 #include "shader_compiler.hpp"
 #include "../node_system/managers/transform/transforms.hpp"
 
@@ -16,8 +16,6 @@
 #include <iostream>
 #include <sstream>
 
-#include <GLFW/glfw3.h>
-
 using namespace bird::node_system::managers;
 
 namespace bird {
@@ -31,7 +29,6 @@ struct QuadTransformUniform {
 
 struct MetalRenderer::Impl {
   MTL::Device* metal_device = nullptr;
-  GLFWwindow* glfw_window = nullptr;
 
   CA::MetalLayer* metal_layer = nullptr;
   CA::MetalDrawable* metal_drawable = nullptr;
@@ -56,16 +53,15 @@ void MetalRenderer::init_device() {
 
 void MetalRenderer::init_window(Window& shared_window) {
 
-  metal_backend_->glfw_window = shared_window.getNativeWindow();
+  void* native_window_handle = shared_window.getNativeHandle();
 
-  if (!metal_backend_->glfw_window) {
-      std::cerr << "Renderer requires a GLFW-backed window" << std::endl;
-      std::exit(EXIT_FAILURE);
-  }
+  // TODO FIXME implement with cocoa native methods instead of GLFW
 
   int width = 0;
   int height = 0;
+  /*
   glfwGetFramebufferSize(metal_backend_->glfw_window, &width, &height);
+   */
 
   metal_backend_->metal_layer = CA::MetalLayer::layer();
   metal_backend_->metal_layer->setDevice(metal_backend_->metal_device);
@@ -86,7 +82,7 @@ void MetalRenderer::init(Window& window) {
 }
 
 void MetalRenderer::render() {
-  if (!metal_backend_ || !metal_backend_->glfw_window || !metal_backend_->metal_layer) {
+  if (!metal_backend_ || !metal_backend_->metal_layer) {
       return;
   }
 
