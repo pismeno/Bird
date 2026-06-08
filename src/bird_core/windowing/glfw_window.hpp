@@ -16,33 +16,39 @@ class GlfwWindow : public Window {
   friend class inputs::GlfwInputs;
 
  public:
-  GlfwWindow(WindowOptions options);
+  GlfwWindow(const WindowOptions& options);
   virtual ~GlfwWindow();
 
   Result init() override;
   void update() override;
   Result close() override;
   bool shouldClose() const override;
-  uint32_t getWidth() const override;
-  uint32_t getHeight() const override;
+  uint32_t getLogicalWidth() const override;
+  uint32_t getLogicalHeight() const override;
+  uint32_t getFramebufferWidth() const override;
+  uint32_t getFramebufferHeight() const override;
   bool isFocused() const override;
   bool isFullscreen() const override;
   void setFullscreen(bool fullscreen) override;
   Inputs& getInputs() override;
-  void setResizeCallback(ResizeCallback callback) override;
   void* getNativeHandle() const override;
 
  private:
-  GLFWwindow* glfwWindow;
+  GLFWwindow* glfwWindow{};
 
-  uint32_t windowedWidth{}, windowedHeight{};
+  std::string title{};
+
+  uint32_t logicalWidth{};
+  uint32_t logicalHeight{};
+  uint32_t framebufferWidth{};
+  uint32_t framebufferHeight{};
+
+  uint32_t windowedWidth{};
+  uint32_t windowedHeight{};
   int windowedX{}, windowedY{};
   bool fullscreen{};
 
-  WindowOptions options;
-
   GlfwInputs inputs;
-  ResizeCallback resize_callback;
 
   void windowResizeCallback(GLFWwindow* window, int width, int height);
   void frameBufferResizeCallback(GLFWwindow* window, int width, int height);

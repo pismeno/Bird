@@ -29,7 +29,7 @@ public:
 
 private:
   void init_device();
-  void init_window(Window& shared_window);
+  void init_window(Window& window);
 
 
   void create_default_library();

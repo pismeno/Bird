@@ -13,8 +13,11 @@ namespace bird {
 using namespace inputs;
 
 struct WindowOptions {
-  uint32_t width, height;
+  uint32_t logical_width, logical_height;
+
   std::string title;
+
+  bool startFullscreen = false;
 };
 
 class Window {
@@ -29,14 +32,15 @@ class Window {
 
   virtual bool shouldClose() const = 0;
 
-  virtual uint32_t getWidth() const = 0;
-  virtual uint32_t getHeight() const = 0;
+  virtual uint32_t getLogicalWidth() const = 0;
+  virtual uint32_t getLogicalHeight() const = 0;
+  virtual uint32_t getFramebufferWidth() const = 0;
+  virtual uint32_t getFramebufferHeight() const = 0;
   virtual bool isFocused() const = 0;
   virtual bool isFullscreen() const = 0;
   virtual void setFullscreen(bool fullscreen) = 0;
 
   virtual Inputs& getInputs() = 0;
-  virtual void setResizeCallback(ResizeCallback callback) = 0;
 
   virtual void* getNativeHandle() const = 0;
 

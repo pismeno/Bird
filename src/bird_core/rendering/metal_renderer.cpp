@@ -51,17 +51,12 @@ void MetalRenderer::init_device() {
   metal_backend_->metal_device = MTL::CreateSystemDefaultDevice();
 }
 
-void MetalRenderer::init_window(Window& shared_window) {
+void MetalRenderer::init_window(Window& window) {
 
-  void* native_window_handle = shared_window.getNativeHandle();
+  void* native_window_handle = window.getNativeHandle();
 
-  // TODO FIXME implement with cocoa native methods instead of GLFW
-
-  int width = 0;
-  int height = 0;
-  /*
-  glfwGetFramebufferSize(metal_backend_->glfw_window, &width, &height);
-   */
+  int width = window.getFramebufferWidth();
+  int height = window.getFramebufferHeight();;
 
   metal_backend_->metal_layer = CA::MetalLayer::layer();
   metal_backend_->metal_layer->setDevice(metal_backend_->metal_device);
