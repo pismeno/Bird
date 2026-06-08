@@ -24,6 +24,8 @@ GlfwWindow::GlfwWindow(const WindowOptions& options)
       windowedWidth(options.logical_width),
       windowedHeight(options.logical_height),
       inputs(),
+      windowedWidth(options.width),
+      windowedHeight(options.height),
       glfwWindow(nullptr),
       fullscreen(options.startFullscreen) {}
 
@@ -50,6 +52,10 @@ Result GlfwWindow::init() {
 
   glfwSetWindowUserPointer(glfwWindow, this);
 
+  glfwSwapInterval(1); // Enable vsync
+
+  glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+
   glfwSetWindowSizeCallback(glfwWindow, [](GLFWwindow* window, int width, int height) {
     auto* birdWindow = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
     birdWindow->windowResizeCallback(birdWindow->glfwWindow, width, height);
@@ -69,7 +75,10 @@ Result GlfwWindow::init() {
 }
 
 void GlfwWindow::update() {
+  glfwMakeContextCurrent(glfwWindow);
+
   glfwPollEvents();
+  glfwSwapBuffers(glfwWindow);
 }
 
 Result GlfwWindow::close() {
@@ -116,10 +125,10 @@ void GlfwWindow::setFullscreen(bool goFullscreen) {
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
 
-    this->fullscreen = true;
+    fullscreen = true;
     glfwSetWindowMonitor(glfwWindow, monitor, 0, 0, vidmode->width, vidmode->height, vidmode->refreshRate);
   } else {
-    this->fullscreen = false;
+    fullscreen = false;
     glfwSetWindowMonitor(glfwWindow, nullptr, windowedX, windowedY,
                          windowedWidth, windowedHeight, 0);
   }
