@@ -4,8 +4,8 @@
 #include <memory>
 #include <string>
 
+#include "utils/result.hpp"
 #include "inputs/inputs.hpp"
-#include "../utils/result.hpp"
 
 namespace bird {
 
@@ -33,6 +33,9 @@ class IWindow {
   virtual void setFullscreen(bool fullscreen) = 0;
 
   virtual Inputs& getInputs() = 0;
+  virtual void setResizeCallback(ResizeCallback callback) = 0;
+
+  virtual void* getNativeHandle() const = 0;
 
   /**
    * @brief Factory method to create the specific implementation

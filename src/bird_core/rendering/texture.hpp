@@ -1,6 +1,8 @@
 #pragma once
-#include <Metal/Metal.hpp>
 #include <stb/stb_image.h>
+
+#ifdef BIRD_PLATFORM_APPLE
+#include <Metal/Metal.hpp>
 
 class Texture2D {
 public:
@@ -12,3 +14,4 @@ public:
 private:
     MTL::Device* device;
 };
+#endif

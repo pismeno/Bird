@@ -1,5 +1,8 @@
 #include "renderer.hpp"
+
+#ifdef BIRD_PLATFORM_APPLE
 #include "metal_renderer.hpp"
+#endif
 
 #include <memory>
 #include <iostream>
@@ -15,22 +18,24 @@ void Renderer::create_renderer(RendererType type) {
 
   switch (type) {
     case RendererType::Metal: {
-        renderer_ = std::make_unique<MetalRenderer>();
-        break;
+#ifdef BIRD_PLATFORM_APPLE
+      renderer_ = std::make_unique<MetalRenderer>();
+#else
+      std::cerr << "Metal Renderer is only supported on Apple platforms." << std::endl;
+#endif
+      break;
     }
     case RendererType::Vulkan: {
-        // not yet implemented
-        // renderer = bird::VulkanRenderer();
-        break;
+      // not yet implemented
+      break;
     }
     case RendererType::DirectX: {
-        // not yet implemented
-        // renderer = bird::DirectXRenderer();
-        break;
+      // not yet implemented
+      break;
     }
     default: {
-        std::cerr << "Unsupported renderer type" << std::endl;
-        break;
+      std::cerr << "Unsupported renderer type" << std::endl;
+      break;
     }
   }
 }
@@ -74,10 +79,15 @@ void Renderer::handle_window_resize(int width, int height) {
     return;
   }
 
+#ifdef BIRD_PLATFORM_APPLE
   auto* metal_renderer = dynamic_cast<MetalRenderer*>(renderer_.get());
   if (metal_renderer) {
     metal_renderer->resizeFrameBuffer(width, height);
   }
+#else
+  // On Windows/Linux, you'll eventually cast to Vulkan/DX12 here if they need explicit resizing
+  // renderer_->handle_resize(width, height); // Consider making this a virtual function in base Renderer!
+#endif
 }
 
 } // namespace bird

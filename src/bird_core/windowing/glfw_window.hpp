@@ -4,8 +4,8 @@
 
 #include "GLFW/glfw3.h"
 
-#include "../inputs/glfw_inputs.hpp"
-#include "../utils/result.hpp"
+#include "inputs/glfw_inputs.hpp"
+#include "utils/result.hpp"
 
 namespace bird {
 
@@ -13,7 +13,7 @@ using namespace inputs;
 
 class GlfwWindow : public Window {
 
-  friend class GlfwInputs;
+  friend class inputs::GlfwInputs;
 
  public:
   GlfwWindow(WindowOptions options);
@@ -29,8 +29,8 @@ class GlfwWindow : public Window {
   bool isFullscreen() const override;
   void setFullscreen(bool fullscreen) override;
   Inputs& getInputs() override;
-  GLFWwindow* getNativeWindow() const override;
   void setResizeCallback(ResizeCallback callback) override;
+  void* getNativeHandle() const override;
 
  private:
   GLFWwindow* glfwWindow;
