@@ -13,7 +13,7 @@ using namespace inputs;
 
 class GlfwWindow : public Window {
 
-  friend class GlfwInputs;
+  friend class inputs::GlfwInputs;
 
  public:
   GlfwWindow(WindowOptions options);
