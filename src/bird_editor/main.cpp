@@ -17,10 +17,14 @@
 #include "node_system/managers/drawable_manager.hpp"
 #include "node_system/render_gatherer.hpp"
 #include "rendering/render_command.hpp"
+#include "node_system/scene_factory.hpp"
 
 void debug_print_commands(const std::vector<RenderCommand>& commands) {
   std::cout << "--- Frame Render Commands (" << commands.size() << ") ---\n";
-  for (size_t i = 0; i < commands.size(); ++i) {
+
+  size_t count = std::min<size_t>(commands.size(), 10);
+
+  for (size_t i = 0; i < count; ++i) {
     const auto& cmd = commands[i];
 
     std::cout << "[" << i << "] "
@@ -44,8 +48,8 @@ int main() {
 
   std::unique_ptr<IWindow> window = IWindow::create(WindowOptions{800, 600, "Bird Editor - CRASH TEST"});
   std::unique_ptr<IWindow> window2 = IWindow::create(WindowOptions{800, 600, "Bird Editor 2"});
-  window->init();
-  window2->init();
+  (void)window->init();
+  (void)window2->init();
 
   std::cout << "Hello, Bird Editor Crash Tests!" << std::endl;
   std::cout << "Controls:\n"
@@ -59,20 +63,46 @@ int main() {
             << " [L-Click] Print Render Commands\n"
             << "------------------------------------------\n";
 
-  std::unique_ptr<Scene> scene = Scene::create_scene_2d();
-  NodeID parID = scene->createNode(INVALID_NODE_ID, "parent");
-  NodeID childID = scene->createNode2DDrawable(parID, "child 1");
-  NodeID childID2 = scene->createNode2DDrawable(childID, "child 2");
-  NodeID famID = scene->createNode2DDrawable(INVALID_NODE_ID, "fam parent");
-  NodeID famChildID = scene->createNode2DDrawable(famID, "fam child");
+  SceneFactory scene_factory;
 
+  scene_factory.register_manager<TransformManager>();
+  scene_factory.register_manager<DrawableManager>();
+  auto load_node_result = scene_factory.load_node_definitions_from("node_system/node_definitions.json");
+  if (!load_node_result) {
+    std::cerr << load_node_result.error() << std::endl;
+    return -1;
+  }
+
+  auto load_scenes_result = scene_factory.load_scene_definitions_from("node_system/scene_definitions.json");
+  if (!load_scenes_result) {
+    std::cerr << load_scenes_result.error() << std::endl;
+    return -1;
+  }
+
+  std::cout << "Creating scene..." << std::endl;
+
+  auto scene = scene_factory.create_scene("scene_2d");
+
+  std::cout << "Creating nodes..." << std::endl;
+  NodeID parID = scene->create_node(INVALID_NODE_ID, "node");
+  NodeID childID = scene->create_node(parID, "sprite_2d");
+  NodeID childID2 = scene->create_node(childID, "sprite_2d");
+  NodeID famID = scene->create_node(INVALID_NODE_ID, "sprite_2d");
+  NodeID famChildID = scene->create_node(famID, "sprite_2d");
+
+
+
+  std::cout << "Getting managers..." << std::endl;
   auto transform_manager = scene->get_manager<TransformManager>();
   auto drawable_manager = scene->get_manager<DrawableManager>();
 
-  transform_manager->set_node_position(childID, glm::vec2(100, 100));
-  transform_manager->set_node_position(childID2, glm::vec2(100, 100));
-  transform_manager->set_node_position(famChildID, glm::vec2(400, 400));
-  transform_manager->set_node_position(famID, glm::vec2(400, 400));
+  std::cout << "Setting transforms..." << std::endl;
+  (void)transform_manager->set_node_position(childID, glm::vec2(100, 100));
+  (void)transform_manager->set_node_position(childID2, glm::vec2(100, 100));
+  (void)transform_manager->set_node_position(famChildID, glm::vec2(400, 400));
+  (void)transform_manager->set_node_position(famID, glm::vec2(400, 400));
+
+  std::cout << "Entering loop..." << std::endl;
 
   RenderGatherer gatherer;
   std::vector<NodeID> stress_nodes; // Keeps track of dynamically spawned nodes
@@ -99,9 +129,9 @@ int main() {
     if (inputs1.isKeyPressed(KeyCode::KP1)) {
       std::cout << "\n[Crash Test 1] Applying extreme scales, shears, and rotations..." << std::endl;
 
-      transform_manager->set_node_scale(childID, glm::vec2(0.0f, 0.0f));
-      transform_manager->set_node_shear(childID2, glm::vec2(99999.0f, -99999.0f));
-      transform_manager->set_node_rotation(famID, 1e10f);
+      (void)transform_manager->set_node_scale(childID, glm::vec2(0.0f, 0.0f));
+      (void)transform_manager->set_node_shear(childID2, glm::vec2(99999.0f, -99999.0f));
+      (void)transform_manager->set_node_rotation(famID, 1e10f);
 
       std::cout << "  -> [LOG] Operations dispatched safely.\n";
       print_frame_timings = true;
@@ -112,10 +142,10 @@ int main() {
       std::cout << "\n[Crash Test 2] Rapidly swapping parents..." << std::endl;
 
       auto start = std::chrono::high_resolution_clock::now();
-      transform_manager->set_parent(childID2, famChildID);
-      transform_manager->set_parent(childID2, parID);
-      transform_manager->set_parent(childID2, famID);
-      transform_manager->set_parent(childID2, childID); // Return to original
+      (void)transform_manager->set_parent(childID2, famChildID);
+      (void)transform_manager->set_parent(childID2, parID);
+      (void)transform_manager->set_parent(childID2, famID);
+      (void)transform_manager->set_parent(childID2, childID); // Return to original
       auto end = std::chrono::high_resolution_clock::now();
 
       std::chrono::duration<double, std::milli> ms = end - start;
@@ -131,11 +161,11 @@ int main() {
 
       auto start = std::chrono::high_resolution_clock::now();
       for (int i = 0; i < 10000; ++i) {
-        NodeID new_node = scene->createNode2DDrawable(INVALID_NODE_ID, "stress_node");
+        NodeID new_node = scene->create_node(INVALID_NODE_ID, "sprite_2d");
         stress_nodes.push_back(new_node);
 
-        transform_manager->set_node_position(new_node, glm::vec2(i * 0.1f, i * 0.1f));
-        transform_manager->set_node_shear(new_node, glm::vec2(1.5f, -0.5f));
+        (void)transform_manager->set_node_position(new_node, glm::vec2(i * 0.1f, i * 0.1f));
+        (void)transform_manager->set_node_shear(new_node, glm::vec2(1.5f, -0.5f));
       }
       auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> ms = end - start;
@@ -152,11 +182,6 @@ int main() {
       size_t successful_destructions = 0;
 
       auto start = std::chrono::high_resolution_clock::now();
-      for (NodeID id : stress_nodes) {
-        if (scene->destroy_node(id).success) {
-          successful_destructions++;
-        }
-      }
       auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double, std::milli> ms = end - start;
 
@@ -168,9 +193,7 @@ int main() {
     // TEST 5: Orphan/Ghost Reference Testing
     if (inputs1.isKeyPressed(KeyCode::KP5)) {
       std::cout << "\n[Crash Test 5] Destroying famID. Checking how famChildID handles orphan status..." << std::endl;
-
-      Result destroy_res = scene->destroy_node(famID);
-      std::cout << "  -> [LOG] famID destruction result: " << (destroy_res.success ? "SUCCESS" : "FAILED") << "\n";
+      scene->destroy_node(famID);
       print_frame_timings = true;
     }
 
@@ -179,12 +202,12 @@ int main() {
     // ==========================================
 
     if (inputs1.isKeyPressed(KeyCode::Space)) {
-      transform_manager->set_node_position(famID, glm::vec2(50, 50));
-      transform_manager->set_node_shear(famID, glm::vec2(1.0f, 0.0f));
+      (void)transform_manager->set_node_position(famID, glm::vec2(50, 50));
+      (void)transform_manager->set_node_shear(famID, glm::vec2(1.0f, 0.0f));
     }
 
     if (inputs2.isKeyPressed(KeyCode::Space)) {
-      transform_manager->set_node_position(childID, glm::vec2(200, 100));
+      (void)transform_manager->set_node_position(childID, glm::vec2(200, 100));
     }
 
     if (inputs1.isMouseButtonReleased(MouseCode::Left)) {
@@ -199,7 +222,7 @@ int main() {
     }
 
     if (inputs1.isKeyPressed(KeyCode::F11)) {
-      window->setFullscreen(!window->isFullscreen());
+      (void)window->setFullscreen(!window->isFullscreen());
     }
 
     // ==========================================
@@ -229,7 +252,9 @@ int main() {
     }
   }
 
-  window->close();
+  (void)window->close();
+  (void)scene_factory.save_scene_to(*scene, "scene_2d3.json");
+
   glfwTerminate();
   return 0;
 }

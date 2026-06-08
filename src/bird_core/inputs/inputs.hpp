@@ -11,27 +11,30 @@ namespace bird::inputs {
  */
 class Inputs {
  public:
+  explicit Inputs() = default;
+  virtual ~Inputs() noexcept = default;
+
   // Keyboard
-  virtual bool isKeyPressed(KeyCode key) = 0;    // True ONLY on the exact frame it was pressed
-  virtual bool isKeyHeld(KeyCode key) = 0;       // True as long as the key is down
-  virtual bool isKeyReleased(KeyCode key) = 0;   // True ONLY on the exact frame it was let go
+  virtual bool isKeyPressed(KeyCode key) noexcept = 0;    // True ONLY on the exact frame it was pressed
+  virtual bool isKeyHeld(KeyCode key) noexcept = 0;       // True as long as the key is down
+  virtual bool isKeyReleased(KeyCode key) noexcept = 0;   // True ONLY on the exact frame it was let go
 
   // Mouse
-  virtual bool isMouseButtonPressed(MouseCode button) = 0;
-  virtual bool isMouseButtonHeld(MouseCode button) = 0;
-  virtual bool isMouseButtonReleased(MouseCode button) = 0;
-  virtual glm::vec2 getMousePosition() = 0;
-  virtual float getMouseX() = 0;
-  virtual float getMouseY() = 0;
-  virtual glm::vec2 getMouseDelta() = 0;
-  virtual float getMouseDeltaX() = 0;
-  virtual float getMouseDeltaY() = 0;
-  virtual float getScrollX() = 0;
-  virtual float getScrollY() = 0;
-  virtual float getScrollDeltaX() = 0;
-  virtual float getScrollDeltaY() = 0;
+  virtual bool isMouseButtonPressed(MouseCode button) noexcept = 0;
+  virtual bool isMouseButtonHeld(MouseCode button) noexcept = 0;
+  virtual bool isMouseButtonReleased(MouseCode button) noexcept = 0;
+  virtual glm::vec2 getMousePosition() noexcept = 0;
+  virtual float getMouseX() noexcept = 0;
+  virtual float getMouseY() noexcept = 0;
+  virtual glm::vec2 getMouseDelta() noexcept = 0;
+  virtual float getMouseDeltaX() noexcept = 0;
+  virtual float getMouseDeltaY() noexcept = 0;
+  virtual float getScrollX() noexcept = 0;
+  virtual float getScrollY() noexcept = 0;
+  virtual float getScrollDeltaX() noexcept = 0;
+  virtual float getScrollDeltaY() noexcept = 0;
 
-  virtual void endFrame() = 0;
+  virtual void endFrame() noexcept = 0;
 };
 
 } // bird::inputs

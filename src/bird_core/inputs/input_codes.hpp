@@ -85,7 +85,7 @@ enum class KeyCode : uint16_t {
   V = 86, W = 87, X = 88, Y = 89, Z = 90,
 
   LeftBracket   = 91,  // [
-  Backslash     = 92,  // \
+  Backslash     = 92,  // '\'
   RightBracket  = 93,  // ]
   GraveAccent   = 96,  // ` (Tilde)
 

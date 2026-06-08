@@ -25,11 +25,9 @@ std::vector<RenderCommand> RenderGatherer::gather_render_commands(Scene& scene) 
   uint32_t max_index = scene.get_highest_allocated_node_index();
 
   std::vector<RenderCommand> commands;
-
   commands.reserve(max_index);
 
   for (uint32_t i = 0; i < max_index; ++i) {
-    // 1. Is there an active drawable at this sparse index?
     if (drawables[i].is_visible) {
 
       commands.emplace_back(RenderCommand{

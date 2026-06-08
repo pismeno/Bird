@@ -5,181 +5,122 @@
 
 namespace bird::node_system::managers {
 
-void TransformManager::remove_from_parent(NodeID child_id) {
-  Transform2D* child = get_transform(child_id);
-  if (!child || child->parent_id == INVALID_NODE_ID) return;
-
-  Transform2D* parent = get_transform(child->parent_id);
-  if (!parent) return;
-
-  // If this child is the first child, just point the parent to the next sibling
-  if (parent->first_child_id == child_id) {
-    parent->first_child_id = child->next_sibling_id;
-  } else {
-    // Otherwise, find the sibling immediately BEFORE this child, and patch the link
-    NodeID current_sibling_id = parent->first_child_id;
-    while (current_sibling_id != INVALID_NODE_ID) {
-      Transform2D* sibling = get_transform(current_sibling_id);
-      if (!sibling) break;
-
-      if (sibling->next_sibling_id == child_id) {
-        sibling->next_sibling_id = child->next_sibling_id; // Bypass the removed child
-        break;
-      }
-      current_sibling_id = sibling->next_sibling_id;
-    }
-  }
-
-  // Clear the child's links
-  child->parent_id = INVALID_NODE_ID;
-  child->next_sibling_id = INVALID_NODE_ID;
-}
-
-void TransformManager::set_parent(NodeID child_id, NodeID new_parent_id) {
-  Transform2D* child = get_transform(child_id);
-  if (!child) return;
-
-  // 1. Unlink from current parent to avoid corrupting the list
-  if (child->parent_id != INVALID_NODE_ID) {
-    remove_from_parent(child_id);
-  }
-
-  // 2. Link to new parent
-  if (new_parent_id != INVALID_NODE_ID) {
-    Transform2D* parent = get_transform(new_parent_id);
-    if (parent) {
-      child->parent_id = new_parent_id;
-      // Prepend to the parent's linked list
-      child->next_sibling_id = parent->first_child_id;
-      parent->first_child_id = child_id;
-    }
-  }
-
-  // 3. Mark dirty since its global space just changed
-  child->is_dirty = true;
-  mark_spatial_children_dirty(child_id);
-}
-
-Result TransformManager::set_node_position(NodeID node_id, glm::vec2 pos) {
-  Transform2D* transform = get_transform(node_id);
+Result<void> TransformManager::set_node_position(NodeID node_id, glm::vec2 pos) {
+  TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
-    return Result::fail("Transform not found");
+    return bird::fail("Transform not found");
   }
 
   transform->local_position = pos;
-  transform->is_dirty = true;
   mark_spatial_children_dirty(node_id);
 
-  return Result::ok();
+  return bird::ok();
 }
 
-Result TransformManager::set_node_scale(NodeID node_id, glm::vec2 scale) {
-  Transform2D* transform = get_transform(node_id);
+Result<void> TransformManager::set_node_scale(NodeID node_id, glm::vec2 scale) {
+  TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
-    return Result::fail("Transform not found");
+    return bird::fail("Transform not found");
   }
 
   transform->local_scale = scale;
-  transform->is_dirty = true;
   mark_spatial_children_dirty(node_id);
 
-  return Result::ok();
+  return bird::ok();
 }
 
-Result TransformManager::set_node_shear(NodeID node_id, glm::vec2 shear) {
-  Transform2D* transform = get_transform(node_id);
+Result<void> TransformManager::set_node_shear(NodeID node_id, glm::vec2 shear) {
+  TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
-    return Result::fail("Transform not found");
+    return bird::fail("Transform not found");
   }
 
   transform->local_shear = shear;
-  transform->is_dirty = true;
   mark_spatial_children_dirty(node_id);
 
-  return Result::ok();
+  return bird::ok();
 }
 
-Result TransformManager::set_node_rotation(NodeID node_id, float rotation) {
-  Transform2D* transform = get_transform(node_id);
+Result<void> TransformManager::set_node_rotation(NodeID node_id, float rotation) {
+  TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
-    return Result::fail("Transform not found");
+    return bird::fail("Transform not found");
   }
 
   transform->local_rotation = rotation;
-  transform->is_dirty = true;
   mark_spatial_children_dirty(node_id);
 
-  return Result::ok();
+  return bird::ok();
 }
 
 void TransformManager::mark_spatial_children_dirty(NodeID parent_id) {
-  Transform2D* parent = get_transform(parent_id);
-  if (!parent) return;
+  TransformInfo* parent = get_transform(parent_id.index());
 
-  // Jump strictly through the Intrusive Linked List
-  NodeID current_child_id = parent->first_child_id;
+  if (!parent || parent->is_dirty) return;
 
-  while (current_child_id != INVALID_NODE_ID) {
-    Transform2D* child = get_transform(current_child_id);
+  parent->is_dirty = true;
+  uint32_t current_child_idx = parent->first_child_idx;
+
+  while (current_child_idx != INVALID_NODE_ID.index()) {
+    TransformInfo* child = get_transform(current_child_idx);
     if (child) {
-      child->is_dirty = true;
-
       // Recursive call for grandchildren
-      mark_spatial_children_dirty(current_child_id);
+      mark_spatial_children_dirty(NodeID::from(current_child_idx, 0));
 
       // Move sideways to the next sibling
-      current_child_id = child->next_sibling_id;
+      current_child_idx = child->next_sibling_idx;
     } else {
       break; // Hit a Ghost or invalid ID
     }
   }
 }
 
-void TransformManager::create_transform(NodeID node_id) {
+bool TransformManager::has_transform(NodeID node_id) const noexcept {
+  if (node_id.index() >= node_to_transform.size()) return false;
+  return node_to_transform[node_id.index()] != INVALID_TRANSFORM_INDEX;
+}
+
+// Signature updated to match your new explicit requirement
+TransformManager::TransformInfo* TransformManager::get_transform(uint32_t node_idx) {
+  if (node_idx >= node_to_transform.size()) {
+    return nullptr;
+  }
+
+  TransformIndex index = node_to_transform[node_idx];
+  if (index == INVALID_TRANSFORM_INDEX || index >= transforms.size()) {
+    return nullptr;
+  }
+
+  return &transforms[index];
+}
+
+void TransformManager::on_update() noexcept {
+  for (size_t i = 0; i < transforms.size(); i++) {
+    if (transforms[i].parent_idx == INVALID_NODE_ID.index() && transforms[i].node_idx != INVALID_NODE_ID.index()) {
+      update_node_hierarchy(NodeID::from(transforms[i].node_idx, 0), glm::mat3(1.0f));
+    }
+  }
+}
+
+void TransformManager::on_node_require_manager(NodeID node_id) noexcept {
   transforms.emplace_back();
-  transforms.back().node_id = node_id;
+  transforms.back().node_idx = node_id.index();
 
   global_matrices[node_id.index()] = glm::mat3(1.0f);
 
   node_to_transform[node_id.index()] = transforms.size() - 1;
 }
 
-bool TransformManager::has_transform(NodeID node_id) const {
-  if (node_id.index() >= node_to_transform.size()) return false;
-  return node_to_transform[node_id.index()] != INVALID_TRANSFORM_INDEX;
-}
-
-TransformManager::Transform2D* TransformManager::get_transform(NodeID node_id) {
-  if (node_id.index() >= node_to_transform.size()) {
-    return nullptr;
-  }
-
-  TransformIndex index = node_to_transform[node_id.index()];
-  if (index == INVALID_TRANSFORM_INDEX || static_cast<size_t>(index) >= transforms.size()) {
-    return nullptr;
-  }
-
-  return &transforms[static_cast<size_t>(index)];
-}
-
-void TransformManager::on_update() {
-  for (size_t i = 0; i < transforms.size(); i++) {
-    if (transforms[i].parent_id == INVALID_NODE_ID && transforms[i].node_id != INVALID_NODE_ID) {
-      update_node_hierarchy(transforms[i].node_id, glm::mat3(1.0f));
-    }
-  }
-}
-
 void TransformManager::update_node_hierarchy(NodeID node_id, const glm::mat3& parent_global_mat) {
-  Transform2D* transform = get_transform(node_id);
+  TransformInfo* transform = get_transform(node_id.index());
   if (!transform) return;
 
-  uint32_t sparse_idx = node_id.index(); // Use the sparse index!
-  glm::mat3 my_global_mat = parent_global_mat;
+  uint32_t idx = node_id.index();
+  glm::mat3 my_global_mat;
 
   if (transform->is_dirty) {
     float cos = std::cos(transform->local_rotation);
@@ -191,61 +132,216 @@ void TransformManager::update_node_hierarchy(NodeID node_id, const glm::mat3& pa
     float shy = transform->local_shear.y;
 
     glm::mat3 local_mat(
-        sx * (cos - sin * shy), sx * (sin + cos * shy), 0.0f,  // Column 0
-        sy * (cos * shx - sin), sy * (sin * shx + cos), 0.0f,  // Column 1
-        transform->local_position.x, transform->local_position.y, 1.0f // Column 2
+        sx * (cos - sin * shy), sx * (sin + cos * shy), 0.0f,
+        sy * (cos * shx - sin), sy * (sin * shx + cos), 0.0f,
+        transform->local_position.x, transform->local_position.y, 1.0f
     );
 
     my_global_mat = parent_global_mat * local_mat;
 
-    global_matrices[sparse_idx] = my_global_mat;
+    global_matrices[idx] = my_global_mat;
     transform->is_dirty = false;
   } else {
-    my_global_mat = global_matrices[sparse_idx];
+    my_global_mat = global_matrices[idx];
   }
 
   // Recurse to children
-  NodeID child_id = transform->first_child_id;
-  while (child_id != INVALID_NODE_ID) {
-    update_node_hierarchy(child_id, my_global_mat);
-    Transform2D* child_transform = get_transform(child_id);
-    child_id = child_transform ? child_transform->next_sibling_id : INVALID_NODE_ID;
+  uint32_t child_idx = transform->first_child_idx;
+  while (child_idx != INVALID_NODE_ID.index()) {
+    update_node_hierarchy(NodeID::from(child_idx, 0), my_global_mat);
+    TransformInfo* child_transform = get_transform(child_idx);
+    child_idx = child_transform ? child_transform->next_sibling_idx : INVALID_NODE_ID.index();
   }
 }
 
-void TransformManager::on_node_destroyed(NodeID node_id) {
+void TransformManager::on_node_destroyed(NodeID node_id) noexcept {
   if (!has_transform(node_id)) return;
+
+  remove_from_parent(node_id);
 
   TransformIndex index = node_to_transform[node_id.index()];
 
-  // 1. Invalidate the memory (Ghost ID)
-  transforms[static_cast<size_t>(index)].node_id = INVALID_NODE_ID;
+  // Invalidate the memory (Ghost ID)
+  transforms[index].node_idx = INVALID_NODE_ID.index();
 
-  // 2. Break the lookup link immediately
+  // Break the lookup link immediately
   node_to_transform[node_id.index()] = INVALID_TRANSFORM_INDEX;
 }
 
-void TransformManager::on_frame_end() {
-  // 1. Physically compact ONLY the transforms array
+void TransformManager::on_frame_end() noexcept {
   size_t write_idx = 0;
   for (size_t read_idx = 0; read_idx < transforms.size(); ++read_idx) {
-    if (transforms[read_idx].node_id != INVALID_NODE_ID) {
+    if (transforms[read_idx].node_idx != INVALID_NODE_ID.index()) {
       if (write_idx != read_idx) {
         transforms[write_idx] = transforms[read_idx];
-        // REMOVED: global_matrices[write_idx] = global_matrices[read_idx];
       }
       write_idx++;
     }
   }
 
-  // Resize the dense array to chop off the dead data
   transforms.resize(write_idx);
 
-  // 2. Rebuild the Lookup Table
   std::fill(node_to_transform.begin(), node_to_transform.end(), INVALID_TRANSFORM_INDEX);
   for (size_t i = 0; i < transforms.size(); ++i) {
-    node_to_transform[transforms[i].node_id.index()] = i;
+    node_to_transform[transforms[i].node_idx] = i;
   }
+}
+
+void TransformManager::remove_from_parent(NodeID child_id) noexcept {
+  TransformInfo* child = get_transform(child_id.index());
+  if (!child || child->parent_idx == INVALID_NODE_ID.index()) return;
+
+  TransformInfo* parent = get_transform(child->parent_idx);
+  if (!parent) return;
+
+  // If this child is the first child, just point the parent to the next sibling
+  if (parent->first_child_idx == child_id.index()) {
+    parent->first_child_idx = child->next_sibling_idx;
+  } else {
+    // Otherwise, find the sibling immediately BEFORE this child, and patch the link
+    uint32_t current_sibling_idx = parent->first_child_idx;
+    while (current_sibling_idx != INVALID_NODE_ID.index()) {
+      TransformInfo* sibling = get_transform(current_sibling_idx);
+      if (!sibling) break;
+
+      if (sibling->next_sibling_idx == child_id.index()) {
+        sibling->next_sibling_idx = child->next_sibling_idx; // Bypass the removed child
+        break;
+      }
+      current_sibling_idx = sibling->next_sibling_idx;
+    }
+  }
+
+  // Clear the child's links
+  child->parent_idx = INVALID_NODE_ID.index();
+  child->next_sibling_idx = INVALID_NODE_ID.index();
+}
+
+void TransformManager::set_parent(NodeID child_id, NodeID new_parent_id) noexcept {
+  TransformInfo* child = get_transform(child_id.index());
+  if (!child) return;
+
+  // Unlink from current parent to avoid corrupting the list
+  if (child->parent_idx != INVALID_NODE_ID.index()) {
+    remove_from_parent(child_id);
+  }
+
+  // Link to new parent
+  if (new_parent_id != INVALID_NODE_ID) {
+    TransformInfo* parent = get_transform(new_parent_id.index());
+    if (parent) {
+      child->parent_idx = new_parent_id.index();
+      child->next_sibling_idx = parent->first_child_idx;
+      parent->first_child_idx = child_id.index();
+    }
+  }
+
+  mark_spatial_children_dirty(child_id);
+}
+
+void TransformManager::on_node_reparented(NodeID node_id, NodeID new_parent_id, NodeID old_parent_id) noexcept {
+  set_parent(node_id, new_parent_id);
+}
+
+void TransformManager::on_scene_clear() noexcept {
+  transforms.clear();
+  std::fill(node_to_transform.begin(), node_to_transform.end(), INVALID_TRANSFORM_INDEX);
+}
+
+Result<void> TransformManager::on_serialize_scene(nlohmann::json& json) const {
+  json["nodes"] = nlohmann::json::array();
+
+  for (const auto& transform : transforms) {
+    // Fixed: Should be == to skip INVALID nodes. If it was != it would skip valid nodes!
+    if (transform.node_idx == INVALID_NODE_ID.index()) {
+      continue;
+    }
+
+    nlohmann::json transform_json;
+
+    transform_json["id"] = transform.node_idx;
+
+    transform_json["local_position"]["x"] = transform.local_position.x;
+    transform_json["local_position"]["y"] = transform.local_position.y;
+
+    transform_json["local_scale"]["x"] = transform.local_scale.x;
+    transform_json["local_scale"]["y"] = transform.local_scale.y;
+
+    transform_json["local_shear"]["x"] = transform.local_shear.x;
+    transform_json["local_shear"]["y"] = transform.local_shear.y;
+
+    transform_json["local_rotation"] = transform.local_rotation;
+
+    transform_json["parent_id"] = transform.parent_idx;
+
+    transform_json["first_child_id"] = transform.first_child_idx;
+
+    transform_json["next_sibling_id"] = transform.next_sibling_idx;
+
+    json["nodes"].push_back(transform_json);
+  }
+
+  return bird::ok();
+}
+
+Result<void> TransformManager::on_deserialize_scene(const nlohmann::json& json) {
+  if (!json.contains("nodes") || !json["nodes"].is_array()) {
+    return bird::ok();
+  }
+
+  for (const auto& node_json : json["nodes"]) {
+    if (!node_json.contains("id") || !node_json["id"].is_number_integer()) {
+      continue;
+    }
+
+    uint32_t node_idx = node_json["id"].get<uint32_t>();
+
+    // Bounds check to ensure we don't exceed MAX_ACTIVE_NODES
+    if (node_idx >= node_to_transform.size()) {
+      continue;
+    }
+
+    // Try to get the transform. If the Scene hasn't allocated it yet, force allocation.
+    TransformInfo* transform = get_transform(node_idx);
+    if (!transform) {
+      on_node_require_manager(NodeID::from(node_idx, 0));
+      transform = get_transform(node_idx);
+
+      // If it's STILL null, something is deeply wrong with memory, skip to be safe
+      if (!transform) continue;
+    }
+
+    // Extract Position
+    if (node_json.contains("local_position")) {
+      transform->local_position.x = node_json["local_position"].value("x", 0.0f);
+      transform->local_position.y = node_json["local_position"].value("y", 0.0f);
+    }
+
+    // Extract Scale
+    if (node_json.contains("local_scale")) {
+      transform->local_scale.x = node_json["local_scale"].value("x", 1.0f);
+      transform->local_scale.y = node_json["local_scale"].value("y", 1.0f);
+    }
+
+    // Extract Shear
+    if (node_json.contains("local_shear")) {
+      transform->local_shear.x = node_json["local_shear"].value("x", 0.0f);
+      transform->local_shear.y = node_json["local_shear"].value("y", 0.0f);
+    }
+
+    // Extract Rotation
+    transform->local_rotation = node_json.value("local_rotation", 0.0f);
+
+    // Extract Hierarchy Links (safely falling back to INVALID if missing)
+    transform->parent_idx       = node_json.value("parent_id", INVALID_NODE_ID.index());
+    transform->first_child_idx  = node_json.value("first_child_id", INVALID_NODE_ID.index());
+    transform->next_sibling_idx = node_json.value("next_sibling_id", INVALID_NODE_ID.index());
+
+    // CRITICAL: Force the engine to rebuild this node's global matrix on the next update
+    transform->is_dirty = true;
+  }
+
+  return bird::ok();
 }
 
 } // bird::node_system::managers

@@ -51,17 +51,12 @@ void MetalRenderer::init_device() {
   metal_backend_->metal_device = MTL::CreateSystemDefaultDevice();
 }
 
-void MetalRenderer::init_window(Window& shared_window) {
+void MetalRenderer::init_window(Window& window) {
 
-  void* native_window_handle = shared_window.getNativeHandle();
+  void* native_window_handle = window.getNativeHandle();
 
-  // TODO FIXME implement with cocoa native methods instead of GLFW
-
-  int width = 0;
-  int height = 0;
-  /*
-  glfwGetFramebufferSize(metal_backend_->glfw_window, &width, &height);
-   */
+  int width = window.getFramebufferWidth();
+  int height = window.getFramebufferHeight();;
 
   metal_backend_->metal_layer = CA::MetalLayer::layer();
   metal_backend_->metal_layer->setDevice(metal_backend_->metal_device);
@@ -94,7 +89,7 @@ void MetalRenderer::render() {
   frame_pool->release();
 }
 
-void MetalRenderer::submit_quad(const bird::node_system::managers::Transform2D& transform) {
+void MetalRenderer::submit_quad(const RenderCommand render_command) {
   const glm::vec2 local_positions[] = {
       {-0.5f,  0.5f},  // top-left
       { 0.5f,  0.5f},  // top-right
@@ -136,11 +131,28 @@ void MetalRenderer::submit_quad(const bird::node_system::managers::Transform2D& 
     metal_backend_->transform_buffer = metal_backend_->metal_device->newBuffer(sizeof(QuadTransformUniform), MTL::ResourceStorageModeShared);
   }
 
+  const glm::mat3& mat = render_command.transform;
+
+  glm::vec2 position(mat[2]);
+
+  glm::vec2 col0(mat[0]);
+  glm::vec2 col1(mat[1]);
+
+  glm::vec2 scale(glm::length(col0), glm::length(col1));
+
+  float determinant = col0.x * col1.y - col0.y * col1.x;
+  if (determinant < 0.0f) {
+    scale.x = -scale.x;
+    col0 = -col0; // Flip the axis back so rotation calculates correctly
+  }
+
+  float rotation = std::atan2(col0.y, col0.x);
+
   QuadTransformUniform quad_transform_uniform {
-    transform.local_position,
-    transform.local_scale,
-    transform.local_rotation,
-    glm::vec3(0.0f) // padding for 16 byte alignment
+      position,
+      scale,
+      rotation,
+      glm::vec3(0.0f) // padding for 16 byte alignment
   };
 
   std::memcpy(metal_backend_->transform_buffer->contents(), &quad_transform_uniform, sizeof(quad_transform_uniform));

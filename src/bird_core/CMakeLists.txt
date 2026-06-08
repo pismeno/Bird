@@ -2,41 +2,6 @@
 # but if using GLOB, let's make sure it doesn't grab .mm files on Windows at all.
 file(GLOB_RECURSE CORE_SOURCES "*.cpp" "*.hpp" "*.h")
 
-set(CORE_SOURCES
-        "rendering/renderer.hpp"
-        "rendering/renderer.cpp"
-        "rendering/metal_renderer.cpp"
-        "rendering/mtl_implementation.cpp"
-        "rendering/stbi_image.cpp"
-        "rendering/texture.hpp"
-        "rendering/texture.cpp"
-        "rendering/GLFWBridge.hpp"
-        "rendering/GLFWBridge.mm"
-        "rendering/shader_compiler.hpp"
-        "rendering/shader_compiler.cpp"
-        "utils/result.hpp"
-        "windowing/iwindow.hpp"
-        "windowing/iwindow.cpp"
-        "windowing/glfw_window.hpp"
-        "windowing/glfw_window.cpp"
-        "inputs/inputs.hpp"
-        "inputs/input_codes.hpp"
-        "inputs/glfw_inputs.hpp"
-        "inputs/glfw_inputs.cpp"
-        "node_system/node_types.hpp"
-        "node_system/node.hpp"
-        "node_system/scene.hpp"
-        "node_system/scene.cpp"
-        "node_system/inode_manager.hpp"
-        "node_system/inode_manager.cpp"
-        "node_system/managers/transform_manager.hpp"
-        "node_system/managers/transform_manager.cpp"
-        "node_system/managers/drawable_manager.hpp"
-        "node_system/managers/drawable_manager.cpp"
-        "node_system/render_gatherer.cpp"
-        "node_system/render_gatherer.hpp"
-        "rendering/render_command.hpp"
-)
 # On Windows/MinGW, explicitly strip out any Objective-C++ (.mm) files if GLOB accidentally found them
 if (NOT APPLE)
     list(FILTER CORE_SOURCES EXCLUDE REGEX ".*\\.mm$")
@@ -104,5 +69,18 @@ target_include_directories(BirdCore PUBLIC
         "${CMAKE_SOURCE_DIR}/external/spirv-cross"
         "${CMAKE_SOURCE_DIR}/external"      # Changed this to cover <stb/stb_image.h>
         "${CMAKE_SOURCE_DIR}/external/stb"  # Fallback
+        "${CMAKE_SOURCE_DIR}/external/json/include"
         ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Automatically copy JSON definitions to the build directory every time BirdCore builds
+add_custom_command(TARGET BirdCore POST_BUILD
+        # Ensure the destination directory exists
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/node_system"
+        # Copy the files if they have been modified
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_definitions.json"
+        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene_definitions.json"
+        "${CMAKE_BINARY_DIR}/node_system/"
+        COMMENT "Copying node and scene JSON definitions to build directory"
 )

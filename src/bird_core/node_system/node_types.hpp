@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <limits>
+#include <vector>
+#include <string>
 
 namespace bird::node_system {
 
@@ -11,7 +13,7 @@ namespace bird::node_system {
 struct NodeID {
   uint64_t id;
 
-  static inline NodeID from(uint32_t index, uint32_t generation) {
+  static inline NodeID from(uint32_t index, uint32_t generation) noexcept {
     uint64_t packed = (static_cast<uint64_t>(generation) << 32) | index;
     return NodeID{ packed };
   }
@@ -19,21 +21,21 @@ struct NodeID {
   /**
    * @return the index part of the NodeID.
    */
-  [[nodiscard]] inline uint32_t index() const {
+  [[nodiscard]] inline uint32_t index() const noexcept {
     return static_cast<uint32_t>(id);
   }
 
   /**
    * @return the generation-counter part of the NodeID.
    */
-  [[nodiscard]] inline uint32_t generation() const {
+  [[nodiscard]] inline uint32_t generation() const noexcept {
     return static_cast<uint32_t>(id >> 32);
   }
 
-  inline bool operator==(const NodeID& other) const {
+  inline bool operator==(const NodeID& other) const noexcept {
     return id == other.id;
   }
-  inline bool operator!=(const NodeID& other) const {
+  inline bool operator!=(const NodeID& other) const noexcept {
     return id != other.id;
   }
 };
