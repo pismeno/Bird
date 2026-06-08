@@ -69,5 +69,18 @@ target_include_directories(BirdCore PUBLIC
         "${CMAKE_SOURCE_DIR}/external/spirv-cross"
         "${CMAKE_SOURCE_DIR}/external"      # Changed this to cover <stb/stb_image.h>
         "${CMAKE_SOURCE_DIR}/external/stb"  # Fallback
+        "${CMAKE_SOURCE_DIR}/external/json/include"
         ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Automatically copy JSON definitions to the build directory every time BirdCore builds
+add_custom_command(TARGET BirdCore POST_BUILD
+        # Ensure the destination directory exists
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/node_system"
+        # Copy the files if they have been modified
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_definitions.json"
+        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene_definitions.json"
+        "${CMAKE_BINARY_DIR}/node_system/"
+        COMMENT "Copying node and scene JSON definitions to build directory"
 )

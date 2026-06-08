@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../node_system/managers/transform/transforms.hpp"
+#include "rendering/render_command.hpp"
 
 namespace bird {
 
@@ -13,7 +13,7 @@ public:
     virtual void init(Window& window) = 0;
     virtual void render() = 0;
     virtual void shutdown() = 0;
-    virtual void submit_quad(const bird::node_system::managers::Transform2D& transform) = 0;
+    virtual void submit_quad(const RenderCommand render_command) = 0;
 };
 
 } // namespace bird

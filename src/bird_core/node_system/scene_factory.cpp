@@ -1,10 +1,8 @@
 #include "scene_factory.hpp"
 #include "node_system/scene.hpp"
-#include "node_system/inode_manager.hpp"
 
 #include <memory>
 #include <functional>
-#include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>

@@ -24,21 +24,19 @@ GlfwWindow::GlfwWindow(const WindowOptions& options)
       windowedWidth(options.logical_width),
       windowedHeight(options.logical_height),
       inputs(),
-      windowedWidth(options.width),
-      windowedHeight(options.height),
       glfwWindow(nullptr),
       fullscreen(options.startFullscreen) {}
 
 GlfwWindow::~GlfwWindow() = default;
 
-Result GlfwWindow::init() {
+Result<void> GlfwWindow::init() {
   glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
   glfwWindow = glfwCreateWindow(logicalWidth, logicalHeight, title.c_str(), nullptr, nullptr);
 
   if (!glfwWindow) {
-    return Result::fail("failed to create GLFW window");
+    return bird::fail("failed to create GLFW window");
   }
 
   if (this->fullscreen) {
@@ -71,7 +69,7 @@ Result GlfwWindow::init() {
   glfwSetCursorPosCallback(glfwWindow, GlfwInputs::cursorPosCallback);
   glfwSetScrollCallback(glfwWindow, GlfwInputs::scrollCallback);
 
-  return Result::ok();
+  return bird::ok();
 }
 
 void GlfwWindow::update() {
@@ -81,12 +79,12 @@ void GlfwWindow::update() {
   glfwSwapBuffers(glfwWindow);
 }
 
-Result GlfwWindow::close() {
+Result<void> GlfwWindow::close() {
   glfwDestroyWindow(glfwWindow);
-  return Result::ok();
+  return bird::ok();
 }
 
-bool GlfwWindow::shouldClose() const {
+bool GlfwWindow::shouldClose() const noexcept {
   return glfwWindowShouldClose(glfwWindow);
 }
 
@@ -106,11 +104,11 @@ uint32_t GlfwWindow::getFramebufferHeight() const {
   return framebufferHeight;
 }
 
-bool GlfwWindow::isFocused() const {
+bool GlfwWindow::isFocused() const noexcept {
   return glfwGetWindowAttrib(glfwWindow, GLFW_FOCUSED);
 }
 
-bool GlfwWindow::isFullscreen() const {
+bool GlfwWindow::isFullscreen() const noexcept {
   return fullscreen;
 }
 

@@ -25,7 +25,7 @@ public:
   void render() override;
   void shutdown() override;
   void resizeFrameBuffer(int width, int height);
-  void submit_quad(const bird::node_system::managers::Transform2D& transform) override;
+  void submit_quad(const RenderCommand render_command) override;
 
 private:
   void init_device();

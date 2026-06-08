@@ -1,6 +1,6 @@
 #pragma once
 
-#include "window.hpp"
+#include "windowing/iwindow.hpp"
 
 #include "GLFW/glfw3.h"
 
@@ -11,7 +11,7 @@ namespace bird {
 
 using namespace inputs;
 
-class GlfwWindow : public Window {
+class GlfwWindow : public IWindow {
 
   friend class inputs::GlfwInputs;
 
@@ -19,16 +19,16 @@ class GlfwWindow : public Window {
   GlfwWindow(const WindowOptions& options);
   virtual ~GlfwWindow();
 
-  Result init() override;
+  Result<void> init() override;
   void update() override;
-  Result close() override;
-  bool shouldClose() const override;
+  Result<void> close() override;
+  bool shouldClose() const noexcept override;
   uint32_t getLogicalWidth() const override;
   uint32_t getLogicalHeight() const override;
   uint32_t getFramebufferWidth() const override;
   uint32_t getFramebufferHeight() const override;
-  bool isFocused() const override;
-  bool isFullscreen() const override;
+  bool isFocused() const noexcept override;
+  bool isFullscreen() const noexcept override;
   void setFullscreen(bool fullscreen) override;
   Inputs& getInputs() override;
   void* getNativeHandle() const override;
