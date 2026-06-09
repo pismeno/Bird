@@ -116,9 +116,9 @@ Inputs& GlfwWindow::get_inputs() {
   return inputs;
 }
 
-void GlfwWindow::set_fullscreen(bool goFullscreen) {
-  if (goFullscreen) {
-    glfwGetWindowPos(glfw_window, &windowedX, &windowedY);
+void GlfwWindow::set_fullscreen(bool fullscreen) {
+  if (fullscreen) {
+    glfwGetWindowPos(glfw_window, &windowed_x, &windowed_y);
 
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
@@ -127,7 +127,7 @@ void GlfwWindow::set_fullscreen(bool goFullscreen) {
     glfwSetWindowMonitor(glfw_window, monitor, 0, 0, vidmode->width, vidmode->height, vidmode->refreshRate);
   } else {
     fullscreen = false;
-    glfwSetWindowMonitor(glfw_window, nullptr, windowedX, windowedY,
+    glfwSetWindowMonitor(glfw_window, nullptr, windowed_x, windowed_y,
                          windowed_width, windowed_height, 0);
   }
 }
