@@ -1,14 +1,16 @@
 #pragma once
 
-#include "irenderer.hpp"
-#include "windowing/iwindow.hpp"
+#include "rendering/irenderer.hpp"
 #include <QuartzCore/CAMetalLayer.hpp>
-#include "vertex.hpp"
-#include "texture.hpp"
+
 #include <filesystem>
 #include <stb/stb_image.h>
-#include "node_system/render_gatherer.hpp"
 
+#include "vertex.hpp"
+#include "texture.hpp"
+#include "windowing/iwindow.hpp"
+#include "node_system/render_gatherer.hpp"
+#include "utils/result.hpp"
 
 namespace MTL {
 class RenderCommandEncoder;
@@ -21,9 +23,9 @@ namespace bird {
 
 class MetalRenderer : public IRenderer {
 public:
-  void init(IWindow& window) override;
+  Result<void> init(IWindow& window) override;
   void render() override;
-  void shutdown() override;
+  Result<void> shutdown() override;
   void resizeFrameBuffer(int width, int height);
   void submit_quad(const RenderCommand render_command) override;
 

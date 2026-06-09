@@ -67,7 +67,7 @@ void MetalRenderer::init_window(IWindow& window) {
 }
 
 
-void MetalRenderer::init(IWindow& window) {
+Result<void> MetalRenderer::init(IWindow& window) {
   init_device();
   init_window(window);
 
@@ -77,6 +77,8 @@ void MetalRenderer::init(IWindow& window) {
   create_default_library();
   create_command_queue();
   create_render_pipeline();
+
+  return bird::ok();
 }
 
 void MetalRenderer::render() {
@@ -162,7 +164,7 @@ void MetalRenderer::submit_quad(const RenderCommand render_command) {
   texture = new Texture2D("src/bird_core/rendering/alpha_test.png", metal_backend_->metal_device);
 }
 
-void MetalRenderer::shutdown() {
+Result<void> MetalRenderer::shutdown() {
   if (metal_backend_) {
     if (metal_backend_->transform_buffer) {
       metal_backend_->transform_buffer->release();
@@ -182,6 +184,8 @@ void MetalRenderer::shutdown() {
 
   delete metal_backend_;
   metal_backend_ = nullptr;
+
+  return bird::ok();
 }
 
 void MetalRenderer::handle_window_resize(int width, int height) {

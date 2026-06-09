@@ -1,38 +1,32 @@
 #include "rendering/irenderer.hpp"
 
-#include <iostream>
-
 #ifdef BIRD_PLATFORM_APPLE
 #include "rendering/metal_renderer.hpp"
 #endif
 
+#include "utils/result.hpp"
+
 namespace bird {
 
-std::unique_ptr<IRenderer> IRenderer::create(RendererType type) {
+Result<std::unique_ptr<IRenderer>> IRenderer::create(RendererType type) {
   switch (type) {
     case RendererType::Metal: {
 #ifdef BIRD_PLATFORM_APPLE
       return std::make_unique<MetalRenderer>();
 #else
-      std::cerr << "Metal Renderer is only supported on Apple platforms." << std::endl;
+      return bird::fail("Metal renderer is only supported on macOS");
 #endif
-      break;
     }
     case RendererType::Vulkan: {
-      // not yet implemented
-      break;
+      return bird::fail("Vulkan renderer is not yet implemented");
     }
     case RendererType::DirectX: {
-      // not yet implemented
-      break;
+      return bird::fail("DirectX renderer is not yet implemented");
     }
     default: {
-      std::cerr << "Unsupported renderer type" << std::endl;
-      return nullptr;
+      return bird::fail("Unsupported renderer type");
     }
   }
-
-  return nullptr;
 }
 
 } // bird
