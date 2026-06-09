@@ -40,7 +40,7 @@ class SceneFactory {
    * @param scene_type the string id of the scene type to create.
    * @return created scene.
    */
-  std::unique_ptr<Scene> create_scene(const std::string& scene_type) const;
+  Result<std::unique_ptr<Scene>> create_scene(const std::string& scene_type) const;
   Result<std::unique_ptr<Scene>> load_scene_from(const std::string& path) const;
   Result<void> save_scene_to(const Scene& scene, const std::string& path) const;
 

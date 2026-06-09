@@ -13,11 +13,11 @@
 
 namespace bird::node_system {
 
-std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type) const {
+Result<std::unique_ptr<Scene>> SceneFactory::create_scene(const std::string& scene_type) const {
   auto scene_def_it = scene_definitions.find(scene_type);
 
   if (scene_def_it == scene_definitions.end()) {
-    return nullptr; // no scene with that name is registered
+    return bird::fail("Scene type '" + scene_type + "' is not registered.");
   }
 
   auto scene = std::make_unique<Scene>(scene_type);
@@ -27,7 +27,7 @@ std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type)
     auto manager_factory_it = manager_registry.find(manager_name);
 
     if (manager_factory_it == manager_registry.end()) {
-      continue; // Skip the manager if it's not registered
+      return bird::fail("Manager '" + manager_name + "' is not registered.");
     }
 
     ManagerFactory manager_factory = manager_factory_it->second;
@@ -38,13 +38,13 @@ std::unique_ptr<Scene> SceneFactory::create_scene(const std::string& scene_type)
     auto node_def_it = node_definitions.find(node_name);
 
     if (node_def_it == node_definitions.end()) {
-      continue; // Skip the node if it's not registered
+      return bird::fail("Node type '" + node_name + "' is not registered.");
     }
 
     scene->add_node_type(node_name, node_def_it->second.managers);
   }
 
-  return scene;
+  return std::move(scene);
 }
 
 Result<void> SceneFactory::load_scene_definitions_from(const std::string& path) {
@@ -172,16 +172,18 @@ Result<std::unique_ptr<Scene>> SceneFactory::load_scene_from(const std::string& 
     return bird::fail("invalid scene JSON: missing 'type' string in '" + path + "'.");
   }
 
-  auto scene = create_scene(scene_json["type"].get<std::string>());
-  if (!scene) {
-    return bird::fail("failed to create scene '" + scene_json["type"].get<std::string>() + "' in '" + path + "'.");
+  auto scene_result = create_scene(scene_json["type"].get<std::string>());
+  if (!scene_result) {
+    return scene_result;
   }
 
-  Result deserialization_result = scene->deserialize(scene_json);
+  std::unique_ptr<Scene> scene = std::move(scene_result).value();
+
+  auto deserialization_result = scene->deserialize(scene_json);
 
   if (!deserialization_result) {
     return bird::fail(deserialization_result.error());
-  };
+  }
 
   return std::move(scene);
 }
