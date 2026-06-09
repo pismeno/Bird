@@ -1,8 +1,4 @@
-#include "metal_renderer.hpp"
-
-#include "CocoaBridge.hpp"
-#include "shader_compiler.hpp"
-#include "node_system/render_gatherer.hpp"
+#include "rendering/metal/metal_renderer.hpp"
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <Metal/Metal.hpp>
@@ -15,6 +11,10 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+
+#include "CocoaBridge.hpp"
+#include "rendering/shader_compiler.hpp"
+#include "node_system/render_gatherer.hpp"
 
 namespace bird {
 

@@ -6,8 +6,8 @@
 #include <filesystem>
 #include <stb/stb_image.h>
 
-#include "vertex.hpp"
-#include "texture.hpp"
+#include "rendering/vertex.hpp"
+#include "rendering/texture.hpp"
 #include "windowing/iwindow.hpp"
 #include "node_system/render_gatherer.hpp"
 #include "utils/result.hpp"
