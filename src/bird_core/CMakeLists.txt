@@ -1,43 +1,86 @@
-set(CORE_SOURCES
-        "utils/result.hpp"
-        "windowing/iwindow.hpp"
-        "windowing/iwindow.cpp"
-        "windowing/glfw_window.hpp"
-        "windowing/glfw_window.cpp"
-        "inputs/inputs.hpp"
-        "inputs/input_codes.hpp"
-        "inputs/glfw_inputs.hpp"
-        "inputs/glfw_inputs.cpp"
-        "node_system/node_types.hpp"
-        "node_system/node.hpp"
-        "node_system/scene.hpp"
-        "node_system/scene.cpp"
-        "node_system/scene_serde.cpp"
-        "node_system/inode_manager.hpp"
-        "node_system/inode_manager.cpp"
-        "node_system/managers/transform_manager.hpp"
-        "node_system/managers/transform_manager.cpp"
-        "node_system/managers/drawable_manager.hpp"
-        "node_system/managers/drawable_manager.cpp"
-        "node_system/render_gatherer.cpp"
-        "node_system/render_gatherer.hpp"
-        "node_system/scene_factory.hpp"
-        "node_system/scene_factory.cpp"
-        "rendering/render_command.hpp"
-)
+# It is highly recommended to use explicit file lists instead of GLOB,
+# but if using GLOB, let's make sure it doesn't grab .mm files on Windows at all.
+file(GLOB_RECURSE CORE_SOURCES "*.cpp" "*.hpp" "*.h")
 
+# On Windows/MinGW, explicitly strip out any Objective-C++ (.mm) files if GLOB accidentally found them
+if (NOT APPLE)
+    list(FILTER CORE_SOURCES EXCLUDE REGEX ".*\\.mm$")
+endif()
+
+# Filter out Apple/Metal-exclusive files globally
+list(FILTER CORE_SOURCES EXCLUDE REGEX "metal_renderer\\.cpp")
+list(FILTER CORE_SOURCES EXCLUDE REGEX "mtl_implementation\\.cpp")
+list(FILTER CORE_SOURCES EXCLUDE REGEX "mtl_implementation\\.mm")
+list(FILTER CORE_SOURCES EXCLUDE REGEX "GLFWBridge\\.mm")
+
+if (APPLE)
+    # Re-add Apple/Metal files with explicit absolute paths
+    list(APPEND CORE_SOURCES
+            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal_renderer.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/mtl_implementation.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/mtl_implementation.mm"
+            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/CocoaBridge.mm"
+    )
+    # Define macro for conditional preprocessor guarding in C++
+    add_compile_definitions(BIRD_PLATFORM_APPLE)
+
+elseif (UNIX AND NOT APPLE)
+    add_compile_definitions(BIRD_PLATFORM_LINUX)
+
+elseif (WIN32)
+    add_compile_definitions(BIRD_PLATFORM_WINDOWS)
+endif()
+
+# Force SPIRV-Cross to use assertions instead of 'throw' since exceptions are disabled
+add_compile_definitions(SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS=1)
+
+# Now create the library using the filtered/curated list
 add_library(BirdCore STATIC ${CORE_SOURCES})
 
-target_link_libraries(BirdCore PUBLIC
+# Public dependencies
+target_link_libraries(BirdCore
+        PUBLIC
         glfw
         glm::glm
-        nlohmann_json::nlohmann_json
+        spirv-cross-core
+        spirv-cross-glsl
+        spirv-cross-msl
+        glslang
+        glslang-default-resource-limits
+        SPIRV
 )
 
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_definitions.json"
+# Platform-specific private dependencies
+if (APPLE)
+    target_link_libraries(BirdCore PRIVATE
+            "-framework Metal"
+            "-framework Foundation"
+            "-framework QuartzCore"
+            "-framework Cocoa"
+    )
+endif()
+
+# Ensure we include the directories correctly.
+# NOTE: If your stb header is at `external/stb/stb_image.h`, use "${CMAKE_SOURCE_DIR}/external"
+# If your stb header is at `external/stb/stb/stb_image.h`, use "${CMAKE_SOURCE_DIR}/external/stb"
+target_include_directories(BirdCore PUBLIC
+        "${CMAKE_SOURCE_DIR}/external/metal-cpp"
+        "${CMAKE_SOURCE_DIR}/external/glslang"
+        "${CMAKE_SOURCE_DIR}/external/spirv-cross"
+        "${CMAKE_SOURCE_DIR}/external"      # Changed this to cover <stb/stb_image.h>
+        "${CMAKE_SOURCE_DIR}/external/stb"  # Fallback
+        "${CMAKE_SOURCE_DIR}/external/json/include"
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Automatically copy JSON definitions to the build directory every time BirdCore builds
+add_custom_command(TARGET BirdCore POST_BUILD
+        # Ensure the destination directory exists
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/node_system"
+        # Copy the files if they have been modified
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_definitions.json"
         "${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene_definitions.json"
-        DESTINATION "${CMAKE_BINARY_DIR}/node_system"
+        "${CMAKE_BINARY_DIR}/node_system/"
+        COMMENT "Copying node and scene JSON definitions to build directory"
 )
-
-target_include_directories(BirdCore
-        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

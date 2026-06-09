@@ -1,6 +1,6 @@
 #pragma once
 
-#include "iwindow.hpp"
+#include "windowing/iwindow.hpp"
 
 #include "GLFW/glfw3.h"
 
@@ -13,35 +13,45 @@ using namespace inputs;
 
 class GlfwWindow : public IWindow {
 
-  friend class GlfwInputs;
+  friend class inputs::GlfwInputs;
 
  public:
-  explicit GlfwWindow(WindowOptions options);
-  virtual ~GlfwWindow() noexcept;
+  GlfwWindow(const WindowOptions& options);
+  virtual ~GlfwWindow();
 
   Result<void> init() override;
   void update() override;
   Result<void> close() override;
   bool shouldClose() const noexcept override;
-  uint32_t getWidth() const noexcept override;
-  uint32_t getHeight() const noexcept override;
+  uint32_t getLogicalWidth() const override;
+  uint32_t getLogicalHeight() const override;
+  uint32_t getFramebufferWidth() const override;
+  uint32_t getFramebufferHeight() const override;
   bool isFocused() const noexcept override;
   bool isFullscreen() const noexcept override;
-  void setFullscreen(bool fullscreen) noexcept override;
-  Inputs& getInputs() noexcept override;
+  void setFullscreen(bool fullscreen) override;
+  Inputs& getInputs() override;
+  void* getNativeHandle() const override;
 
  private:
-  GLFWwindow* glfwWindow;
+  GLFWwindow* glfwWindow{};
 
-  uint32_t windowedWidth{}, windowedHeight{};
+  std::string title{};
+
+  uint32_t logicalWidth{};
+  uint32_t logicalHeight{};
+  uint32_t framebufferWidth{};
+  uint32_t framebufferHeight{};
+
+  uint32_t windowedWidth{};
+  uint32_t windowedHeight{};
   int windowedX{}, windowedY{};
   bool fullscreen{};
 
-  WindowOptions options;
-
   GlfwInputs inputs;
 
-  void windowResizeCallback(GLFWwindow* window, int width, int height) noexcept;
+  void windowResizeCallback(GLFWwindow* window, int width, int height);
+  void frameBufferResizeCallback(GLFWwindow* window, int width, int height);
 };
 
 } // bird

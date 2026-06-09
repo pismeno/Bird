@@ -15,7 +15,7 @@ class NodeHandle {
   /**
    * @brief safely checks if the node still exists in the current generation.
    */
-  [[nodiscard]] bool is_valid() const;
+  [[nodiscard]] bool is_valid() const noexcept;
 
   explicit operator bool() const noexcept {
     return is_valid();
@@ -24,7 +24,7 @@ class NodeHandle {
   /**
    * @brief safely fetches the raw pointer. Returns nullptr if the node was destroyed.
    */
-  [[nodiscard]] Node* get() const;
+  [[nodiscard]] Node* get() const noexcept;
 
   Node* operator->() const noexcept { return get(); }
  private:
