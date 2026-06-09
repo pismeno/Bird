@@ -16,10 +16,10 @@ list(FILTER CORE_SOURCES EXCLUDE REGEX "GLFWBridge\\.mm")
 if (APPLE)
     # Re-add Apple/Metal files with explicit absolute paths
     list(APPEND CORE_SOURCES
-            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal_renderer.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/mtl_implementation.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/mtl_implementation.mm"
-            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/CocoaBridge.mm"
+            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/metal_renderer.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/mtl_implementation.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/mtl_implementation.mm"
+            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/CocoaBridge.mm"
     )
     # Define macro for conditional preprocessor guarding in C++
     add_compile_definitions(BIRD_PLATFORM_APPLE)

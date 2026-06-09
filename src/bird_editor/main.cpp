@@ -4,7 +4,7 @@
 #include "GLFW/glfw3.h"
 
 #include "windowing/iwindow.hpp"
-#include "rendering/renderer.hpp"
+#include "rendering/irenderer.hpp"
 
 int main() {
     using namespace bird;
@@ -23,25 +23,36 @@ int main() {
         return -1;
     }
 
-    Renderer renderer;
-    renderer.create_renderer(bird::RendererType::Metal);
-    renderer.init(*window);
+    auto renderer_result = IRenderer::create(bird::RendererType::Metal);
+    if (!renderer_result) {
+        std::cerr << renderer_result.error() << std::endl;
+        return -1;
+    }
 
+    std::unique_ptr<IRenderer> renderer = std::move(renderer_result).value();
+    auto r_init_result = renderer->init(*window);
+    if (!r_init_result) {
+        std::cerr << r_init_result.error() << std::endl;
+        return -1;
+    }
 
     while (!window->shouldClose()) {
         window->update();
-        renderer.render();
-
-        // Window/input handling goes here.
-        // Example:
-        // auto& inputs = window->getInputs();
-
-        if (window->isFullscreen()) {
-            // Optional fullscreen logic
-        }
+        renderer->render();
     }
 
-    window->close();
+    auto r_shutdown_result = renderer->shutdown();
+
+    if (!r_shutdown_result) {
+        std::cerr << r_shutdown_result.error() << std::endl;
+        return -1;
+    }
+
+    auto window_close_result = window->close();
+    if (!window_close_result) {
+        std::cerr << window_close_result.error() << std::endl;
+        return -1;
+    }
 
     glfwTerminate();
     return 0;
