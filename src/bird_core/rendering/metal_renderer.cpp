@@ -2,7 +2,7 @@
 
 #include "CocoaBridge.hpp"
 #include "shader_compiler.hpp"
-#include "../node_system/managers/transform/transforms.hpp"
+#include "node_system/render_gatherer.hpp"
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <Metal/Metal.hpp>
@@ -15,8 +15,6 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-
-using namespace bird::node_system::managers;
 
 namespace bird {
 
@@ -42,6 +40,7 @@ struct MetalRenderer::Impl {
   MTL::Buffer* index_buffer = nullptr;
   MTL::Buffer* transform_buffer = nullptr;
   MTL::SamplerState* sampler_state = nullptr;
+  void* cocoa_window = nullptr;
 };
 
 void MetalRenderer::init_device() {
@@ -51,7 +50,7 @@ void MetalRenderer::init_device() {
   metal_backend_->metal_device = MTL::CreateSystemDefaultDevice();
 }
 
-void MetalRenderer::init_window(Window& window) {
+void MetalRenderer::init_window(IWindow& window) {
 
   void* native_window_handle = window.getNativeHandle();
 
@@ -62,15 +61,19 @@ void MetalRenderer::init_window(Window& window) {
   metal_backend_->metal_layer->setDevice(metal_backend_->metal_device);
   metal_backend_->metal_layer->setPixelFormat(MTL::PixelFormatBGRA8Unorm);
   metal_backend_->metal_layer->setDrawableSize(CGSizeMake(width, height));
+  metal_backend_->cocoa_window = native_window_handle;
 
-  GLFWBridge::AddLayerToWindow(metal_backend_->glfw_window, metal_backend_->metal_layer);
+  CocoaBridge::AddLayerToWindow(metal_backend_->cocoa_window, metal_backend_->metal_layer);
 }
 
 
-void MetalRenderer::init(Window& window) {
+void MetalRenderer::init(IWindow& window) {
   init_device();
   init_window(window);
 
+  RenderCommand comm;
+
+  submit_quad(comm);
   create_default_library();
   create_command_queue();
   create_render_pipeline();

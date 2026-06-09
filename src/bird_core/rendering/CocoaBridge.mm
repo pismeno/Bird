@@ -24,6 +24,7 @@ void AddLayerToWindow(GLFWwindow* window, CA::MetalLayer* layer) {
 
 #include "CocoaBridge.hpp"
 #include <AppKit/AppKit.h>
+#include <QuartzCore/CAMetalLayer.h>
 
 namespace CocoaBridge {
 

@@ -1,13 +1,13 @@
 #pragma once
 
 #include "irenderer.hpp"
-#include "../windowing/window.hpp"
+#include "windowing/iwindow.hpp"
 #include <QuartzCore/CAMetalLayer.hpp>
 #include "vertex.hpp"
 #include "texture.hpp"
 #include <filesystem>
 #include <stb/stb_image.h>
-#include "../node_system/managers/transform/transforms.hpp"
+#include "node_system/render_gatherer.hpp"
 
 
 namespace MTL {
@@ -21,7 +21,7 @@ namespace bird {
 
 class MetalRenderer : public IRenderer {
 public:
-  void init(Window& window) override;
+  void init(IWindow& window) override;
   void render() override;
   void shutdown() override;
   void resizeFrameBuffer(int width, int height);
@@ -29,7 +29,7 @@ public:
 
 private:
   void init_device();
-  void init_window(Window& window);
+  void init_window(IWindow& window);
 
 
   void create_default_library();

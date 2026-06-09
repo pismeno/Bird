@@ -40,7 +40,7 @@ void Renderer::create_renderer(RendererType type) {
   }
 }
 
-void Renderer::init(Window& window) {
+void Renderer::init(IWindow& window) {
   if (!renderer_) {
     std::cerr << "Renderer not created. Call create_renderer() first." << std::endl;
     return;

@@ -26,7 +26,7 @@ add_subdirectory(external/glm)
 add_subdirectory(external/spirv-cross)
 add_subdirectory(external/glslang)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(src/bird_core)
 add_subdirectory(src/bird_editor)

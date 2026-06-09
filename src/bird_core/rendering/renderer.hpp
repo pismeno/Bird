@@ -22,7 +22,7 @@ public:
   */
 
   void create_renderer(RendererType type);
-  void init(Window& window);
+  void init(IWindow& window);
   void render();
   void shutdown();
   void submit_quad(const RenderCommand render_command);
