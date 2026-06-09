@@ -1,7 +1,7 @@
 #include "rendering/irenderer.hpp"
 
 #ifdef BIRD_PLATFORM_APPLE
-#include "rendering/metal_renderer.hpp"
+#include "rendering/metal/metal_renderer.hpp"
 #endif
 
 #include "utils/result.hpp"
