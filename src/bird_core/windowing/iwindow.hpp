@@ -45,7 +45,7 @@ class IWindow {
   /**
    * @brief Factory method to create the specific implementation
    */
-  static std::unique_ptr<IWindow> create(const WindowOptions& options);
+  static Result<std::unique_ptr<IWindow>> create(const WindowOptions& options);
 };
 
 } // bird

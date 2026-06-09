@@ -1,9 +1,13 @@
-#include "iwindow.hpp"
-#include "glfw_window.hpp"
+#include "windowing/iwindow.hpp"
+
+#include <memory>
+
+#include "windowing/glfw_window.hpp"
+#include "utils/result.hpp"
 
 namespace bird {
 
-std::unique_ptr<IWindow> IWindow::create(const WindowOptions& options) {
+Result<std::unique_ptr<IWindow>> IWindow::create(const WindowOptions& options) {
   return std::make_unique<GlfwWindow>(options);
 }
 

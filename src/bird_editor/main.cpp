@@ -14,8 +14,15 @@ int main() {
         return -1;
     }
 
-    std::unique_ptr<IWindow> window =
+    auto window_result =
         IWindow::create(WindowOptions{800, 600, "Bird Editor"});
+
+    if (!window_result) {
+      std::cerr << window_result.error() << std::endl;
+      return -1;
+    }
+
+    std::unique_ptr<IWindow> window = std::move(window_result).value();
 
     if (!window->init()) {
         std::cerr << "Failed to create window" << std::endl;
