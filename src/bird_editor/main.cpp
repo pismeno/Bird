@@ -43,7 +43,7 @@ int main() {
         return -1;
     }
 
-    while (!window->shouldClose()) {
+    while (!window->should_close()) {
         window->update();
         renderer->render();
     }

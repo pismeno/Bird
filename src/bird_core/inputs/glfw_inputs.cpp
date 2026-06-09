@@ -6,71 +6,71 @@
 
 namespace bird::inputs {
 
-bool GlfwInputs::isKeyHeld(KeyCode key) noexcept {
+bool GlfwInputs::is_key_held(KeyCode key) noexcept {
   return currentKeyState[(uint16_t) key];
 }
 
-bool GlfwInputs::isKeyPressed(KeyCode key) noexcept {
+bool GlfwInputs::is_key_pressed(KeyCode key) noexcept {
   return currentKeyState[(uint16_t) key] && !previousKeyState[(uint16_t) key];
 }
 
-bool GlfwInputs::isKeyReleased(KeyCode key) noexcept {
+bool GlfwInputs::is_key_released(KeyCode key) noexcept {
   return !currentKeyState[(uint16_t) key] && previousKeyState[(uint16_t) key];
 }
 
-bool GlfwInputs::isMouseButtonHeld(MouseCode button) noexcept {
+bool GlfwInputs::is_mouse_button_held(MouseCode button) noexcept {
   return currentMouseState[(uint16_t)button];
 }
 
-bool GlfwInputs::isMouseButtonPressed(MouseCode button) noexcept {
+bool GlfwInputs::is_mouse_button_pressed(MouseCode button) noexcept {
   return currentMouseState[(uint16_t)button] && !previousMouseState[(uint16_t)button];
 }
 
-bool GlfwInputs::isMouseButtonReleased(MouseCode button) noexcept {
+bool GlfwInputs::is_mouse_button_released(MouseCode button) noexcept {
   return !currentMouseState[(uint16_t)button] && previousMouseState[(uint16_t)button];
 }
 
-glm::vec2 GlfwInputs::getMousePosition() noexcept {
+glm::vec2 GlfwInputs::get_mouse_position() noexcept {
   return glm::vec2(mouseX, mouseY);
 }
 
-float GlfwInputs::getMouseX() noexcept {
+float GlfwInputs::get_mouse_x() noexcept {
   return mouseX;
 }
 
-float GlfwInputs::getMouseY() noexcept {
+float GlfwInputs::get_mouse_y() noexcept {
   return mouseY;
 }
 
-glm::vec2 GlfwInputs::getMouseDelta() noexcept {
-  return glm::vec2(getMouseDeltaX(), getMouseDeltaY());
+glm::vec2 GlfwInputs::get_mouse_delta() noexcept {
+  return glm::vec2(get_mouse_delta_x(), get_mouse_delta_y());
 }
 
-float GlfwInputs::getMouseDeltaY() noexcept {
+float GlfwInputs::get_mouse_delta_y() noexcept {
   return mouseY - previousMouseY;
 }
 
-float GlfwInputs::getMouseDeltaX() noexcept {
+float GlfwInputs::get_mouse_delta_x() noexcept {
   return mouseX - previousMouseX;
 }
 
-float GlfwInputs::getScrollX() noexcept {
+float GlfwInputs::get_scroll_x() noexcept {
   return scrollX;
 }
 
-float GlfwInputs::getScrollY() noexcept {
+float GlfwInputs::get_scroll_y() noexcept {
   return scrollY;
 }
 
-float GlfwInputs::getScrollDeltaX() noexcept {
+float GlfwInputs::get_scroll_delta_x() noexcept {
   return scrollX - previousScrollX;
 }
 
-float GlfwInputs::getScrollDeltaY() noexcept {
+float GlfwInputs::get_scroll_delta_y() noexcept {
   return scrollY - previousScrollY;
 }
 
-void GlfwInputs::endFrame() noexcept {
+void GlfwInputs::end_frame() noexcept {
   endFrameKeys();
   endFrameMouse();
 }
@@ -95,35 +95,35 @@ inline void GlfwInputs::endFrameMouse() noexcept {
   previousScrollY = 0.0f;
 }
 
-void GlfwInputs::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-  auto* birdWindow = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+void GlfwInputs::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+  auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
 
-  if (birdWindow) {
-    birdWindow->inputs.handleKey(key, scancode, action, mods);
+  if (bird_window) {
+    bird_window->inputs.handleKey(key, scancode, action, mods);
   }
 }
 
-void GlfwInputs::mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
-  auto* birdWindow = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+void GlfwInputs::mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
+  auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
 
-  if (birdWindow) {
-    birdWindow->inputs.handleMouseButton(button, action, mods);
+  if (bird_window) {
+    bird_window->inputs.handleMouseButton(button, action, mods);
   }
 }
 
-void GlfwInputs::cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
-  auto* birdWindow = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+void GlfwInputs::cursor_pos_callback(GLFWwindow *window, double xpos, double ypos) {
+  auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
 
-  if (birdWindow) {
-    birdWindow->inputs.handleCursor(xpos, ypos);
+  if (bird_window) {
+    bird_window->inputs.handle_cursor(xpos, ypos);
   }
 }
 
 void GlfwInputs::scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
-  auto* birdWindow = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+  auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
 
-  if (birdWindow) {
-    birdWindow->inputs.handleScroll(xoffset, yoffset);
+  if (bird_window) {
+    bird_window->inputs.handleScroll(xoffset, yoffset);
   }
 }
 
@@ -153,7 +153,7 @@ void GlfwInputs::handleMouseButton(int button, int action, int mods) noexcept {
   }
 }
 
-void GlfwInputs::handleCursor(double xpos, double ypos) noexcept {
+void GlfwInputs::handle_cursor(double xpos, double ypos) noexcept {
   auto x = (float)xpos;
   auto y = (float)ypos;
 

@@ -28,19 +28,19 @@ class IWindow {
   virtual void update() = 0;
   virtual Result<void> close() = 0;
 
-  virtual bool shouldClose() const noexcept = 0;
+  [[nodiscard]] virtual bool should_close() const noexcept = 0;
 
-  virtual uint32_t getLogicalWidth() const = 0;
-  virtual uint32_t getLogicalHeight() const = 0;
-  virtual uint32_t getFramebufferWidth() const = 0;
-  virtual uint32_t getFramebufferHeight() const = 0;
-  virtual bool isFocused() const noexcept = 0;
-  virtual bool isFullscreen() const noexcept = 0;
-  virtual void setFullscreen(bool fullscreen) = 0;
+  [[nodiscard]] virtual uint32_t get_logical_width() const = 0;
+  [[nodiscard]] virtual uint32_t get_logical_height() const = 0;
+  [[nodiscard]] virtual uint32_t get_framebuffer_width() const = 0;
+  [[nodiscard]] virtual uint32_t get_framebuffer_height() const = 0;
+  [[nodiscard]] virtual bool is_focused() const noexcept = 0;
+  [[nodiscard]] virtual bool is_fullscreen() const noexcept = 0;
+  virtual void set_fullscreen(bool fullscreen) = 0;
 
-  virtual Inputs& getInputs() = 0;
+  virtual Inputs& get_inputs() = 0;
 
-  virtual void* getNativeHandle() const = 0;
+  [[nodiscard]] virtual void* get_native_handle() const = 0;
 
   /**
    * @brief Factory method to create the specific implementation

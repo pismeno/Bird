@@ -26,7 +26,7 @@ public:
   Result<void> init(IWindow& window) override;
   void render() override;
   Result<void> shutdown() override;
-  void resizeFrameBuffer(int width, int height);
+  void resize_frame_buffer(int width, int height);
   void submit_quad(const RenderCommand render_command) override;
 
   void handle_window_resize(int width, int height) override;

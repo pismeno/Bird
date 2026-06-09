@@ -15,13 +15,13 @@
 namespace bird::node_system::managers {
 
 using TransformIndex = uint32_t;
-inline constexpr TransformIndex INVALID_TRANSFORM_INDEX = std::numeric_limits<uint32_t>::max();
+inline constexpr TransformIndex invalid_transform_index = std::numeric_limits<uint32_t>::max();
 
 class TransformManager : public NodeManagerBase<TransformManager> {
  public:
   explicit TransformManager() {
     global_matrices.resize(MAX_ACTIVE_NODES, glm::mat3x3(1.0f));
-    node_to_transform.resize(MAX_ACTIVE_NODES, INVALID_TRANSFORM_INDEX);
+    node_to_transform.resize(MAX_ACTIVE_NODES, invalid_transform_index);
     transforms.reserve(MAX_ACTIVE_NODES);
   }
 

@@ -81,7 +81,7 @@ void TransformManager::mark_spatial_children_dirty(NodeID parent_id) {
 
 bool TransformManager::has_transform(NodeID node_id) const noexcept {
   if (node_id.index() >= node_to_transform.size()) return false;
-  return node_to_transform[node_id.index()] != INVALID_TRANSFORM_INDEX;
+  return node_to_transform[node_id.index()] != invalid_transform_index;
 }
 
 // Signature updated to match your new explicit requirement
@@ -91,7 +91,7 @@ TransformManager::TransformInfo* TransformManager::get_transform(uint32_t node_i
   }
 
   TransformIndex index = node_to_transform[node_idx];
-  if (index == INVALID_TRANSFORM_INDEX || index >= transforms.size()) {
+  if (index == invalid_transform_index || index >= transforms.size()) {
     return nullptr;
   }
 
@@ -165,7 +165,7 @@ void TransformManager::on_node_destroyed(NodeID node_id) noexcept {
   transforms[index].node_idx = INVALID_NODE_ID.index();
 
   // Break the lookup link immediately
-  node_to_transform[node_id.index()] = INVALID_TRANSFORM_INDEX;
+  node_to_transform[node_id.index()] = invalid_transform_index;
 }
 
 void TransformManager::on_frame_end() noexcept {
@@ -181,7 +181,7 @@ void TransformManager::on_frame_end() noexcept {
 
   transforms.resize(write_idx);
 
-  std::fill(node_to_transform.begin(), node_to_transform.end(), INVALID_TRANSFORM_INDEX);
+  std::fill(node_to_transform.begin(), node_to_transform.end(), invalid_transform_index);
   for (size_t i = 0; i < transforms.size(); ++i) {
     node_to_transform[transforms[i].node_idx] = i;
   }
@@ -245,7 +245,7 @@ void TransformManager::on_node_reparented(NodeID node_id, NodeID new_parent_id, 
 
 void TransformManager::on_scene_clear() noexcept {
   transforms.clear();
-  std::fill(node_to_transform.begin(), node_to_transform.end(), INVALID_TRANSFORM_INDEX);
+  std::fill(node_to_transform.begin(), node_to_transform.end(), invalid_transform_index);
 }
 
 Result<void> TransformManager::on_serialize_scene(nlohmann::json& json) const {

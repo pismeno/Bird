@@ -39,7 +39,7 @@ using namespace managers;
   NodeID new_id = generate_id();
 
   nodes[new_id.index()].id = new_id;
-  nodes[new_id.index()].parentId = INVALID_NODE_ID;
+  nodes[new_id.index()].parent_id = INVALID_NODE_ID;
 
   for (auto& manager : managers_flat_array) {
     manager->on_node_created(new_id);
@@ -68,15 +68,15 @@ void Scene::destroy_node(NodeID node_id) {
     return;
   }
 
-  if (node->parentId != INVALID_NODE_ID) {
-    Node* parent = &nodes[node->parentId.index()];
+  if (node->parent_id != INVALID_NODE_ID) {
+    Node* parent = &nodes[node->parent_id.index()];
     if (parent) {
-      auto& siblings = parent->childrenIds;
+      auto& siblings = parent->children_ids;
       siblings.erase(std::remove(siblings.begin(), siblings.end(), node_id), siblings.end());
     }
   }
 
-  std::vector<NodeID> children_to_kill = node->childrenIds;
+  std::vector<NodeID> children_to_kill = node->children_ids;
   for (NodeID child_id : children_to_kill) {
     destroy_node(child_id);
   }
@@ -92,8 +92,8 @@ void Scene::destroy_node(NodeID node_id) {
   recycled_ids.push_back(idx);
 
   node->id = INVALID_NODE_ID;
-  node->parentId = INVALID_NODE_ID;
-  node->childrenIds.clear();
+  node->parent_id = INVALID_NODE_ID;
+  node->children_ids.clear();
 }
 
 [[nodiscard]] NodeHandle Scene::get_node(NodeID node_id) {
@@ -108,8 +108,8 @@ void Scene::clear() {
   for (uint32_t i = 0; i < get_highest_allocated_node_index(); ++i) {
     generations[i]++; // Invalidates all existing handles globally
     nodes[i].id = INVALID_NODE_ID;
-    nodes[i].parentId = INVALID_NODE_ID;
-    nodes[i].childrenIds.clear();
+    nodes[i].parent_id = INVALID_NODE_ID;
+    nodes[i].children_ids.clear();
   }
 
   recycled_ids.clear();
@@ -134,17 +134,17 @@ void Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
     return;
   }
 
-  NodeID old_parent_id = child->parentId;
-  if (child->parentId != INVALID_NODE_ID) {
-    Node *old_parent = &nodes[child->parentId.index()];
+  NodeID old_parent_id = child->parent_id;
+  if (child->parent_id != INVALID_NODE_ID) {
+    Node *old_parent = &nodes[child->parent_id.index()];
     if (old_parent) {
-      auto& siblings = old_parent->childrenIds;
+      auto& siblings = old_parent->children_ids;
       siblings.erase(std::remove(siblings.begin(), siblings.end(), node_id), siblings.end());
     }
   }
 
-  child->parentId = new_parent_id;
-  new_parent->childrenIds.push_back(node_id);
+  child->parent_id = new_parent_id;
+  new_parent->children_ids.push_back(node_id);
 
   for (auto& manager : managers_flat_array) {
     manager->on_node_reparented(node_id, new_parent_id, old_parent_id);

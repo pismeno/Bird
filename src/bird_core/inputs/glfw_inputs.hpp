@@ -21,35 +21,35 @@ class GlfwInputs : public Inputs {
   explicit GlfwInputs() = default;
 
   // Keyboard
-  bool isKeyPressed(KeyCode key) noexcept override;    // True ONLY on the exact frame it was pressed
-  bool isKeyHeld(KeyCode key) noexcept override;       // True as long as the key is down
-  bool isKeyReleased(KeyCode key) noexcept override;   // True ONLY on the exact frame it was let go
+  bool is_key_pressed(KeyCode key) noexcept override;    // True ONLY on the exact frame it was pressed
+  bool is_key_held(KeyCode key) noexcept override;       // True as long as the key is down
+  bool is_key_released(KeyCode key) noexcept override;   // True ONLY on the exact frame it was let go
 
   // Mouse
-  bool isMouseButtonPressed(MouseCode button) noexcept override;
-  bool isMouseButtonHeld(MouseCode button) noexcept override;
-  bool isMouseButtonReleased(MouseCode button) noexcept override;
-  glm::vec2 getMousePosition() noexcept override;
-  float getMouseX() noexcept override;
-  float getMouseY() noexcept override;
-  glm::vec2 getMouseDelta() noexcept override;
-  float getMouseDeltaX() noexcept override;
-  float getMouseDeltaY() noexcept override;
-  float getScrollX() noexcept override;
-  float getScrollY() noexcept override;
-  float getScrollDeltaX() noexcept override;
-  float getScrollDeltaY() noexcept override;
+  bool is_mouse_button_pressed(MouseCode button) noexcept override;
+  bool is_mouse_button_held(MouseCode button) noexcept override;
+  bool is_mouse_button_released(MouseCode button) noexcept override;
+  glm::vec2 get_mouse_position() noexcept override;
+  float get_mouse_x() noexcept override;
+  float get_mouse_y() noexcept override;
+  glm::vec2 get_mouse_delta() noexcept override;
+  float get_mouse_delta_x() noexcept override;
+  float get_mouse_delta_y() noexcept override;
+  float get_scroll_x() noexcept override;
+  float get_scroll_y() noexcept override;
+  float get_scroll_delta_x() noexcept override;
+  float get_scroll_delta_y() noexcept override;
 
-  void endFrame() noexcept override;
+  void end_frame() noexcept override;
 
  private:
-  static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-  static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
-  static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos);
+  static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+  static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+  static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
   static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
   void handleKey(int key, int scancode, int action, int mods) noexcept;
   void handleMouseButton(int button, int action, int mods) noexcept;
-  void handleCursor(double xpos, double ypos) noexcept;
+  void handle_cursor(double xpos, double ypos) noexcept;
   void handleScroll(double xoffset, double yoffset) noexcept;
 
   // Mouse

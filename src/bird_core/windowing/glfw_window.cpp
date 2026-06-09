@@ -19,12 +19,12 @@ using namespace inputs;
 
 GlfwWindow::GlfwWindow(const WindowOptions& options)
     : title(options.title),
-      logicalWidth(options.logical_width),
-      logicalHeight(options.logical_height),
-      windowedWidth(options.logical_width),
-      windowedHeight(options.logical_height),
+      logical_width(options.logical_width),
+      logical_height(options.logical_height),
+      windowed_width(options.logical_width),
+      windowed_height(options.logical_height),
       inputs(),
-      glfwWindow(nullptr),
+      glfw_window(nullptr),
       fullscreen(options.startFullscreen) {}
 
 GlfwWindow::~GlfwWindow() = default;
@@ -33,127 +33,127 @@ Result<void> GlfwWindow::init() {
   glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-  glfwWindow = glfwCreateWindow(logicalWidth, logicalHeight, title.c_str(), nullptr, nullptr);
+  glfw_window = glfwCreateWindow(logical_width, logical_height, title.c_str(), nullptr, nullptr);
 
-  if (!glfwWindow) {
+  if (!glfw_window) {
     return bird::fail("failed to create GLFW window");
   }
 
   if (this->fullscreen) {
-    setFullscreen(true);
+    set_fullscreen(true);
   }
 
   int fbWidth = 0, fbHeight = 0;
-  glfwGetFramebufferSize(glfwWindow, &fbWidth, &fbHeight);
-  framebufferWidth = static_cast<uint32_t>(fbWidth);
-  framebufferHeight = static_cast<uint32_t>(fbHeight);
+  glfwGetFramebufferSize(glfw_window, &fbWidth, &fbHeight);
+  framebuffer_width = static_cast<uint32_t>(fbWidth);
+  framebuffer_height = static_cast<uint32_t>(fbHeight);
 
-  glfwSetWindowUserPointer(glfwWindow, this);
+  glfwSetWindowUserPointer(glfw_window, this);
 
   glfwSwapInterval(1); // Enable vsync
 
   glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 
-  glfwSetWindowSizeCallback(glfwWindow, [](GLFWwindow* window, int width, int height) {
-    auto* birdWindow = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
-    birdWindow->windowResizeCallback(birdWindow->glfwWindow, width, height);
+  glfwSetWindowSizeCallback(glfw_window, [](GLFWwindow* window, int width, int height) {
+    auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+    bird_window->window_resize_callback(bird_window->glfw_window, width, height);
   });
 
-  glfwSetFramebufferSizeCallback(glfwWindow, [](GLFWwindow* window, int width, int height) {
-    auto* birdWindow = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
-    birdWindow->frameBufferResizeCallback(birdWindow->glfwWindow, width, height);
+  glfwSetFramebufferSizeCallback(glfw_window, [](GLFWwindow* window, int width, int height) {
+    auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+    bird_window->frame_buffer_resize_callback(bird_window->glfw_window, width, height);
   });
 
-  glfwSetKeyCallback(glfwWindow, GlfwInputs::keyCallback);
-  glfwSetMouseButtonCallback(glfwWindow, GlfwInputs::mouseButtonCallback);
-  glfwSetCursorPosCallback(glfwWindow, GlfwInputs::cursorPosCallback);
-  glfwSetScrollCallback(glfwWindow, GlfwInputs::scrollCallback);
+  glfwSetKeyCallback(glfw_window, GlfwInputs::key_callback);
+  glfwSetMouseButtonCallback(glfw_window, GlfwInputs::mouse_button_callback);
+  glfwSetCursorPosCallback(glfw_window, GlfwInputs::cursor_pos_callback);
+  glfwSetScrollCallback(glfw_window, GlfwInputs::scrollCallback);
 
   return bird::ok();
 }
 
 void GlfwWindow::update() {
-  glfwMakeContextCurrent(glfwWindow);
+  glfwMakeContextCurrent(glfw_window);
 
   glfwPollEvents();
-  glfwSwapBuffers(glfwWindow);
+  glfwSwapBuffers(glfw_window);
 }
 
 Result<void> GlfwWindow::close() {
-  glfwDestroyWindow(glfwWindow);
+  glfwDestroyWindow(glfw_window);
   return bird::ok();
 }
 
-bool GlfwWindow::shouldClose() const noexcept {
-  return glfwWindowShouldClose(glfwWindow);
+bool GlfwWindow::should_close() const noexcept {
+  return glfwWindowShouldClose(glfw_window);
 }
 
-uint32_t GlfwWindow::getLogicalWidth() const {
-  return logicalWidth;
+uint32_t GlfwWindow::get_logical_width() const {
+  return logical_width;
 }
 
-uint32_t GlfwWindow::getLogicalHeight() const {
-  return logicalHeight;
+uint32_t GlfwWindow::get_logical_height() const {
+  return logical_height;
 }
 
-uint32_t GlfwWindow::getFramebufferWidth() const {
-  return framebufferWidth;
+uint32_t GlfwWindow::get_framebuffer_width() const {
+  return framebuffer_width;
 }
 
-uint32_t GlfwWindow::getFramebufferHeight() const {
-  return framebufferHeight;
+uint32_t GlfwWindow::get_framebuffer_height() const {
+  return framebuffer_height;
 }
 
-bool GlfwWindow::isFocused() const noexcept {
-  return glfwGetWindowAttrib(glfwWindow, GLFW_FOCUSED);
+bool GlfwWindow::is_focused() const noexcept {
+  return glfwGetWindowAttrib(glfw_window, GLFW_FOCUSED);
 }
 
-bool GlfwWindow::isFullscreen() const noexcept {
+bool GlfwWindow::is_fullscreen() const noexcept {
   return fullscreen;
 }
 
-Inputs& GlfwWindow::getInputs() {
+Inputs& GlfwWindow::get_inputs() {
   return inputs;
 }
 
-void GlfwWindow::setFullscreen(bool goFullscreen) {
+void GlfwWindow::set_fullscreen(bool goFullscreen) {
   if (goFullscreen) {
-    glfwGetWindowPos(glfwWindow, &windowedX, &windowedY);
+    glfwGetWindowPos(glfw_window, &windowedX, &windowedY);
 
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
 
     fullscreen = true;
-    glfwSetWindowMonitor(glfwWindow, monitor, 0, 0, vidmode->width, vidmode->height, vidmode->refreshRate);
+    glfwSetWindowMonitor(glfw_window, monitor, 0, 0, vidmode->width, vidmode->height, vidmode->refreshRate);
   } else {
     fullscreen = false;
-    glfwSetWindowMonitor(glfwWindow, nullptr, windowedX, windowedY,
-                         windowedWidth, windowedHeight, 0);
+    glfwSetWindowMonitor(glfw_window, nullptr, windowedX, windowedY,
+                         windowed_width, windowed_height, 0);
   }
 }
 
-void GlfwWindow::windowResizeCallback(GLFWwindow *window, int width, int height) {
+void GlfwWindow::window_resize_callback(GLFWwindow *window, int width, int height) {
   if (width <= 0 || height <= 0) return;
 
-  logicalWidth = static_cast<uint32_t>(width);
-  logicalHeight = static_cast<uint32_t>(height);
+  logical_width = static_cast<uint32_t>(width);
+  logical_height = static_cast<uint32_t>(height);
 
-  if (!isFullscreen()) {
-    windowedWidth = logicalWidth;
-    windowedHeight = logicalHeight;
+  if (!is_fullscreen()) {
+    windowed_width = logical_width;
+    windowed_height = logical_height;
   }
 }
 
-void GlfwWindow::frameBufferResizeCallback(GLFWwindow *window, int width, int height) {
+void GlfwWindow::frame_buffer_resize_callback(GLFWwindow *window, int width, int height) {
   if (width <= 0 || height <= 0) return;
 
-  framebufferWidth = static_cast<uint32_t>(width);
-  framebufferHeight = static_cast<uint32_t>(height);
+  framebuffer_width = static_cast<uint32_t>(width);
+  framebuffer_height = static_cast<uint32_t>(height);
 }
 
-void* GlfwWindow::getNativeHandle() const {
+void* GlfwWindow::get_native_handle() const {
 #if defined(BIRD_PLATFORM_WINDOWS)
-  return (void*) glfwGetWin32Window(glfwWindow);
+  return (void*) glfwGetWin32Window(glfw_window);
 #elif defined(BIRD_PLATFORM_APPLE)
   return (void*) glfwGetCocoaWindow(glfwWindow);
 #else

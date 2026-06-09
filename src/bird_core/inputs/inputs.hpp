@@ -15,26 +15,26 @@ class Inputs {
   virtual ~Inputs() noexcept = default;
 
   // Keyboard
-  virtual bool isKeyPressed(KeyCode key) noexcept = 0;    // True ONLY on the exact frame it was pressed
-  virtual bool isKeyHeld(KeyCode key) noexcept = 0;       // True as long as the key is down
-  virtual bool isKeyReleased(KeyCode key) noexcept = 0;   // True ONLY on the exact frame it was let go
+  [[nodiscard]] virtual bool is_key_pressed(KeyCode key) noexcept = 0;    // True ONLY on the exact frame it was pressed
+  [[nodiscard]] virtual bool is_key_held(KeyCode key) noexcept = 0;       // True as long as the key is down
+  [[nodiscard]] virtual bool is_key_released(KeyCode key) noexcept = 0;   // True ONLY on the exact frame it was let go
 
   // Mouse
-  virtual bool isMouseButtonPressed(MouseCode button) noexcept = 0;
-  virtual bool isMouseButtonHeld(MouseCode button) noexcept = 0;
-  virtual bool isMouseButtonReleased(MouseCode button) noexcept = 0;
-  virtual glm::vec2 getMousePosition() noexcept = 0;
-  virtual float getMouseX() noexcept = 0;
-  virtual float getMouseY() noexcept = 0;
-  virtual glm::vec2 getMouseDelta() noexcept = 0;
-  virtual float getMouseDeltaX() noexcept = 0;
-  virtual float getMouseDeltaY() noexcept = 0;
-  virtual float getScrollX() noexcept = 0;
-  virtual float getScrollY() noexcept = 0;
-  virtual float getScrollDeltaX() noexcept = 0;
-  virtual float getScrollDeltaY() noexcept = 0;
+  [[nodiscard]] virtual bool is_mouse_button_pressed(MouseCode button) noexcept = 0;
+  [[nodiscard]] virtual bool is_mouse_button_held(MouseCode button) noexcept = 0;
+  [[nodiscard]] virtual bool is_mouse_button_released(MouseCode button) noexcept = 0;
+  [[nodiscard]] virtual glm::vec2 get_mouse_position() noexcept = 0;
+  [[nodiscard]] virtual float get_mouse_x() noexcept = 0;
+  [[nodiscard]] virtual float get_mouse_y() noexcept = 0;
+  [[nodiscard]] virtual glm::vec2 get_mouse_delta() noexcept = 0;
+  [[nodiscard]] virtual float get_mouse_delta_x() noexcept = 0;
+  [[nodiscard]] virtual float get_mouse_delta_y() noexcept = 0;
+  [[nodiscard]] virtual float get_scroll_x() noexcept = 0;
+  [[nodiscard]] virtual float get_scroll_y() noexcept = 0;
+  [[nodiscard]] virtual float get_scroll_delta_x() noexcept = 0;
+  [[nodiscard]] virtual float get_scroll_delta_y() noexcept = 0;
 
-  virtual void endFrame() noexcept = 0;
+  virtual void end_frame() noexcept = 0;
 };
 
 } // bird::inputs

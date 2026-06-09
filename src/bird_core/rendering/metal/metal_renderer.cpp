@@ -52,10 +52,10 @@ void MetalRenderer::init_device() {
 
 void MetalRenderer::init_window(IWindow& window) {
 
-  void* native_window_handle = window.getNativeHandle();
+  void* native_window_handle = window.get_native_handle();
 
-  int width = window.getFramebufferWidth();
-  int height = window.getFramebufferHeight();;
+  int width = window.get_framebuffer_width();
+  int height = window.get_framebuffer_height();;
 
   metal_backend_->metal_layer = CA::MetalLayer::layer();
   metal_backend_->metal_layer->setDevice(metal_backend_->metal_device);
@@ -189,7 +189,7 @@ Result<void> MetalRenderer::shutdown() {
 }
 
 void MetalRenderer::handle_window_resize(int width, int height) {
-  resizeFrameBuffer(width, height);
+  resize_frame_buffer(width, height);
 }
 
 void MetalRenderer::create_default_library() {
@@ -350,7 +350,7 @@ void MetalRenderer::encode_render_command(MTL::RenderCommandEncoder* render_comm
   render_command_encoder->drawIndexedPrimitives(MTL::PrimitiveTypeTriangle, metal_backend_->index_buffer->length() / sizeof(uint16_t), MTL::IndexTypeUInt16, metal_backend_->index_buffer, 0);
 }
 
-void MetalRenderer::resizeFrameBuffer(int width, int height) {
+void MetalRenderer::resize_frame_buffer(int width, int height) {
   if (!metal_backend_ || !metal_backend_->metal_layer) {
       return;
   }
