@@ -184,6 +184,10 @@ void MetalRenderer::shutdown() {
   metal_backend_ = nullptr;
 }
 
+void MetalRenderer::handle_window_resize(int width, int height) {
+  resizeFrameBuffer(width, height);
+}
+
 void MetalRenderer::create_default_library() {
   NS::Error* error = nullptr;
 

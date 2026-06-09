@@ -27,10 +27,11 @@ public:
   void resizeFrameBuffer(int width, int height);
   void submit_quad(const RenderCommand render_command) override;
 
+  void handle_window_resize(int width, int height) override;
+
 private:
   void init_device();
   void init_window(IWindow& window);
-
 
   void create_default_library();
   void create_command_queue();

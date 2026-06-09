@@ -4,7 +4,7 @@
 #include "GLFW/glfw3.h"
 
 #include "windowing/iwindow.hpp"
-#include "rendering/renderer.hpp"
+#include "rendering/irenderer.hpp"
 
 int main() {
     using namespace bird;
@@ -23,14 +23,12 @@ int main() {
         return -1;
     }
 
-    Renderer renderer;
-    renderer.create_renderer(bird::RendererType::Metal);
-    renderer.init(*window);
-
+    std::unique_ptr<IRenderer> renderer = IRenderer::create(bird::RendererType::Vulkan);
+    renderer->init(*window);
 
     while (!window->shouldClose()) {
         window->update();
-        renderer.render();
+        renderer->render();
 
         // Window/input handling goes here.
         // Example:
@@ -41,6 +39,7 @@ int main() {
         }
     }
 
+    renderer->shutdown();
     window->close();
 
     glfwTerminate();
