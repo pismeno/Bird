@@ -136,7 +136,11 @@ Result<void> SceneFactory::save_scene_to(const Scene &scene, const std::string& 
 
   data["scene"] = nlohmann::json::object();
   data["scene"]["type"] = scene.get_scene_type();
-  scene.serialize(data["scene"]);
+  auto scene_ser_result = scene.serialize(data["scene"]);
+
+  if (!scene_ser_result) {
+    return scene_ser_result;
+  }
 
   std::ofstream file(path);
 
