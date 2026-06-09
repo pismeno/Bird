@@ -1,11 +1,14 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 #include <source_location>
 #include <variant>
 #include <iostream>
 #include <utility>
 #include <cassert>
+#include <type_traits>
+#include <concepts>
 
 namespace bird {
 
@@ -23,6 +26,10 @@ class [[nodiscard]] Result {
  public:
   Result(T value) : data(std::move(value)) {} // Accept by value and move, works for both copyable and move-only types
   Result(bird::Failure failure) : data(std::move(failure.message)) {}
+
+  template <typename U>
+  requires std::convertible_to<U, T> && (!std::same_as<std::decay_t<U>, Result<T>>)
+  Result(U&& value) : data(T(std::forward<U>(value))) {}
 
   Result(Result&& other) noexcept = default; // moving the Result itself
   Result& operator=(Result&& other) noexcept = default;
