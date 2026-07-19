@@ -70,6 +70,7 @@ target_include_directories(BirdCore PUBLIC
         "${CMAKE_SOURCE_DIR}/external"      # Changed this to cover <stb/stb_image.h>
         "${CMAKE_SOURCE_DIR}/external/stb"  # Fallback
         "${CMAKE_SOURCE_DIR}/external/json/include"
+        "${CMAKE_SOURCE_DIR}/external/Vulkan-Headers/include"
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
