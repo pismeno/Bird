@@ -4,15 +4,17 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include <cstdint>
+
 #include "utils/result.hpp"
-#include "windowing/iwindow.hpp"
 #include "rendering/render_command.hpp"
 
 namespace bird {
 
 class VulkanRenderer : public IRenderer {
  public:
-  Result<void> init(IWindow& window) override;
+  Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) override;
+  Result<void> init() override;
   void render() override;
   Result<void> shutdown() override;
   void resize_frame_buffer(int width, int height);

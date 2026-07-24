@@ -50,26 +50,19 @@ void MetalRenderer::init_device() {
   metal_backend_->metal_device = MTL::CreateSystemDefaultDevice();
 }
 
-void MetalRenderer::init_window(IWindow& window) {
-
-  void* native_window_handle = window.get_native_handle();
-
-  int width = window.get_framebuffer_width();
-  int height = window.get_framebuffer_height();;
-
+void MetalRenderer::attach_window(void *native_window_handle, uint32_t window_width, uint32_t window_height) {
   metal_backend_->metal_layer = CA::MetalLayer::layer();
   metal_backend_->metal_layer->setDevice(metal_backend_->metal_device);
   metal_backend_->metal_layer->setPixelFormat(MTL::PixelFormatBGRA8Unorm);
-  metal_backend_->metal_layer->setDrawableSize(CGSizeMake(width, height));
+  metal_backend_->metal_layer->setDrawableSize(CGSizeMake(window_width, window_height));
   metal_backend_->cocoa_window = native_window_handle;
 
   CocoaBridge::AddLayerToWindow(metal_backend_->cocoa_window, metal_backend_->metal_layer);
 }
 
 
-Result<void> MetalRenderer::init(IWindow& window) {
+Result<void> MetalRenderer::init() {
   init_device();
-  init_window(window);
 
   RenderCommand comm;
 

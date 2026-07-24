@@ -3,16 +3,12 @@
 #include <vulkan/vulkan.hpp>
 
 #include "utils/result.hpp"
-#include "windowing/iwindow.hpp"
-#include "rendering/render_command.hpp"
 
 namespace bird {
 
-Result<void> VulkanRenderer::init(IWindow &window) {
+Result<void> VulkanRenderer::init() {
   auto result = create_instance();
   if (!result) return result;
-
-
 
   vkDestroyInstance(vk_instance, nullptr);
 
