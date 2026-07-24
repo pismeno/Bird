@@ -2,7 +2,7 @@
 
 #include "rendering/irenderer.hpp"
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 
 #include <cstdint>
 
@@ -23,8 +23,13 @@ class VulkanRenderer : public IRenderer {
   void handle_window_resize(int width, int height) override;
  private:
   Result<void> create_instance();
+  Result<void> pick_physical_device();
 
-  VkInstance vk_instance;
+  bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
+
+  vk::raii::Context vk_context;
+  vk::raii::Instance vk_instance = nullptr;
+  vk::raii::PhysicalDevice vk_physical_device = nullptr;
 };
 
 } // bird

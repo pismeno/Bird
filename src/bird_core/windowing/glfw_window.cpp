@@ -33,6 +33,8 @@ Result<void> GlfwWindow::init() {
   glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // Temporarily disabled until we handle resizing for Vulkan renderer.
+
   glfw_window = glfwCreateWindow(logical_width, logical_height, title.c_str(), nullptr, nullptr);
 
   if (!glfw_window) {
