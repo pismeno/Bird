@@ -48,16 +48,20 @@ class VulkanRenderer : public IRenderer {
   uint32_t window_width = 0;
   uint32_t window_height = 0;
 
-  vk::raii::Context vk_context;
+  vk::raii::Context context;
 
-  vk::raii::Instance vk_instance = nullptr;
-  vk::raii::PhysicalDevice vk_physical_device = nullptr;
-  vk::raii::Device vk_logical_device = nullptr;
+  vk::raii::Instance instance = nullptr;
+  vk::raii::PhysicalDevice physical_device = nullptr;
+  vk::raii::Device logical_device = nullptr;
   vk::raii::Queue graphics_queue = nullptr;
   vk::raii::SurfaceKHR surface = nullptr;
   vk::raii::SwapchainKHR swap_chain = nullptr;
 
   std::vector<vk::Image> swap_chain_images;
+  vk::SurfaceFormatKHR   swap_chain_surface_format;
+  vk::Extent2D           swap_chain_extent;
+
+  std::vector<vk::raii::ImageView> swap_chain_image_views;
 };
 
 } // namespace bird

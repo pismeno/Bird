@@ -66,7 +66,7 @@ Result<void> VulkanRenderer::create_instance() {
   }
 
   // STEP 2: Transfer ownership to RAII wrapper
-  vk_instance = vk::raii::Instance(vk_context, inst_res.value);
+  instance = vk::raii::Instance(context, inst_res.value);
 
   // We must create the surface immediately after the instance
   return create_surface();
@@ -79,18 +79,18 @@ Result<void> VulkanRenderer::create_surface() {
   };
 
   // Dereference RAII object to get the raw vk::Instance wrapper to call creation
-  vk::Instance raw_instance = *vk_instance;
+  vk::Instance raw_instance = *instance;
   auto surf_res = raw_instance.createWin32SurfaceKHR(createInfo);
   if (surf_res.result != vk::Result::eSuccess) {
     return bird::fail("Failed to create Win32 Surface");
   }
 
-  surface = vk::raii::SurfaceKHR(vk_instance, surf_res.value);
+  surface = vk::raii::SurfaceKHR(instance, surf_res.value);
   return bird::ok();
 }
 
 Result<void> VulkanRenderer::pick_physical_device() {
-  auto phys_devs_res = vk_instance.enumeratePhysicalDevices();
+  auto phys_devs_res = instance.enumeratePhysicalDevices();
   if (phys_devs_res.result != vk::Result::eSuccess) {
     return bird::fail("Failed to enumerate physical devices");
   }
@@ -104,7 +104,7 @@ Result<void> VulkanRenderer::pick_physical_device() {
     return bird::fail("No suitable physical device found");
   }
 
-  vk_physical_device = *devIter;
+  physical_device = *devIter;
   return bird::ok();
 }
 
@@ -142,13 +142,13 @@ bool VulkanRenderer::is_physical_device_suitable(const vk::PhysicalDevice &physi
 }
 
 Result<void> VulkanRenderer::create_logical_device() {
-  auto queue_family_properties = vk_physical_device.getQueueFamilyProperties();
+  auto queue_family_properties = physical_device.getQueueFamilyProperties();
 
   auto it = std::ranges::find_if(queue_family_properties, [this, index = 0u](const auto& qfp) mutable {
     uint32_t current_index = index++;
     bool supports_graphics = static_cast<bool>(qfp.queueFlags & vk::QueueFlagBits::eGraphics);
 
-    auto support_res = vk_physical_device.getSurfaceSupportKHR(current_index, *surface);
+    auto support_res = physical_device.getSurfaceSupportKHR(current_index, *surface);
     bool supports_present = (support_res.result == vk::Result::eSuccess) && support_res.value;
 
     return supports_graphics && supports_present;
@@ -194,43 +194,43 @@ Result<void> VulkanRenderer::create_logical_device() {
       .pEnabledFeatures = nullptr
   };
 
-  vk::PhysicalDevice raw_phys_dev = *vk_physical_device;
+  vk::PhysicalDevice raw_phys_dev = *physical_device;
   auto dev_res = raw_phys_dev.createDevice(device_create_info);
   if (dev_res.result != vk::Result::eSuccess) {
     return bird::fail("Failed to create logical device");
   }
-  vk_logical_device = vk::raii::Device(vk_physical_device, dev_res.value);
+  logical_device = vk::raii::Device(physical_device, dev_res.value);
 
   // getQueue returns the vk::Queue directly, no ResultValue because it cannot fail
-  vk::Queue raw_queue = (*vk_logical_device).getQueue(queue_index, 0);
-  graphics_queue = vk::raii::Queue(vk_logical_device, raw_queue);
+  vk::Queue raw_queue = (*logical_device).getQueue(queue_index, 0);
+  graphics_queue = vk::raii::Queue(logical_device, raw_queue);
 
   return bird::ok();
 }
 
 Result<void> VulkanRenderer::create_swap_chain() {
-  auto caps_res = vk_physical_device.getSurfaceCapabilitiesKHR(*surface);
+  auto caps_res = physical_device.getSurfaceCapabilitiesKHR(*surface);
   if (caps_res.result != vk::Result::eSuccess) return bird::fail("Failed to get surface capabilities");
   vk::SurfaceCapabilitiesKHR surface_capabilities = caps_res.value;
 
-  auto formats_res = vk_physical_device.getSurfaceFormatsKHR(*surface);
+  auto formats_res = physical_device.getSurfaceFormatsKHR(*surface);
   if (formats_res.result != vk::Result::eSuccess) return bird::fail("Failed to get surface formats");
   std::vector<vk::SurfaceFormatKHR> available_formats = formats_res.value;
 
-  auto modes_res = vk_physical_device.getSurfacePresentModesKHR(*surface);
+  auto modes_res = physical_device.getSurfacePresentModesKHR(*surface);
   if (modes_res.result != vk::Result::eSuccess) return bird::fail("Failed to get present modes");
   std::vector<vk::PresentModeKHR> availablePresentModes = modes_res.value;
 
-  auto swapChainExtent = choose_swap_extent(surface_capabilities);
+  swap_chain_extent = choose_swap_extent(surface_capabilities);
   uint32_t minImageCount = choose_swap_min_image_count(surface_capabilities);
-  auto swapChainSurfaceFormat = choose_swap_surface_format(available_formats);
+  swap_chain_surface_format = choose_swap_surface_format(available_formats);
 
   vk::SwapchainCreateInfoKHR swap_chain_create_info{
       .surface          = *surface,
       .minImageCount    = minImageCount,
-      .imageFormat      = swapChainSurfaceFormat.format,
-      .imageColorSpace  = swapChainSurfaceFormat.colorSpace,
-      .imageExtent      = swapChainExtent,
+      .imageFormat      = swap_chain_surface_format.format,
+      .imageColorSpace  = swap_chain_surface_format.colorSpace,
+      .imageExtent      = swap_chain_extent,
       .imageArrayLayers = 1,
       .imageUsage       = vk::ImageUsageFlagBits::eColorAttachment,
       .imageSharingMode = vk::SharingMode::eExclusive,
@@ -240,12 +240,12 @@ Result<void> VulkanRenderer::create_swap_chain() {
       .clipped          = true
   };
 
-  vk::Device raw_dev = *vk_logical_device;
+  vk::Device raw_dev = *logical_device;
   auto swap_res = raw_dev.createSwapchainKHR(swap_chain_create_info);
   if (swap_res.result != vk::Result::eSuccess) {
     return bird::fail("Failed to create swapchain");
   }
-  swap_chain = vk::raii::SwapchainKHR(vk_logical_device, swap_res.value);
+  swap_chain = vk::raii::SwapchainKHR(logical_device, swap_res.value);
 
   auto images_res = swap_chain.getImages();
   if (images_res.result != vk::Result::eSuccess) {
