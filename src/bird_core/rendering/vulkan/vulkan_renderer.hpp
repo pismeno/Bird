@@ -36,6 +36,8 @@ class VulkanRenderer : public IRenderer {
   Result<void> pick_physical_device();
   Result<void> create_logical_device();
   Result<void> create_swap_chain();
+  Result<void> create_image_views();
+  Result<void> create_graphics_pipeline();
 
   vk::SurfaceFormatKHR choose_swap_surface_format(std::vector<vk::SurfaceFormatKHR> const &availableFormats);
   vk::PresentModeKHR choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes);

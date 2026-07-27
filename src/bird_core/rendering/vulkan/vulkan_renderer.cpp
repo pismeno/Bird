@@ -29,6 +29,12 @@ Result<void> VulkanRenderer::init() {
   auto r_create_swap_chain = create_swap_chain();
   if (!r_create_swap_chain) return r_create_swap_chain;
 
+  auto r_create_image_views = create_image_views();
+  if (!r_create_image_views) return r_create_image_views;
+
+  auto r_create_graphics_pipeline = create_graphics_pipeline();
+  if (!r_create_graphics_pipeline) return r_create_graphics_pipeline;
+
   std::cout << "Vulkan Renderer initialized successfully" << std::endl;
 
   return bird::ok();
@@ -293,6 +299,36 @@ uint32_t VulkanRenderer::choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR 
     minImageCount = surfaceCapabilities.maxImageCount;
   }
   return minImageCount;
+}
+
+Result<void> VulkanRenderer::create_image_views() {
+  assert(swap_chain_image_views.empty());
+
+  vk::ImageViewCreateInfo image_view_create_info{
+    .viewType         = vk::ImageViewType::e2D,
+    .format           = swap_chain_surface_format.format,
+    .components       = {vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity},
+    .subresourceRange = {.aspectMask = vk::ImageAspectFlagBits::eColor, .levelCount = 1, .layerCount = 1},
+  };
+
+  vk::Device raw_device = *logical_device;
+  for (auto &image : swap_chain_images)
+  {
+    image_view_create_info.image = image;
+
+    auto view_res = raw_device.createImageView(image_view_create_info);
+    if (view_res.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to create swapchain image view");
+    }
+
+    swap_chain_image_views.emplace_back(logical_device, view_res.value);
+  }
+
+  return bird::ok();
+}
+
+Result<void> VulkanRenderer::create_graphics_pipeline() {
+  return bird::ok();
 }
 
 // TODO
