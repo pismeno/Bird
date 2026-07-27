@@ -26,10 +26,18 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_surface();
   Result<void> pick_physical_device();
   Result<void> create_logical_device();
+  Result<void> create_swap_chain();
+
+  vk::SurfaceFormatKHR choose_swap_surface_format(std::vector<vk::SurfaceFormatKHR> const &availableFormats);
+  vk::PresentModeKHR choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes);
+  vk::Extent2D choose_swap_extent(vk::SurfaceCapabilitiesKHR const &capabilities);
+  uint32_t choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities);
 
   bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
 
   void* native_window_handle = nullptr;
+  uint32_t window_width = 0;
+  uint32_t window_height = 0;
 
   vk::raii::Context vk_context;
   vk::raii::Instance vk_instance = nullptr;
@@ -37,6 +45,8 @@ class VulkanRenderer : public IRenderer {
   vk::raii::Device vk_logical_device = nullptr;
   vk::raii::Queue graphics_queue = nullptr;
   vk::raii::SurfaceKHR surface = nullptr;
+  vk::raii::SwapchainKHR swap_chain;
+  std::vector<vk::Image> swap_chain_images;
 };
 
 } // bird

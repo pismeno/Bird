@@ -19,6 +19,10 @@ namespace bird {
 
 Result<void> VulkanRenderer::attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) {
   this->native_window_handle = native_window_handle;
+  this->window_width = window_width;
+  this->window_height = window_height;
+
+  return bird::ok();
 }
 
 Result<void> VulkanRenderer::init() {
@@ -180,6 +184,74 @@ Result<void> VulkanRenderer::create_logical_device() {
   graphics_queue    = vk::raii::Queue(vk_logical_device, queue_index, 0);
 
   return bird::ok();
+}
+
+Result<void> VulkanRenderer::create_swap_chain() {
+  vk::SurfaceCapabilitiesKHR surface_capabilities = vk_physical_device.getSurfaceCapabilitiesKHR(*surface );
+  auto swapChainExtent = choose_swap_extent(surface_capabilities);
+  uint32_t minImageCount = choose_swap_min_image_count(surface_capabilities);
+
+  std::vector<vk::SurfaceFormatKHR> available_formats = vk_physical_device.getSurfaceFormatsKHR(*surface);
+  auto swapChainSurfaceFormat = choose_swap_surface_format(available_formats);
+
+  std::vector<vk::PresentModeKHR> availablePresentModes = vk_physical_device.getSurfacePresentModesKHR(*surface);
+
+  vk::SwapchainCreateInfoKHR swap_chain_create_info{.surface          = *surface,
+      .minImageCount    = minImageCount,
+      .imageFormat      = swapChainSurfaceFormat.format,
+      .imageColorSpace  = swapChainSurfaceFormat.colorSpace,
+      .imageExtent      = swapChainExtent,
+      .imageArrayLayers = 1,
+      .imageUsage       = vk::ImageUsageFlagBits::eColorAttachment,
+      .imageSharingMode = vk::SharingMode::eExclusive,
+      .preTransform     = surface_capabilities.currentTransform,
+      .compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+      .presentMode      = choose_swap_present_mode(availablePresentModes),
+      .clipped          = true};
+
+  swap_chain       = vk::raii::SwapchainKHR(vk_logical_device, swap_chain_create_info);
+  swap_chain_images = swap_chain.getImages();
+
+  return bird::ok();
+}
+
+vk::SurfaceFormatKHR VulkanRenderer::choose_swap_surface_format(std::vector<vk::SurfaceFormatKHR> const &availableFormats) {
+  const auto formatIt = std::ranges::find_if(
+      availableFormats,
+      [](const auto &format) { return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear; });
+  return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
+}
+
+vk::PresentModeKHR VulkanRenderer::choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes)
+{
+  assert(std::ranges::any_of(availablePresentModes, [](auto presentMode) {return presentMode == vk::PresentModeKHR::eFifo;}));
+  return std::ranges::any_of(availablePresentModes,
+                             [](const vk::PresentModeKHR value) {return vk::PresentModeKHR::eMailbox == value;}) ?
+         vk::PresentModeKHR::eMailbox :
+         vk::PresentModeKHR::eFifo;
+}
+
+vk::Extent2D VulkanRenderer::choose_swap_extent(vk::SurfaceCapabilitiesKHR const &capabilities)
+{
+  if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+  {
+    return capabilities.currentExtent;
+  }
+
+  return {
+      std::clamp<uint32_t>(window_width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
+      std::clamp<uint32_t>(window_height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
+  };
+}
+
+uint32_t VulkanRenderer::choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities)
+{
+  auto minImageCount = std::max(3u, surfaceCapabilities.minImageCount);
+  if ((0 < surfaceCapabilities.maxImageCount) && (surfaceCapabilities.maxImageCount < minImageCount))
+  {
+    minImageCount = surfaceCapabilities.maxImageCount;
+  }
+  return minImageCount;
 }
 
 }
