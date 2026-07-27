@@ -4,7 +4,10 @@
 #include <cstdint>
 #include <cstring>
 #include <algorithm>
+#include <string>
+#include <memory>
 
+#include "rendering/shader_compiler.hpp"
 #include "utils/result.hpp"
 
 namespace bird {
@@ -328,7 +331,85 @@ Result<void> VulkanRenderer::create_image_views() {
 }
 
 Result<void> VulkanRenderer::create_graphics_pipeline() {
+  auto r_load_vert_shader_module = load_shader_module("src/bird_core/rendering/shaders/triangle.vert.glsl");
+  if (!r_load_vert_shader_module) return bird::fail(r_load_vert_shader_module.error());
+
+  auto r_load_frag_shader_module = load_shader_module("src/bird_core/rendering/shaders/triangle.frag.glsl");
+  if (!r_load_frag_shader_module) return bird::fail(r_load_frag_shader_module.error());
+
+  std::unique_ptr<vk::raii::ShaderModule> vert_shader_module = std::move(r_load_vert_shader_module).value();
+  std::unique_ptr<vk::raii::ShaderModule> frag_shader_module = std::move(r_load_frag_shader_module).value();
+
+  vk::PipelineShaderStageCreateInfo vert_shader_stage_info{
+    .stage = vk::ShaderStageFlagBits::eVertex,
+    .module = **vert_shader_module,
+    .pName = "main"
+  };
+
+  vk::PipelineShaderStageCreateInfo frag_shader_stage_info{
+    .stage = vk::ShaderStageFlagBits::eFragment,
+    .module = **frag_shader_module,
+    .pName = "fragMain"
+  };
+
+  vk::PipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info, frag_shader_stage_info};
+
+  std::vector<vk::DynamicState> dynamic_states = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+
+  vk::PipelineDynamicStateCreateInfo dynamic_state{
+    .dynamicStateCount = static_cast<uint32_t>(dynamic_states.size()),
+    .pDynamicStates = dynamic_states.data()
+  };
+
+  vk::PipelineVertexInputStateCreateInfo vertex_input_info;
+
+  vk::PipelineInputAssemblyStateCreateInfo inputAssembly{.topology = vk::PrimitiveTopology::eTriangleList};
+
+  vk::Viewport viewport{0.0f, 0.0f, static_cast<float>(swap_chain_extent.width), static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f};
+  vk::Rect2D scissor{vk::Offset2D{ 0, 0 }, swap_chain_extent};
+
+  vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1, .pViewports = &viewport, .scissorCount = 1, .pScissors = &scissor};
+
+  vk::PipelineRasterizationStateCreateInfo rasterizer{
+    .depthClampEnable        = vk::False,
+      .rasterizerDiscardEnable = vk::False,
+      .polygonMode             = vk::PolygonMode::eFill,
+      .cullMode                = vk::CullModeFlagBits::eBack,
+      .frontFace               = vk::FrontFace::eClockwise,
+      .depthBiasEnable         = vk::False,
+      .lineWidth               = 1.0f
+  };
+
   return bird::ok();
+}
+
+Result<std::unique_ptr<vk::raii::ShaderModule>> VulkanRenderer::load_shader_module(const std::string filepath) const {
+  ShaderCompiler shader_compiler;
+
+  std::vector<uint32_t> vert_spirv = shader_compiler.compile_glsl_file_to_spirv(filepath);
+
+  if (vert_spirv.empty()) {
+    return bird::fail("Shader compilation failed: " + shader_compiler.get_last_error());
+  }
+
+  vk::ShaderModuleCreateInfo create_info{
+      .codeSize = vert_spirv.size() * sizeof(uint32_t), // Size in bytes
+      .pCode    = vert_spirv.data()                    // Pointer to uint32_t data
+  };
+
+  VkShaderModule raw_module = VK_NULL_HANDLE;
+  VkResult result = vkCreateShaderModule(
+      *logical_device,
+      reinterpret_cast<const VkShaderModuleCreateInfo*>(&create_info),
+      nullptr,
+      &raw_module
+  );
+
+  if (result != VK_SUCCESS) {
+    return bird::fail("Vulkan failed to create shader module for: " + filepath);
+  }
+
+  return std::make_unique<vk::raii::ShaderModule>(logical_device, raw_module);
 }
 
 // TODO

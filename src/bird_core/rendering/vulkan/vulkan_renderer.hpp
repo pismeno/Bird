@@ -12,9 +12,14 @@
 
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
 #define VULKAN_HPP_NO_EXCEPTIONS
+
 #include <vulkan/vulkan_raii.hpp>
 
 #include <cstdint>
+#include <vector>
+#include <string>
+#include <memory>
+
 #include "utils/result.hpp"
 #include "rendering/render_command.hpp"
 
@@ -45,6 +50,8 @@ class VulkanRenderer : public IRenderer {
   uint32_t choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities);
 
   bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
+
+  Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string filepath) const;
 
   void* native_window_handle = nullptr;
   uint32_t window_width = 0;
