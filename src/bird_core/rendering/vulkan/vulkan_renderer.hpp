@@ -2,10 +2,19 @@
 
 #include "rendering/irenderer.hpp"
 
+#ifdef BIRD_PLATFORM_WINDOWS
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#define VK_USE_PLATFORM_WIN32_KHR
+#include <windows.h>
+#endif
+
+#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#define VULKAN_HPP_NO_EXCEPTIONS
 #include <vulkan/vulkan_raii.hpp>
 
 #include <cstdint>
-
 #include "utils/result.hpp"
 #include "rendering/render_command.hpp"
 
@@ -40,13 +49,15 @@ class VulkanRenderer : public IRenderer {
   uint32_t window_height = 0;
 
   vk::raii::Context vk_context;
+
   vk::raii::Instance vk_instance = nullptr;
   vk::raii::PhysicalDevice vk_physical_device = nullptr;
   vk::raii::Device vk_logical_device = nullptr;
   vk::raii::Queue graphics_queue = nullptr;
   vk::raii::SurfaceKHR surface = nullptr;
-  vk::raii::SwapchainKHR swap_chain;
+  vk::raii::SwapchainKHR swap_chain = nullptr;
+
   std::vector<vk::Image> swap_chain_images;
 };
 
-} // bird
+} // namespace bird

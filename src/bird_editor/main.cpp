@@ -30,7 +30,7 @@ int main() {
         return -1;
     }
 
-    auto renderer_result = IRenderer::create(bird::RendererType::Metal);
+    auto renderer_result = IRenderer::create(bird::RendererType::Vulkan);
     if (!renderer_result) {
         std::cerr << renderer_result.error() << std::endl;
         return -1;

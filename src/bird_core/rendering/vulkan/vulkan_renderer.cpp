@@ -5,14 +5,6 @@
 #include <cstring>
 #include <algorithm>
 
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#define VK_USE_PLATFORM_WIN32_KHR
-#include <windows.h>
-
-#include <vulkan/vulkan_raii.hpp>
-
 #include "utils/result.hpp"
 
 namespace bird {
@@ -21,7 +13,6 @@ Result<void> VulkanRenderer::attach_window(void* native_window_handle, uint32_t 
   this->native_window_handle = native_window_handle;
   this->window_width = window_width;
   this->window_height = window_height;
-
   return bird::ok();
 }
 
@@ -35,25 +26,22 @@ Result<void> VulkanRenderer::init() {
   auto r_create_logical_device = create_logical_device();
   if (!r_create_logical_device) return r_create_logical_device;
 
-  //vkDestroyInstance(instance, nullptr);
+  auto r_create_swap_chain = create_swap_chain();
+  if (!r_create_swap_chain) return r_create_swap_chain;
+
+  std::cout << "Vulkan Renderer initialized successfully" << std::endl;
 
   return bird::ok();
 }
 
 Result<void> VulkanRenderer::create_instance() {
-  vk::ApplicationInfo app_info{};
-  app_info.pApplicationName = "Hello Triangle";
-  app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  app_info.pEngineName = "BirdEngine";
-  app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  app_info.apiVersion = VK_API_VERSION_1_0;
-
-  vk::InstanceCreateInfo create_info{};
-  create_info.pApplicationInfo = &app_info;
-
-  // TODO: Implement validation layers
-  create_info.enabledLayerCount = 0;
-  create_info.ppEnabledLayerNames = nullptr;
+  vk::ApplicationInfo app_info{
+      .pApplicationName = "Hello Triangle",
+      .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+      .pEngineName = "BirdEngine",
+      .engineVersion = VK_MAKE_VERSION(1, 0, 0),
+      .apiVersion = VK_API_VERSION_1_0
+  };
 
   std::vector<const char*> extensions = { "VK_KHR_surface" };
 #ifdef BIRD_PLATFORM_WINDOWS
@@ -63,23 +51,51 @@ Result<void> VulkanRenderer::create_instance() {
   extensions.push_back("VK_KHR_xcb_surface");
 #endif
 
-  create_info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-  create_info.ppEnabledExtensionNames = extensions.data();
+  vk::InstanceCreateInfo create_info{
+      .pApplicationInfo = &app_info,
+      .enabledLayerCount = 0,
+      .ppEnabledLayerNames = nullptr,
+      .enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
+      .ppEnabledExtensionNames = extensions.data()
+  };
 
-  vk_instance = vk::raii::Instance(vk_context, create_info);
+  // STEP 1: Create raw handle, check result
+  auto inst_res = vk::createInstance(create_info);
+  if (inst_res.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create Vulkan Instance");
+  }
 
-  return bird::ok();
+  // STEP 2: Transfer ownership to RAII wrapper
+  vk_instance = vk::raii::Instance(vk_context, inst_res.value);
+
+  // We must create the surface immediately after the instance
+  return create_surface();
 }
 
 Result<void> VulkanRenderer::create_surface() {
-  vk::Win32SurfaceCreateInfoKHR createInfo{.hinstance = GetModuleHandle(nullptr),
-                                           .hwnd      = native_window_handle};
+  vk::Win32SurfaceCreateInfoKHR createInfo{
+      .hinstance = GetModuleHandle(nullptr),
+      .hwnd      = static_cast<HWND>(native_window_handle)
+  };
 
-  surface = vk_instance.createWin32SurfaceKHR(createInfo);
+  // Dereference RAII object to get the raw vk::Instance wrapper to call creation
+  vk::Instance raw_instance = *vk_instance;
+  auto surf_res = raw_instance.createWin32SurfaceKHR(createInfo);
+  if (surf_res.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create Win32 Surface");
+  }
+
+  surface = vk::raii::SurfaceKHR(vk_instance, surf_res.value);
+  return bird::ok();
 }
 
 Result<void> VulkanRenderer::pick_physical_device() {
-  std::vector<vk::raii::PhysicalDevice> physicalDevices = vk_instance.enumeratePhysicalDevices();
+  auto phys_devs_res = vk_instance.enumeratePhysicalDevices();
+  if (phys_devs_res.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to enumerate physical devices");
+  }
+
+  std::vector<vk::raii::PhysicalDevice> physicalDevices = phys_devs_res.value;
   auto const devIter = std::ranges::find_if(physicalDevices, [&]( auto const & physicalDevice) {
     return is_physical_device_suitable(physicalDevice);
   });
@@ -89,7 +105,6 @@ Result<void> VulkanRenderer::pick_physical_device() {
   }
 
   vk_physical_device = *devIter;
-
   return bird::ok();
 }
 
@@ -98,12 +113,14 @@ bool VulkanRenderer::is_physical_device_suitable(const vk::PhysicalDevice &physi
 
   bool supportsVulkan1_3 = physical_device.getProperties().apiVersion >= vk::ApiVersion13;
 
-  // Check if any of the queue families support graphics operations
+  // getQueueFamilyProperties doesn't fail, so it returns the vector directly (no ResultValue)
   auto queueFamilies    = physical_device.getQueueFamilyProperties();
   bool supportsGraphics = std::ranges::any_of( queueFamilies, []( auto const & qfp ) { return !!( qfp.queueFlags & vk::QueueFlagBits::eGraphics ); } );
 
-  // Check if all required physical_device extensions are available
-  auto availableDeviceExtensions = physical_device.enumerateDeviceExtensionProperties();
+  auto ext_res = physical_device.enumerateDeviceExtensionProperties();
+  if (ext_res.result != vk::Result::eSuccess) return false;
+  auto availableDeviceExtensions = ext_res.value;
+
   bool supportsAllRequiredExtensions =
       std::ranges::all_of( requiredDeviceExtension,
                            [&availableDeviceExtensions]( auto const & requiredDeviceExtension )
@@ -113,7 +130,6 @@ bool VulkanRenderer::is_physical_device_suitable(const vk::PhysicalDevice &physi
                                                          { return strcmp( availableDeviceExtension.extensionName, requiredDeviceExtension ) == 0; } );
                            } );
 
-  // Check if the physical_device supports the required features (shader draw parameters, dynamic rendering and extended dynamic state)
   auto features                 = physical_device.template getFeatures2<vk::PhysicalDeviceFeatures2,
       vk::PhysicalDeviceVulkan11Features,
       vk::PhysicalDeviceVulkan13Features,
@@ -122,7 +138,6 @@ bool VulkanRenderer::is_physical_device_suitable(const vk::PhysicalDevice &physi
                                   features.template get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering &&
                                   features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
 
-  // Return true if the physicalDevice meets all the criteria
   return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions && supportsRequiredFeatures;
 }
 
@@ -132,7 +147,9 @@ Result<void> VulkanRenderer::create_logical_device() {
   auto it = std::ranges::find_if(queue_family_properties, [this, index = 0u](const auto& qfp) mutable {
     uint32_t current_index = index++;
     bool supports_graphics = static_cast<bool>(qfp.queueFlags & vk::QueueFlagBits::eGraphics);
-    bool supports_present  = vk_physical_device.getSurfaceSupportKHR(current_index, *surface);
+
+    auto support_res = vk_physical_device.getSurfaceSupportKHR(current_index, *surface);
+    bool supports_present = (support_res.result == vk::Result::eSuccess) && support_res.value;
 
     return supports_graphics && supports_present;
   });
@@ -143,60 +160,73 @@ Result<void> VulkanRenderer::create_logical_device() {
 
   auto queue_index = static_cast<uint32_t>(std::distance(queue_family_properties.begin(), it));
 
-  // Queue Creation Info
   float queue_priority = 1.0f;
-  vk::DeviceQueueCreateInfo device_queue_create_info(
-      vk::DeviceQueueCreateFlags(),
-      queue_index,
-      1,               // queueCount
-      &queue_priority  // pQueuePriorities
-  );
+  vk::DeviceQueueCreateInfo device_queue_create_info{
+      .flags = vk::DeviceQueueCreateFlags(),
+      .queueFamilyIndex = queue_index,
+      .queueCount = 1,
+      .pQueuePriorities = &queue_priority
+  };
 
-  // Feature chain configuration
   vk::StructureChain<
       vk::PhysicalDeviceFeatures2,
       vk::PhysicalDeviceVulkan11Features,
       vk::PhysicalDeviceVulkan13Features,
       vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
-  > feature_chain = {
-      {},
-      {.shaderDrawParameters = true},
-      {.dynamicRendering = true},
-      {.extendedDynamicState = true}
-  };
+  > feature_chain(
+      vk::PhysicalDeviceFeatures2{},
+      vk::PhysicalDeviceVulkan11Features{ .shaderDrawParameters = true },
+      vk::PhysicalDeviceVulkan13Features{ .dynamicRendering = true },
+      vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT{ .extendedDynamicState = true }
+  );
 
   std::vector<const char*> required_device_extensions = { vk::KHRSwapchainExtensionName };
 
-  // Device Creation Info
-  vk::DeviceCreateInfo device_create_info(
-      vk::DeviceCreateFlags(),
-      1,
-      &device_queue_create_info,
-      0, nullptr,
-      static_cast<uint32_t>(required_device_extensions.size()),
-      required_device_extensions.data(),
-      nullptr,
-      &feature_chain.get<vk::PhysicalDeviceFeatures2>()
-  );
+  vk::DeviceCreateInfo device_create_info{
+      .pNext = &feature_chain.get<vk::PhysicalDeviceFeatures2>(),
+      .flags = vk::DeviceCreateFlags(),
+      .queueCreateInfoCount = 1,
+      .pQueueCreateInfos = &device_queue_create_info,
+      .enabledLayerCount = 0,
+      .ppEnabledLayerNames = nullptr,
+      .enabledExtensionCount = static_cast<uint32_t>(required_device_extensions.size()),
+      .ppEnabledExtensionNames = required_device_extensions.data(),
+      .pEnabledFeatures = nullptr
+  };
 
-  // Instantiation & Queue retrieval
-  vk_logical_device = vk::raii::Device(vk_physical_device, device_create_info);
-  graphics_queue    = vk::raii::Queue(vk_logical_device, queue_index, 0);
+  vk::PhysicalDevice raw_phys_dev = *vk_physical_device;
+  auto dev_res = raw_phys_dev.createDevice(device_create_info);
+  if (dev_res.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create logical device");
+  }
+  vk_logical_device = vk::raii::Device(vk_physical_device, dev_res.value);
+
+  // getQueue returns the vk::Queue directly, no ResultValue because it cannot fail
+  vk::Queue raw_queue = (*vk_logical_device).getQueue(queue_index, 0);
+  graphics_queue = vk::raii::Queue(vk_logical_device, raw_queue);
 
   return bird::ok();
 }
 
 Result<void> VulkanRenderer::create_swap_chain() {
-  vk::SurfaceCapabilitiesKHR surface_capabilities = vk_physical_device.getSurfaceCapabilitiesKHR(*surface );
+  auto caps_res = vk_physical_device.getSurfaceCapabilitiesKHR(*surface);
+  if (caps_res.result != vk::Result::eSuccess) return bird::fail("Failed to get surface capabilities");
+  vk::SurfaceCapabilitiesKHR surface_capabilities = caps_res.value;
+
+  auto formats_res = vk_physical_device.getSurfaceFormatsKHR(*surface);
+  if (formats_res.result != vk::Result::eSuccess) return bird::fail("Failed to get surface formats");
+  std::vector<vk::SurfaceFormatKHR> available_formats = formats_res.value;
+
+  auto modes_res = vk_physical_device.getSurfacePresentModesKHR(*surface);
+  if (modes_res.result != vk::Result::eSuccess) return bird::fail("Failed to get present modes");
+  std::vector<vk::PresentModeKHR> availablePresentModes = modes_res.value;
+
   auto swapChainExtent = choose_swap_extent(surface_capabilities);
   uint32_t minImageCount = choose_swap_min_image_count(surface_capabilities);
-
-  std::vector<vk::SurfaceFormatKHR> available_formats = vk_physical_device.getSurfaceFormatsKHR(*surface);
   auto swapChainSurfaceFormat = choose_swap_surface_format(available_formats);
 
-  std::vector<vk::PresentModeKHR> availablePresentModes = vk_physical_device.getSurfacePresentModesKHR(*surface);
-
-  vk::SwapchainCreateInfoKHR swap_chain_create_info{.surface          = *surface,
+  vk::SwapchainCreateInfoKHR swap_chain_create_info{
+      .surface          = *surface,
       .minImageCount    = minImageCount,
       .imageFormat      = swapChainSurfaceFormat.format,
       .imageColorSpace  = swapChainSurfaceFormat.colorSpace,
@@ -207,10 +237,21 @@ Result<void> VulkanRenderer::create_swap_chain() {
       .preTransform     = surface_capabilities.currentTransform,
       .compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque,
       .presentMode      = choose_swap_present_mode(availablePresentModes),
-      .clipped          = true};
+      .clipped          = true
+  };
 
-  swap_chain       = vk::raii::SwapchainKHR(vk_logical_device, swap_chain_create_info);
-  swap_chain_images = swap_chain.getImages();
+  vk::Device raw_dev = *vk_logical_device;
+  auto swap_res = raw_dev.createSwapchainKHR(swap_chain_create_info);
+  if (swap_res.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create swapchain");
+  }
+  swap_chain = vk::raii::SwapchainKHR(vk_logical_device, swap_res.value);
+
+  auto images_res = swap_chain.getImages();
+  if (images_res.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to retrieve swapchain images");
+  }
+  swap_chain_images = images_res.value;
 
   return bird::ok();
 }
@@ -254,4 +295,15 @@ uint32_t VulkanRenderer::choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR 
   return minImageCount;
 }
 
+// TODO
+void VulkanRenderer::render() {}
+
+Result<void> VulkanRenderer::shutdown() {
+  return bird::ok();
 }
+
+void VulkanRenderer::resize_frame_buffer(int width, int height) {}
+void VulkanRenderer::submit_quad(const RenderCommand render_command) {}
+void VulkanRenderer::handle_window_resize(int width, int height) {}
+
+} // namespace bird

@@ -5,6 +5,7 @@
 #endif
 
 #include "utils/result.hpp"
+#include "rendering/vulkan/vulkan_renderer.hpp"
 
 namespace bird {
 
@@ -18,7 +19,11 @@ Result<std::unique_ptr<IRenderer>> IRenderer::create(RendererType type) {
 #endif
     }
     case RendererType::Vulkan: {
-      return bird::fail("Vulkan renderer is not yet implemented");
+#ifdef BIRD_PLATFORM_WINDOWS
+      return std::make_unique<VulkanRenderer>();
+#else
+      return bird::fail("Vulkan renderer is only supported on Windows");
+#endif
     }
     case RendererType::DirectX: {
       return bird::fail("DirectX renderer is not yet implemented");

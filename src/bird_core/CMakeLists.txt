@@ -37,6 +37,11 @@ add_compile_definitions(SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS=1)
 # Now create the library using the filtered/curated list
 add_library(BirdCore STATIC ${CORE_SOURCES})
 
+# Find Vulkan on Windows
+if (WIN32)
+    find_package(Vulkan REQUIRED)
+endif()
+
 # Public dependencies
 target_link_libraries(BirdCore
         PUBLIC
@@ -50,6 +55,11 @@ target_link_libraries(BirdCore
         SPIRV
 )
 
+# Link Vulkan to BirdCore if it was found
+if (Vulkan_FOUND)
+    target_link_libraries(BirdCore PUBLIC Vulkan::Vulkan)
+endif()
+
 # Platform-specific private dependencies
 if (APPLE)
     target_link_libraries(BirdCore PRIVATE
@@ -61,14 +71,12 @@ if (APPLE)
 endif()
 
 # Ensure we include the directories correctly.
-# NOTE: If your stb header is at `external/stb/stb_image.h`, use "${CMAKE_SOURCE_DIR}/external"
-# If your stb header is at `external/stb/stb/stb_image.h`, use "${CMAKE_SOURCE_DIR}/external/stb"
 target_include_directories(BirdCore PUBLIC
         "${CMAKE_SOURCE_DIR}/external/metal-cpp"
         "${CMAKE_SOURCE_DIR}/external/glslang"
         "${CMAKE_SOURCE_DIR}/external/spirv-cross"
-        "${CMAKE_SOURCE_DIR}/external"      # Changed this to cover <stb/stb_image.h>
-        "${CMAKE_SOURCE_DIR}/external/stb"  # Fallback
+        "${CMAKE_SOURCE_DIR}/external"
+        "${CMAKE_SOURCE_DIR}/external/stb"
         "${CMAKE_SOURCE_DIR}/external/json/include"
         "${CMAKE_SOURCE_DIR}/external/Vulkan-Headers/include"
         ${CMAKE_CURRENT_SOURCE_DIR}
