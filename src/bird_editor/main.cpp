@@ -5,9 +5,12 @@
 
 #include "windowing/iwindow.hpp"
 #include "rendering/irenderer.hpp"
+#include "glslang/Public/ShaderLang.h"
 
 int main() {
     using namespace bird;
+
+  glslang::InitializeProcess();
 
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -73,5 +76,6 @@ int main() {
     }
 
     glfwTerminate();
-    return 0;
+  glslang::FinalizeProcess();
+  return 0;
 }

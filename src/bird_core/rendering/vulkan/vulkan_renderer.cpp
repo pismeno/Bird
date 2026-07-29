@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <string>
 #include <memory>
+#include <filesystem>
 
 #include "rendering/shader_compiler.hpp"
 #include "utils/result.hpp"
@@ -23,17 +24,27 @@ Result<void> VulkanRenderer::init() {
   auto r_create_instance = create_instance();
   if (!r_create_instance) return r_create_instance;
 
+  std::cout << "Vulkan Instance created successfully" << std::endl;
+
   auto r_pick_physical_device = pick_physical_device();
   if (!r_pick_physical_device) return r_pick_physical_device;
+
+  std::cout << "Vulkan Physical Device selected successfully" << std::endl;
 
   auto r_create_logical_device = create_logical_device();
   if (!r_create_logical_device) return r_create_logical_device;
 
+  std::cout << "Vulkan Logical Device created successfully" << std::endl;
+
   auto r_create_swap_chain = create_swap_chain();
   if (!r_create_swap_chain) return r_create_swap_chain;
 
+  std::cout << "Vulkan Swap Chain created successfully" << std::endl;
+
   auto r_create_image_views = create_image_views();
   if (!r_create_image_views) return r_create_image_views;
+
+  std::cout << "Vulkan Image Views created successfully" << std::endl;
 
   auto r_create_graphics_pipeline = create_graphics_pipeline();
   if (!r_create_graphics_pipeline) return r_create_graphics_pipeline;
@@ -49,7 +60,7 @@ Result<void> VulkanRenderer::create_instance() {
       .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
       .pEngineName = "BirdEngine",
       .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-      .apiVersion = VK_API_VERSION_1_0
+      .apiVersion = VK_API_VERSION_1_3
   };
 
   std::vector<const char*> extensions = { "VK_KHR_surface" };
@@ -332,10 +343,10 @@ Result<void> VulkanRenderer::create_image_views() {
 
 Result<void> VulkanRenderer::create_graphics_pipeline() {
   // loading the shaders from files
-  auto r_load_vert_shader_module = load_shader_module("src/bird_core/rendering/shaders/triangle.vert.glsl");
+  auto r_load_vert_shader_module = load_shader_module("shaders/triangle.vert.glsl");
   if (!r_load_vert_shader_module) return bird::fail(r_load_vert_shader_module.error());
 
-  auto r_load_frag_shader_module = load_shader_module("src/bird_core/rendering/shaders/triangle.frag.glsl");
+  auto r_load_frag_shader_module = load_shader_module("shaders/triangle.frag.glsl");
   if (!r_load_frag_shader_module) return bird::fail(r_load_frag_shader_module.error());
 
   std::unique_ptr<vk::raii::ShaderModule> vert_shader_module = std::move(r_load_vert_shader_module).value();
@@ -352,7 +363,7 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
   vk::PipelineShaderStageCreateInfo frag_shader_stage_info{
     .stage = vk::ShaderStageFlagBits::eFragment,
     .module = **frag_shader_module,
-    .pName = "fragMain"
+    .pName = "main"
   };
 
   vk::PipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info, frag_shader_stage_info};
@@ -369,14 +380,19 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
   vk::PipelineVertexInputStateCreateInfo vertex_input_info;
 
   // input assembly create info
-  vk::PipelineInputAssemblyStateCreateInfo inputAssembly{.topology = vk::PrimitiveTopology::eTriangleList};
+  vk::PipelineInputAssemblyStateCreateInfo input_assembly{.topology = vk::PrimitiveTopology::eTriangleList};
 
   // viewport and scissor
   vk::Viewport viewport{0.0f, 0.0f, static_cast<float>(swap_chain_extent.width), static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f};
   vk::Rect2D scissor{vk::Offset2D{ 0, 0 }, swap_chain_extent};
 
   // viewport create info
-  vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1, .pViewports = &viewport, .scissorCount = 1, .pScissors = &scissor};
+  vk::PipelineViewportStateCreateInfo viewport_state{
+    .viewportCount = 1,
+    .pViewports = &viewport,
+    .scissorCount = 1,
+    .pScissors = &scissor
+  };
 
   // rasterizer create info
   vk::PipelineRasterizationStateCreateInfo rasterizer{
@@ -389,13 +405,83 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
       .lineWidth               = 1.0f
   };
 
+  // multisampling create info
+  vk::PipelineMultisampleStateCreateInfo multisampling{
+    .rasterizationSamples = vk::SampleCountFlagBits::e1,
+    .sampleShadingEnable = vk::False
+  };
+
+  // disabling color blending for our only framebuffer
+  vk::PipelineColorBlendAttachmentState color_blend_attachment{
+      .blendEnable    = vk::False,
+      .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+  };
+
+  vk::PipelineColorBlendStateCreateInfo color_blending{
+      .logicOpEnable = vk::False,
+      .logicOp = vk::LogicOp::eCopy,
+      .attachmentCount = 1,
+      .pAttachments = &color_blend_attachment
+  };
+
+  // pipeline layout create info
+  vk::PipelineLayoutCreateInfo pipeline_layout_info{
+    .setLayoutCount = 0,
+    .pushConstantRangeCount = 0
+  };
+
+  // creating the pipeline layout
+  auto vkr_create_pipeline_layout = logical_device.createPipelineLayout(pipeline_layout_info);
+  if (vkr_create_pipeline_layout.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create pipeline layout");
+  }
+
+  pipeline_layout = std::move(vkr_create_pipeline_layout.value);
+
+  vk::StructureChain<vk::GraphicsPipelineCreateInfo, vk::PipelineRenderingCreateInfo> pipeline_create_info_chain = {
+      {
+          .stageCount          = 2,
+          .pStages             = shader_stages,
+          .pVertexInputState   = &vertex_input_info,
+          .pInputAssemblyState = &input_assembly,
+          .pViewportState      = &viewport_state,
+          .pRasterizationState = &rasterizer,
+          .pMultisampleState   = &multisampling,
+          .pColorBlendState    = &color_blending,
+          .pDynamicState       = &dynamic_state,
+          .layout              = pipeline_layout,
+          .renderPass          = nullptr
+      },
+      {
+          .colorAttachmentCount    = 1,
+          .pColorAttachmentFormats = &swap_chain_surface_format.format
+      }
+  };
+
+
+  auto vkr_create_graphics_pipeline = logical_device.createGraphicsPipeline(nullptr, pipeline_create_info_chain.get<vk::GraphicsPipelineCreateInfo>());
+  if (vkr_create_graphics_pipeline.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create graphics pipeline");
+  }
+  graphics_pipeline = std::move(vkr_create_graphics_pipeline.value);
+
   return bird::ok();
 }
 
 Result<std::unique_ptr<vk::raii::ShaderModule>> VulkanRenderer::load_shader_module(const std::string filepath) const {
+  if (!std::filesystem::exists(filepath)) {
+    return bird::fail("Shader file not found at path: " + std::filesystem::absolute(filepath).string());
+  }
+
   ShaderCompiler shader_compiler;
 
-  std::vector<uint32_t> vert_spirv = shader_compiler.compile_glsl_file_to_spirv(filepath);
+  std::vector<uint32_t> vert_spirv;
+
+  try {
+    vert_spirv = shader_compiler.compile_glsl_file_to_spirv(filepath);
+  } catch (const std::exception& e) {
+    return bird::fail(std::string("Shader exception caught: ") + e.what() + "\nDetails: " + shader_compiler.get_last_error());
+  }
 
   if (vert_spirv.empty()) {
     return bird::fail("Shader compilation failed: " + shader_compiler.get_last_error());
@@ -406,19 +492,13 @@ Result<std::unique_ptr<vk::raii::ShaderModule>> VulkanRenderer::load_shader_modu
       .pCode    = vert_spirv.data()                    // Pointer to uint32_t data
   };
 
-  VkShaderModule raw_module = VK_NULL_HANDLE;
-  VkResult result = vkCreateShaderModule(
-      *logical_device,
-      reinterpret_cast<const VkShaderModuleCreateInfo*>(&create_info),
-      nullptr,
-      &raw_module
-  );
 
-  if (result != VK_SUCCESS) {
-    return bird::fail("Vulkan failed to create shader module for: " + filepath);
+  auto vkr_create_shader_module = logical_device.createShaderModule(create_info);
+  if (vkr_create_shader_module.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create shader module");
   }
 
-  return std::make_unique<vk::raii::ShaderModule>(logical_device, raw_module);
+  return std::make_unique<vk::raii::ShaderModule>(std::move(vkr_create_shader_module.value));
 }
 
 // TODO

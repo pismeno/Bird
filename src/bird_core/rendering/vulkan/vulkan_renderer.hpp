@@ -70,6 +70,9 @@ class VulkanRenderer : public IRenderer {
   vk::SurfaceFormatKHR   swap_chain_surface_format;
   vk::Extent2D           swap_chain_extent;
 
+  vk::raii::PipelineLayout pipeline_layout = nullptr;
+  vk::raii::Pipeline graphics_pipeline = nullptr;
+
   std::vector<vk::raii::ImageView> swap_chain_image_views;
 };
 
