@@ -331,6 +331,7 @@ Result<void> VulkanRenderer::create_image_views() {
 }
 
 Result<void> VulkanRenderer::create_graphics_pipeline() {
+  // loading the shaders from files
   auto r_load_vert_shader_module = load_shader_module("src/bird_core/rendering/shaders/triangle.vert.glsl");
   if (!r_load_vert_shader_module) return bird::fail(r_load_vert_shader_module.error());
 
@@ -340,12 +341,14 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
   std::unique_ptr<vk::raii::ShaderModule> vert_shader_module = std::move(r_load_vert_shader_module).value();
   std::unique_ptr<vk::raii::ShaderModule> frag_shader_module = std::move(r_load_frag_shader_module).value();
 
+  // vertex shader stage create info
   vk::PipelineShaderStageCreateInfo vert_shader_stage_info{
     .stage = vk::ShaderStageFlagBits::eVertex,
     .module = **vert_shader_module,
     .pName = "main"
   };
 
+  // fragment shader stage create info
   vk::PipelineShaderStageCreateInfo frag_shader_stage_info{
     .stage = vk::ShaderStageFlagBits::eFragment,
     .module = **frag_shader_module,
@@ -356,20 +359,26 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
 
   std::vector<vk::DynamicState> dynamic_states = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 
+  // pipeline layout create info
   vk::PipelineDynamicStateCreateInfo dynamic_state{
     .dynamicStateCount = static_cast<uint32_t>(dynamic_states.size()),
     .pDynamicStates = dynamic_states.data()
   };
 
+  // vertex input create info
   vk::PipelineVertexInputStateCreateInfo vertex_input_info;
 
+  // input assembly create info
   vk::PipelineInputAssemblyStateCreateInfo inputAssembly{.topology = vk::PrimitiveTopology::eTriangleList};
 
+  // viewport and scissor
   vk::Viewport viewport{0.0f, 0.0f, static_cast<float>(swap_chain_extent.width), static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f};
   vk::Rect2D scissor{vk::Offset2D{ 0, 0 }, swap_chain_extent};
 
+  // viewport create info
   vk::PipelineViewportStateCreateInfo viewportState{.viewportCount = 1, .pViewports = &viewport, .scissorCount = 1, .pScissors = &scissor};
 
+  // rasterizer create info
   vk::PipelineRasterizationStateCreateInfo rasterizer{
     .depthClampEnable        = vk::False,
       .rasterizerDiscardEnable = vk::False,
