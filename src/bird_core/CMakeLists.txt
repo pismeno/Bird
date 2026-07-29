@@ -93,3 +93,11 @@ add_custom_command(TARGET BirdCore POST_BUILD
         "${CMAKE_BINARY_DIR}/node_system/"
         COMMENT "Copying node and scene JSON definitions to build directory"
 )
+
+add_custom_command(TARGET BirdCore POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/shaders"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders"
+        "${CMAKE_BINARY_DIR}/shaders"
+        COMMENT "Copying shaders to build directory"
+)
