@@ -46,7 +46,7 @@ class GlfwWindow : public IWindow {
   uint32_t windowed_width{};
   uint32_t windowed_height{};
   int windowed_x{}, windowed_y{};
-  bool fullscreen{};
+  bool is_fullscreen_{};
 
   GlfwInputs inputs;
 

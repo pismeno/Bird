@@ -23,7 +23,7 @@ GlfwWindow::GlfwWindow(const WindowOptions& options)
       windowed_height(options.logical_height),
       inputs(),
       glfw_window(nullptr),
-      fullscreen(options.startFullscreen) {}
+      is_fullscreen_(options.start_fullscreen) {}
 
 GlfwWindow::~GlfwWindow() = default;
 
@@ -39,7 +39,7 @@ Result<void> GlfwWindow::init() {
     return bird::fail("failed to create GLFW window");
   }
 
-  if (this->fullscreen) {
+  if (this->is_fullscreen_) {
     set_fullscreen(true);
   }
 
@@ -109,7 +109,7 @@ bool GlfwWindow::is_focused() const noexcept {
 }
 
 bool GlfwWindow::is_fullscreen() const noexcept {
-  return fullscreen;
+  return is_fullscreen_;
 }
 
 Inputs& GlfwWindow::get_inputs() {
@@ -123,10 +123,10 @@ void GlfwWindow::set_fullscreen(bool fullscreen) {
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
 
-    fullscreen = true;
+    is_fullscreen_ = true;
     glfwSetWindowMonitor(glfw_window, monitor, 0, 0, vidmode->width, vidmode->height, vidmode->refreshRate);
   } else {
-    fullscreen = false;
+    is_fullscreen_ = false;
     glfwSetWindowMonitor(glfw_window, nullptr, windowed_x, windowed_y,
                          windowed_width, windowed_height, 0);
   }
