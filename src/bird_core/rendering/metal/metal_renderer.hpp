@@ -8,7 +8,6 @@
 
 #include "rendering/vertex.hpp"
 #include "rendering/texture.hpp"
-#include "windowing/iwindow.hpp"
 #include "node_system/render_gatherer.hpp"
 #include "utils/result.hpp"
 
@@ -23,7 +22,8 @@ namespace bird {
 
 class MetalRenderer : public IRenderer {
 public:
-  Result<void> init(IWindow& window) override;
+  Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) override;
+  Result<void> init() override;
   void render() override;
   Result<void> shutdown() override;
   void resize_frame_buffer(int width, int height);
@@ -33,7 +33,6 @@ public:
 
 private:
   void init_device();
-  void init_window(IWindow& window);
 
   void create_default_library();
   void create_command_queue();

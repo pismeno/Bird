@@ -2,12 +2,12 @@
 
 #include <memory>
 
+#include <cstdint>
+
 #include "rendering/render_command.hpp"
 #include "utils/result.hpp"
 
 namespace bird {
-
-class IWindow;
 
 enum class RendererType {
   Metal,
@@ -20,7 +20,8 @@ public:
   explicit IRenderer() = default;
   virtual ~IRenderer() = default;
 
-  virtual Result<void> init(IWindow& window) = 0;
+  virtual Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) = 0;
+  virtual Result<void> init() = 0;
   virtual void render() = 0;
   virtual Result<void> shutdown() = 0;
   virtual void submit_quad(const RenderCommand render_command) = 0;

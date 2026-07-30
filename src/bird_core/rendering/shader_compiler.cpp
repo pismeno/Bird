@@ -27,11 +27,11 @@ namespace {
 }
 
 ShaderCompiler::ShaderCompiler() {
-    glslang::InitializeProcess();
+    //glslang::InitializeProcess();
 }
 
 ShaderCompiler::~ShaderCompiler() {
-    glslang::FinalizeProcess();
+    //glslang::FinalizeProcess();
 }
 
 std::string ShaderCompiler::detect_shader_stage(const std::string& filepath) const {
