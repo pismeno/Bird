@@ -2,6 +2,10 @@
 # but if using GLOB, let's make sure it doesn't grab .mm files on Windows at all.
 file(GLOB_RECURSE CORE_SOURCES "*.cpp" "*.hpp" "*.h")
 
+# Remove everything in the external/ and build/ directories from CORE_SOURCES
+list(FILTER CORE_SOURCES EXCLUDE REGEX "^${CMAKE_CURRENT_SOURCE_DIR}/external/.*")
+list(FILTER CORE_SOURCES EXCLUDE REGEX "^${CMAKE_CURRENT_SOURCE_DIR}/cmake-build-.*")
+
 # On Windows/MinGW, explicitly strip out any Objective-C++ (.mm) files if GLOB accidentally found them
 if (NOT APPLE)
     list(FILTER CORE_SOURCES EXCLUDE REGEX ".*\\.mm$")
@@ -96,7 +100,7 @@ add_custom_command(TARGET BirdCore POST_BUILD
 
 add_custom_command(TARGET BirdCore POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/shaders"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
         "${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders"
         "${CMAKE_BINARY_DIR}/shaders"
         COMMENT "Copying shaders to build directory"
