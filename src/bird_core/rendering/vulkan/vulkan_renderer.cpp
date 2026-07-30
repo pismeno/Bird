@@ -685,16 +685,24 @@ void VulkanRenderer::render() {
 
   logical_device.resetFences(*draw_fence);
 
-  auto [vkr_acquire_next_image, image_index] = swap_chain.acquireNextImage(UINT64_MAX, *present_complete_semaphore, nullptr);
+  uint32_t image_index = 0;
+  VkResult vkr_acquire_next_image = vkAcquireNextImageKHR(
+      *logical_device,
+      *swap_chain,
+      UINT64_MAX,
+      *present_complete_semaphore,
+      VK_NULL_HANDLE,
+      &image_index
+  );
 
-  if (vkr_acquire_next_image == vk::Result::eErrorOutOfDateKHR || vkr_acquire_next_image == vk::Result::eSuboptimalKHR) {
+  if (vkr_acquire_next_image == VK_ERROR_OUT_OF_DATE_KHR || vkr_acquire_next_image == VK_SUBOPTIMAL_KHR) {
     needs_framebuffer_resize_ = true;
     return;
-  } else if (vkr_acquire_next_image == vk::Result::eErrorDeviceLost) {
+  } else if (vkr_acquire_next_image == VK_ERROR_DEVICE_LOST) {
     is_context_lost_ = true;
     return;
-  } else if (vkr_acquire_next_image != vk::Result::eSuccess) {
-    std::cerr << "Fatal: Failed to acquire swap chain image. Result: " << vk::to_string(vkr_acquire_next_image) << std::endl;
+  } else if (vkr_acquire_next_image != VK_SUCCESS) {
+    std::cerr << "Fatal: Failed to acquire swap chain image. Result: " << vkr_acquire_next_image << std::endl;
     return;
   }
 
@@ -702,13 +710,13 @@ void VulkanRenderer::render() {
 
   vk::PipelineStageFlags waitDestinationStageMask( vk::PipelineStageFlagBits::eColorAttachmentOutput );
   const vk::SubmitInfo   submitInfo{
-    .waitSemaphoreCount   = 1,
-    .pWaitSemaphores      = &*present_complete_semaphore,
-    .pWaitDstStageMask    = &waitDestinationStageMask,
-    .commandBufferCount   = 1,
-    .pCommandBuffers      = &*command_buffer,
-    .signalSemaphoreCount = 1,
-    .pSignalSemaphores    = &*render_finished_semaphore
+      .waitSemaphoreCount   = 1,
+      .pWaitSemaphores      = &*present_complete_semaphore,
+      .pWaitDstStageMask    = &waitDestinationStageMask,
+      .commandBufferCount   = 1,
+      .pCommandBuffers      = &*command_buffer,
+      .signalSemaphoreCount = 1,
+      .pSignalSemaphores    = &*render_finished_semaphore
   };
 
   graphics_queue.submit(submitInfo, *draw_fence);
@@ -721,15 +729,33 @@ void VulkanRenderer::render() {
       .pImageIndices      = &image_index,
   };
 
-  auto vkr_present = graphics_queue.presentKHR(presentInfoKHR);
+  VkResult vkr_present = vkQueuePresentKHR(
+      *graphics_queue,
+      reinterpret_cast<const VkPresentInfoKHR*>(&presentInfoKHR)
+  );
 
-  if (vkr_present == vk::Result::eErrorOutOfDateKHR || vkr_present == vk::Result::eSuboptimalKHR) {
+  if (vkr_present == VK_ERROR_OUT_OF_DATE_KHR || vkr_present == VK_SUBOPTIMAL_KHR) {
     needs_framebuffer_resize_ = true;
-  } else if (vkr_present == vk::Result::eErrorDeviceLost) {
+  } else if (vkr_present == VK_ERROR_DEVICE_LOST) {
     is_context_lost_ = true;
-  } else if (vkr_present != vk::Result::eSuccess) {
-    std::cerr << "Fatal: Failed to present image. Result: " << vk::to_string(vkr_present) << "\n";
+  } else if (vkr_present != VK_SUCCESS) {
+    std::cerr << "Fatal: Failed to present image. Result: " << vkr_present << "\n";
   }
+}
+
+Result<void> VulkanRenderer::recreate_swap_chain() {
+  logical_device.waitIdle();
+
+  swap_chain_image_views.clear();
+  swap_chain = nullptr;
+
+  auto r_create_swap_chain = create_swap_chain(); // TODO later it should be done directly here to pass current swap chain into create swap chain struct as an old to not lose render commands
+  if (!r_create_swap_chain) return r_create_swap_chain;
+
+  auto r_create_image_views = create_image_views();
+  if (!r_create_image_views) return r_create_image_views;
+
+  return bird::ok();
 }
 
 Result<void> VulkanRenderer::shutdown() {
@@ -748,12 +774,20 @@ bool VulkanRenderer::needs_framebuffer_resize() const noexcept {
   return needs_framebuffer_resize_;
 }
 
-// TODO
-//
-void VulkanRenderer::resize_frame_buffer(int width, int height) {}
-void VulkanRenderer::submit_quad(const RenderCommand render_command) {}
 Result<void> VulkanRenderer::resize_framebuffer(uint32_t width, uint32_t height) {
+  window_width = width;
+  window_height = height;
+
+  auto r_recreate_swap_chain = recreate_swap_chain();
+  if (!r_recreate_swap_chain) return r_recreate_swap_chain;
+
+  needs_framebuffer_resize_ = false;
+
   return bird::ok();
 }
+
+// TODO
+//
+void VulkanRenderer::submit_quad(const RenderCommand render_command) {}
 //
 } // namespace bird

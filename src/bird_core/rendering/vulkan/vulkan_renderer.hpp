@@ -61,6 +61,9 @@ class VulkanRenderer : public IRenderer {
 
   [[nodiscard]] Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string filepath) const;
 
+  // other vulkan methods
+  Result<void> recreate_swap_chain();
+
   // rendering helper methods
   Result<void> record_command_buffer(const uint32_t image_index);
 
