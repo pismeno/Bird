@@ -43,6 +43,19 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_swap_chain();
   Result<void> create_image_views();
   Result<void> create_graphics_pipeline();
+  Result<void> create_command_pool();
+  Result<void> create_command_buffer();
+
+  Result<void> record_command_buffer(const uint32_t image_index);
+
+  void transition_image_layout(
+      uint32_t                imageIndex,
+      vk::ImageLayout         old_layout,
+      vk::ImageLayout         new_layout,
+      vk::AccessFlags2        src_access_mask,
+      vk::AccessFlags2        dst_access_mask,
+      vk::PipelineStageFlags2 src_stage_mask,
+      vk::PipelineStageFlags2 dst_stage_mask);
 
   vk::SurfaceFormatKHR choose_swap_surface_format(std::vector<vk::SurfaceFormatKHR> const &availableFormats);
   vk::PresentModeKHR choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes);
@@ -62,6 +75,7 @@ class VulkanRenderer : public IRenderer {
   vk::raii::Instance instance = nullptr;
   vk::raii::PhysicalDevice physical_device = nullptr;
   vk::raii::Device logical_device = nullptr;
+  uint32_t queue_index = ~0;
   vk::raii::Queue graphics_queue = nullptr;
   vk::raii::SurfaceKHR surface = nullptr;
   vk::raii::SwapchainKHR swap_chain = nullptr;
@@ -72,6 +86,9 @@ class VulkanRenderer : public IRenderer {
 
   vk::raii::PipelineLayout pipeline_layout = nullptr;
   vk::raii::Pipeline graphics_pipeline = nullptr;
+
+  vk::raii::CommandPool command_pool = nullptr;
+  vk::raii::CommandBuffer command_buffer = nullptr;
 
   std::vector<vk::raii::ImageView> swap_chain_image_views;
 };

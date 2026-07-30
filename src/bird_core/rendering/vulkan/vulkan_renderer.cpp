@@ -49,6 +49,18 @@ Result<void> VulkanRenderer::init() {
   auto r_create_graphics_pipeline = create_graphics_pipeline();
   if (!r_create_graphics_pipeline) return r_create_graphics_pipeline;
 
+  std::cout << "Vulkan Graphics Pipeline created successfully" << std::endl;
+
+  auto r_create_command_pool = create_command_pool();
+  if (!r_create_command_pool) return r_create_command_pool;
+
+  std::cout << "Vulkan Command Pool created successfully" << std::endl;
+
+  auto r_create_command_buffer = create_command_buffer();
+  if (!r_create_command_buffer) return r_create_command_buffer;
+
+  std::cout << "Vulkan Command Buffer created successfully" << std::endl;
+
   std::cout << "Vulkan Renderer initialized successfully" << std::endl;
 
   return bird::ok();
@@ -162,68 +174,65 @@ bool VulkanRenderer::is_physical_device_suitable(const vk::PhysicalDevice &physi
 }
 
 Result<void> VulkanRenderer::create_logical_device() {
-  auto queue_family_properties = physical_device.getQueueFamilyProperties();
+  std::vector<vk::QueueFamilyProperties> queue_family_properties = physical_device.getQueueFamilyProperties();
 
-  auto it = std::ranges::find_if(queue_family_properties, [this, index = 0u](const auto& qfp) mutable {
-    uint32_t current_index = index++;
-    bool supports_graphics = static_cast<bool>(qfp.queueFlags & vk::QueueFlagBits::eGraphics);
+  // get the first index into queue_family_properties which supports both graphics and present
+  for (uint32_t qfp_index = 0; qfp_index < queue_family_properties.size(); qfp_index++) {
 
-    auto support_res = physical_device.getSurfaceSupportKHR(current_index, *surface);
+    // FIX 1: Extract the ResultValue properly instead of treating it as a raw bool
+    auto support_res = physical_device.getSurfaceSupportKHR(qfp_index, *surface);
     bool supports_present = (support_res.result == vk::Result::eSuccess) && support_res.value;
 
-    return supports_graphics && supports_present;
-  });
-
-  if (it == queue_family_properties.end()) {
-    return bird::fail("Could not find a queue family supporting both graphics and presentation");
+    if ((queue_family_properties[qfp_index].queueFlags & vk::QueueFlagBits::eGraphics) && supports_present) {
+      // found a queue family that supports both graphics and present
+      queue_index = qfp_index;
+      break;
+    }
   }
 
-  auto queue_index = static_cast<uint32_t>(std::distance(queue_family_properties.begin(), it));
+  if (queue_index == ~0u) {
+    return bird::fail("Could not find a queue for graphics and present");
+  }
 
-  float queue_priority = 1.0f;
+  // query for Vulkan 1.3 features
+  vk::StructureChain<vk::PhysicalDeviceFeatures2,
+      vk::PhysicalDeviceVulkan11Features,
+      vk::PhysicalDeviceVulkan13Features,
+      vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>
+      feature_chain = {
+      {},                                                          // vk::PhysicalDeviceFeatures2
+      {.shaderDrawParameters = true},                              // vk::PhysicalDeviceVulkan11Features
+      {.synchronization2 = true, .dynamicRendering = true},        // vk::PhysicalDeviceVulkan13Features
+      {.extendedDynamicState = true}                               // vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
+  };
+
+  // create a Device
+  float queue_priority = 0.5f;
+
   vk::DeviceQueueCreateInfo device_queue_create_info{
-      .flags = vk::DeviceQueueCreateFlags(),
       .queueFamilyIndex = queue_index,
-      .queueCount = 1,
+      .queueCount       = 1,
       .pQueuePriorities = &queue_priority
   };
 
-  vk::StructureChain<
-      vk::PhysicalDeviceFeatures2,
-      vk::PhysicalDeviceVulkan11Features,
-      vk::PhysicalDeviceVulkan13Features,
-      vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
-  > feature_chain(
-      vk::PhysicalDeviceFeatures2{},
-      vk::PhysicalDeviceVulkan11Features{ .shaderDrawParameters = true },
-      vk::PhysicalDeviceVulkan13Features{ .dynamicRendering = true },
-      vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT{ .extendedDynamicState = true }
-  );
-
-  std::vector<const char*> required_device_extensions = { vk::KHRSwapchainExtensionName };
+  // FIX 2: Declare the required extensions locally before using them
+  std::vector<const char*> required_device_extensions = {vk::KHRSwapchainExtensionName};
 
   vk::DeviceCreateInfo device_create_info{
-      .pNext = &feature_chain.get<vk::PhysicalDeviceFeatures2>(),
-      .flags = vk::DeviceCreateFlags(),
-      .queueCreateInfoCount = 1,
-      .pQueueCreateInfos = &device_queue_create_info,
-      .enabledLayerCount = 0,
-      .ppEnabledLayerNames = nullptr,
-      .enabledExtensionCount = static_cast<uint32_t>(required_device_extensions.size()),
-      .ppEnabledExtensionNames = required_device_extensions.data(),
-      .pEnabledFeatures = nullptr
+      .pNext                   = &feature_chain.get<vk::PhysicalDeviceFeatures2>(),
+      .queueCreateInfoCount    = 1,
+      .pQueueCreateInfos       = &device_queue_create_info,
+      .enabledExtensionCount   = static_cast<uint32_t>(required_device_extensions.size()),
+      .ppEnabledExtensionNames = required_device_extensions.data()
   };
 
-  vk::PhysicalDevice raw_phys_dev = *physical_device;
-  auto dev_res = raw_phys_dev.createDevice(device_create_info);
-  if (dev_res.result != vk::Result::eSuccess) {
+  auto vkr_create_logical_device = physical_device.createDevice(device_create_info);
+  if (vkr_create_logical_device.result != vk::Result::eSuccess) {
     return bird::fail("Failed to create logical device");
   }
-  logical_device = vk::raii::Device(physical_device, dev_res.value);
+  logical_device = std::move(vkr_create_logical_device.value);
 
-  // getQueue returns the vk::Queue directly, no ResultValue because it cannot fail
-  vk::Queue raw_queue = (*logical_device).getQueue(queue_index, 0);
-  graphics_queue = vk::raii::Queue(logical_device, raw_queue);
+  graphics_queue = logical_device.getQueue(queue_index, 0);
 
   return bird::ok();
 }
@@ -501,7 +510,140 @@ Result<std::unique_ptr<vk::raii::ShaderModule>> VulkanRenderer::load_shader_modu
   return std::make_unique<vk::raii::ShaderModule>(std::move(vkr_create_shader_module.value));
 }
 
+Result<void> VulkanRenderer::create_command_pool() {
+  vk::CommandPoolCreateInfo pool_info{
+    .flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+    .queueFamilyIndex = queue_index
+  };
+
+  auto vkr_create_command_pool = logical_device.createCommandPool(pool_info);
+  if (vkr_create_command_pool.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create command pool");
+  }
+
+  command_pool = std::move(vkr_create_command_pool.value);
+
+  return bird::ok();
+}
+
+Result<void> VulkanRenderer::create_command_buffer() {
+  vk::CommandBufferAllocateInfo alloc_info{
+    .commandPool = command_pool,
+    .level = vk::CommandBufferLevel::ePrimary,
+    .commandBufferCount = 1
+  };
+
+  auto vkr_alloc_command_buffers = logical_device.allocateCommandBuffers(alloc_info);
+  if (vkr_alloc_command_buffers.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to allocate command buffers");
+  }
+  command_buffer = std::move(vkr_alloc_command_buffers.value.front());
+
+  return bird::ok();
+}
+
+Result<void> VulkanRenderer::record_command_buffer(const uint32_t image_index) {
+  auto vkr_command_buffer_begin = command_buffer.begin({});
+  if (vkr_command_buffer_begin != vk::Result::eSuccess) {
+    return bird::fail("Failed to begin command buffer recording");
+  }
+
+  // Transition the image layout for rendering
+  transition_image_layout(
+      image_index,
+      vk::ImageLayout::eUndefined,
+      vk::ImageLayout::eColorAttachmentOptimal,
+      {},
+      vk::AccessFlagBits2::eColorAttachmentWrite,
+      vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+      vk::PipelineStageFlagBits2::eColorAttachmentOutput
+  );
+
+  // Set up the color attachment
+  vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
+  vk::RenderingAttachmentInfo attachmentInfo = {
+      .imageView   = swap_chain_image_views[image_index],
+      .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+      .loadOp      = vk::AttachmentLoadOp::eClear,
+      .storeOp     = vk::AttachmentStoreOp::eStore,
+      .clearValue  = clearColor};
+
+  // Set up the rendering info
+  vk::RenderingInfo renderingInfo = {
+      .renderArea           = {.offset = {0, 0}, .extent = swap_chain_extent},
+      .layerCount           = 1,
+      .colorAttachmentCount = 1,
+      .pColorAttachments    = &attachmentInfo};
+
+  // Begin rendering
+  command_buffer.beginRendering(renderingInfo);
+
+  command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *graphics_pipeline);
+  command_buffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swap_chain_extent.width), static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f));
+  command_buffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swap_chain_extent));
+  command_buffer.draw(3, 1, 0, 0);
+
+  // End rendering
+  command_buffer.endRendering();
+
+  // Transition the image layout for presentation
+  transition_image_layout(
+      image_index,
+      vk::ImageLayout::eColorAttachmentOptimal,
+      vk::ImageLayout::ePresentSrcKHR,
+      vk::AccessFlagBits2::eColorAttachmentWrite,
+      {},
+      vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+      vk::PipelineStageFlagBits2::eBottomOfPipe
+  );
+
+  auto vkr_command_buffer_end = command_buffer.end();
+  if (vkr_command_buffer_end != vk::Result::eSuccess) {
+    return bird::fail("Failed to end command buffer recording");
+  }
+
+  return bird::ok();
+}
+
+void VulkanRenderer::transition_image_layout(
+    uint32_t                imageIndex,
+    vk::ImageLayout         old_layout,
+    vk::ImageLayout         new_layout,
+    vk::AccessFlags2        src_access_mask,
+    vk::AccessFlags2        dst_access_mask,
+    vk::PipelineStageFlags2 src_stage_mask,
+    vk::PipelineStageFlags2 dst_stage_mask)
+{
+  vk::ImageMemoryBarrier2 barrier =
+      {
+      .srcStageMask        = src_stage_mask,
+      .srcAccessMask       = src_access_mask,
+      .dstStageMask        = dst_stage_mask,
+      .dstAccessMask       = dst_access_mask,
+      .oldLayout           = old_layout,
+      .newLayout           = new_layout,
+      .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+      .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+      .image               = swap_chain_images[imageIndex],
+      .subresourceRange    = {
+          .aspectMask     = vk::ImageAspectFlagBits::eColor,
+          .baseMipLevel   = 0,
+          .levelCount     = 1,
+          .baseArrayLayer = 0,
+          .layerCount     = 1}
+      };
+
+  vk::DependencyInfo dependency_info = {
+      .dependencyFlags         = {},
+      .imageMemoryBarrierCount = 1,
+      .pImageMemoryBarriers    = &barrier
+  };
+
+  command_buffer.pipelineBarrier2(dependency_info);
+}
+
 // TODO
+//
 void VulkanRenderer::render() {}
 
 Result<void> VulkanRenderer::shutdown() {
@@ -511,5 +653,5 @@ Result<void> VulkanRenderer::shutdown() {
 void VulkanRenderer::resize_frame_buffer(int width, int height) {}
 void VulkanRenderer::submit_quad(const RenderCommand render_command) {}
 void VulkanRenderer::handle_window_resize(int width, int height) {}
-
+//
 } // namespace bird
