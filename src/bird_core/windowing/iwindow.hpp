@@ -16,7 +16,7 @@ struct WindowOptions {
 
   std::string title;
 
-  bool startFullscreen = false;
+  bool start_fullscreen = false;
 };
 
 class IWindow {
