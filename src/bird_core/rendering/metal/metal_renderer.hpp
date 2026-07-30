@@ -26,10 +26,10 @@ public:
   Result<void> init() override;
   void render() override;
   Result<void> shutdown() override;
-  void resize_frame_buffer(int width, int height);
+  Result<void> resize_frame_buffer(int width, int height);
   void submit_quad(const RenderCommand render_command) override;
 
-  void handle_window_resize(int width, int height) override;
+  Result<void> resize_framebuffer(uint32_t width, uint32_t height) override;
 
 private:
   void init_device();

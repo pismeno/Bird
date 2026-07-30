@@ -34,7 +34,10 @@ class VulkanRenderer : public IRenderer {
   void resize_frame_buffer(int width, int height);
   void submit_quad(const RenderCommand render_command) override;
 
-  void handle_window_resize(int width, int height) override;
+  Result<void> resize_framebuffer(uint32_t width, uint32_t height) override;
+
+  bool needs_framebuffer_resize() const noexcept override;
+  bool is_context_lost() const noexcept override;
  private:
   Result<void> create_instance();
   Result<void> create_surface();
@@ -63,9 +66,9 @@ class VulkanRenderer : public IRenderer {
   vk::Extent2D choose_swap_extent(vk::SurfaceCapabilitiesKHR const &capabilities);
   uint32_t choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities);
 
-  bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
+  [[nodiscard]] bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
 
-  Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string filepath) const;
+  [[nodiscard]] Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string filepath) const;
 
   void* native_window_handle = nullptr;
   uint32_t window_width = 0;
@@ -96,6 +99,9 @@ class VulkanRenderer : public IRenderer {
   vk::raii::Semaphore present_complete_semaphore = nullptr;
   vk::raii::Semaphore render_finished_semaphore  = nullptr;
   vk::raii::Fence     draw_fence                 = nullptr;
+
+  bool is_context_lost_ = false;
+  bool needs_framebuffer_resize_ = false;
 };
 
 } // namespace bird

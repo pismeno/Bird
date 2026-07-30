@@ -8,13 +8,13 @@
 #include "glslang/Public/ShaderLang.h"
 
 int main() {
-    using namespace bird;
+  using namespace bird;
 
   glslang::InitializeProcess();
 
     if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
-        return -1;
+      std::cerr << "Failed to initialize GLFW" << std::endl;
+      return -1;
     }
 
     auto window_result =
@@ -28,15 +28,15 @@ int main() {
     std::unique_ptr<IWindow> window = std::move(window_result).value();
 
     if (!window->init()) {
-        std::cerr << "Failed to create window" << std::endl;
-        glfwTerminate();
-        return -1;
+      std::cerr << "Failed to create window" << std::endl;
+      glfwTerminate();
+      return -1;
     }
 
     auto renderer_result = IRenderer::create(bird::RendererType::Vulkan);
     if (!renderer_result) {
-        std::cerr << renderer_result.error() << std::endl;
-        return -1;
+      std::cerr << renderer_result.error() << std::endl;
+      return -1;
     }
 
     std::unique_ptr<IRenderer> renderer = std::move(renderer_result).value();
@@ -47,35 +47,48 @@ int main() {
         );
 
     if (!r_attach_window_result) {
-        std::cerr << r_attach_window_result.error() << std::endl;
-        return -1;
+      std::cerr << r_attach_window_result.error() << std::endl;
+      return -1;
     }
 
     auto r_init_result = renderer->init();
     if (!r_init_result) {
-        std::cerr << r_init_result.error() << std::endl;
-        return -1;
+      std::cerr << r_init_result.error() << std::endl;
+      return -1;
     }
 
     while (!window->should_close()) {
-        window->update();
-        renderer->render();
+      window->update();
+      renderer->render();
+
+      if (renderer->needs_framebuffer_resize()) {
+        auto r_resize_framebuffer = renderer->resize_framebuffer(window->get_framebuffer_width(),window->get_framebuffer_height());
+        if (!r_resize_framebuffer) {
+          std::cerr << r_resize_framebuffer.error() << std::endl;
+          return -1;
+        }
+      }
+
+      if (renderer->is_context_lost()) {
+        std::cerr << "Renderer context lost" << std::endl;
+        return -1;
+      }
     }
 
     auto r_shutdown_result = renderer->shutdown();
 
     if (!r_shutdown_result) {
-        std::cerr << r_shutdown_result.error() << std::endl;
-        return -1;
+      std::cerr << r_shutdown_result.error() << std::endl;
+      return -1;
     }
 
     auto window_close_result = window->close();
     if (!window_close_result) {
-        std::cerr << window_close_result.error() << std::endl;
-        return -1;
+      std::cerr << window_close_result.error() << std::endl;
+      return -1;
     }
 
-    glfwTerminate();
+  glfwTerminate();
   glslang::FinalizeProcess();
   return 0;
 }
