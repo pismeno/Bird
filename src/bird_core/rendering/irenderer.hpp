@@ -25,7 +25,10 @@ public:
   virtual void render() = 0;
   virtual Result<void> shutdown() = 0;
   virtual void submit_quad(const RenderCommand render_command) = 0;
-  virtual void handle_window_resize(int width, int height) = 0; // TODO actually fix the implementation with the new IWindow
+  virtual Result<void> resize_framebuffer(uint32_t width, uint32_t height) = 0;
+
+  virtual bool needs_framebuffer_resize() const noexcept = 0;
+  virtual bool is_context_lost() const noexcept = 0;
 
   /**
    * @brief Factory method to create the specific implementation

@@ -181,8 +181,9 @@ Result<void> MetalRenderer::shutdown() {
   return bird::ok();
 }
 
-void MetalRenderer::handle_window_resize(int width, int height) {
-  resize_frame_buffer(width, height);
+Result<void> MetalRenderer::resize_framebuffer(uint32_t width, uint32_t height) {
+  //resize_frame_buffer(width, height);
+  return bird::ok();
 }
 
 void MetalRenderer::create_default_library() {

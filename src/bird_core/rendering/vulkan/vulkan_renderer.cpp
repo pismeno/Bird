@@ -670,16 +670,35 @@ void VulkanRenderer::transition_image_layout(
 }
 
 void VulkanRenderer::render() {
-  auto fenceResult = logical_device.waitForFences(*draw_fence, vk::True, UINT64_MAX);
-  if (fenceResult != vk::Result::eSuccess) {
-    throw std::runtime_error("failed to wait for fence!"); // TODO remove error throwing
+  if (needs_framebuffer_resize_ || is_context_lost_) {
+    return;
+  }
+
+  auto vkr_fence = logical_device.waitForFences(*draw_fence, vk::True, UINT64_MAX);
+  if (vkr_fence == vk::Result::eErrorDeviceLost) {
+    is_context_lost_ = true;
+    return;
+  } else if (vkr_fence != vk::Result::eSuccess) {
+    std::cerr << "Fatal: Failed to wait for fence. Result: " << vk::to_string(vkr_fence) << std::endl;
+    return;
   }
 
   logical_device.resetFences(*draw_fence);
 
-  auto [result, image_index] = swap_chain.acquireNextImage(UINT64_MAX, *present_complete_semaphore, nullptr);
+  auto [vkr_acquire_next_image, image_index] = swap_chain.acquireNextImage(UINT64_MAX, *present_complete_semaphore, nullptr);
 
-  auto _r = record_command_buffer(image_index); // TODO
+  if (vkr_acquire_next_image == vk::Result::eErrorOutOfDateKHR || vkr_acquire_next_image == vk::Result::eSuboptimalKHR) {
+    needs_framebuffer_resize_ = true;
+    return;
+  } else if (vkr_acquire_next_image == vk::Result::eErrorDeviceLost) {
+    is_context_lost_ = true;
+    return;
+  } else if (vkr_acquire_next_image != vk::Result::eSuccess) {
+    std::cerr << "Fatal: Failed to acquire swap chain image. Result: " << vk::to_string(vkr_acquire_next_image) << std::endl;
+    return;
+  }
+
+  auto _r = record_command_buffer(image_index);
 
   vk::PipelineStageFlags waitDestinationStageMask( vk::PipelineStageFlagBits::eColorAttachmentOutput );
   const vk::SubmitInfo   submitInfo{
@@ -702,19 +721,39 @@ void VulkanRenderer::render() {
       .pImageIndices      = &image_index,
   };
 
-  result = graphics_queue.presentKHR(presentInfoKHR);
+  auto vkr_present = graphics_queue.presentKHR(presentInfoKHR);
+
+  if (vkr_present == vk::Result::eErrorOutOfDateKHR || vkr_present == vk::Result::eSuboptimalKHR) {
+    needs_framebuffer_resize_ = true;
+  } else if (vkr_present == vk::Result::eErrorDeviceLost) {
+    is_context_lost_ = true;
+  } else if (vkr_present != vk::Result::eSuccess) {
+    std::cerr << "Fatal: Failed to present image. Result: " << vk::to_string(vkr_present) << "\n";
+  }
 }
 
 Result<void> VulkanRenderer::shutdown() {
-  logical_device.waitIdle();
+  if (!is_context_lost()) {
+    logical_device.waitIdle();
+  }
 
   return bird::ok();
+}
+
+bool VulkanRenderer::is_context_lost() const noexcept {
+  return is_context_lost_;
+}
+
+bool VulkanRenderer::needs_framebuffer_resize() const noexcept {
+  return needs_framebuffer_resize_;
 }
 
 // TODO
 //
 void VulkanRenderer::resize_frame_buffer(int width, int height) {}
 void VulkanRenderer::submit_quad(const RenderCommand render_command) {}
-void VulkanRenderer::handle_window_resize(int width, int height) {}
+Result<void> VulkanRenderer::resize_framebuffer(uint32_t width, uint32_t height) {
+  return bird::ok();
+}
 //
 } // namespace bird
