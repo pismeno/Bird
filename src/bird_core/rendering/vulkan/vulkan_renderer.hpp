@@ -39,6 +39,7 @@ class VulkanRenderer : public IRenderer {
   bool needs_framebuffer_resize() const noexcept override;
   bool is_context_lost() const noexcept override;
  private:
+  // initialization methods
   Result<void> create_instance();
   Result<void> create_surface();
   Result<void> pick_physical_device();
@@ -50,6 +51,17 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_command_buffer();
   Result<void> create_sync_objects();
 
+  //initialization helper methods
+  vk::SurfaceFormatKHR choose_swap_surface_format(std::vector<vk::SurfaceFormatKHR> const &availableFormats);
+  vk::PresentModeKHR choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes);
+  vk::Extent2D choose_swap_extent(vk::SurfaceCapabilitiesKHR const &capabilities);
+  uint32_t choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities);
+
+  [[nodiscard]] bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
+
+  [[nodiscard]] Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string filepath) const;
+
+  // rendering helper methods
   Result<void> record_command_buffer(const uint32_t image_index);
 
   void transition_image_layout(
@@ -61,19 +73,12 @@ class VulkanRenderer : public IRenderer {
       vk::PipelineStageFlags2 src_stage_mask,
       vk::PipelineStageFlags2 dst_stage_mask);
 
-  vk::SurfaceFormatKHR choose_swap_surface_format(std::vector<vk::SurfaceFormatKHR> const &availableFormats);
-  vk::PresentModeKHR choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes);
-  vk::Extent2D choose_swap_extent(vk::SurfaceCapabilitiesKHR const &capabilities);
-  uint32_t choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities);
-
-  [[nodiscard]] bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
-
-  [[nodiscard]] Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string filepath) const;
-
+  // window members that hold values for surface initialization
   void* native_window_handle = nullptr;
   uint32_t window_width = 0;
   uint32_t window_height = 0;
 
+  // vulkan members
   vk::raii::Context context;
 
   vk::raii::Instance instance = nullptr;
@@ -100,6 +105,7 @@ class VulkanRenderer : public IRenderer {
   vk::raii::Semaphore render_finished_semaphore  = nullptr;
   vk::raii::Fence     draw_fence                 = nullptr;
 
+  // rendering states
   bool is_context_lost_ = false;
   bool needs_framebuffer_resize_ = false;
 };
