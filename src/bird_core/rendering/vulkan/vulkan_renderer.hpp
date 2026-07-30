@@ -45,6 +45,7 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_graphics_pipeline();
   Result<void> create_command_pool();
   Result<void> create_command_buffer();
+  Result<void> create_sync_objects();
 
   Result<void> record_command_buffer(const uint32_t image_index);
 
@@ -91,6 +92,10 @@ class VulkanRenderer : public IRenderer {
   vk::raii::CommandBuffer command_buffer = nullptr;
 
   std::vector<vk::raii::ImageView> swap_chain_image_views;
+
+  vk::raii::Semaphore present_complete_semaphore = nullptr;
+  vk::raii::Semaphore render_finished_semaphore  = nullptr;
+  vk::raii::Fence     draw_fence                 = nullptr;
 };
 
 } // namespace bird

@@ -61,6 +61,11 @@ Result<void> VulkanRenderer::init() {
 
   std::cout << "Vulkan Command Buffer created successfully" << std::endl;
 
+  auto r_create_sync_objects = create_sync_objects();
+  if (!r_create_sync_objects) return r_create_sync_objects;
+
+  std::cout << "Vulkan Sync Objects created successfully" << std::endl;
+
   std::cout << "Vulkan Renderer initialized successfully" << std::endl;
 
   return bird::ok();
@@ -542,6 +547,28 @@ Result<void> VulkanRenderer::create_command_buffer() {
   return bird::ok();
 }
 
+Result<void> VulkanRenderer::create_sync_objects() {
+  auto vkr_create_present_complete_semaphore = logical_device.createSemaphore(vk::SemaphoreCreateInfo());
+  if (vkr_create_present_complete_semaphore.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create present complete semaphore");
+  }
+  present_complete_semaphore = std::move(vkr_create_present_complete_semaphore.value);
+
+  auto vkr_create_render_finished_semaphore = logical_device.createSemaphore(vk::SemaphoreCreateInfo());
+  if (vkr_create_render_finished_semaphore.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create render finished semaphore");
+  }
+  render_finished_semaphore = std::move(vkr_create_render_finished_semaphore.value);
+
+  auto vkr_create_draw_fence = logical_device.createFence(vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
+  if (vkr_create_draw_fence.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create draw fence");
+  }
+  draw_fence = std::move(vkr_create_draw_fence.value);
+
+  return bird::ok();
+}
+
 Result<void> VulkanRenderer::record_command_buffer(const uint32_t image_index) {
   auto vkr_command_buffer_begin = command_buffer.begin({});
   if (vkr_command_buffer_begin != vk::Result::eSuccess) {
@@ -642,10 +669,44 @@ void VulkanRenderer::transition_image_layout(
   command_buffer.pipelineBarrier2(dependency_info);
 }
 
+void VulkanRenderer::render() {
+  auto fenceResult = logical_device.waitForFences(*draw_fence, vk::True, UINT64_MAX);
+  if (fenceResult != vk::Result::eSuccess) {
+    throw std::runtime_error("failed to wait for fence!"); // TODO remove error throwing
+  }
+
+  logical_device.resetFences(*draw_fence);
+
+  auto [result, image_index] = swap_chain.acquireNextImage(UINT64_MAX, *present_complete_semaphore, nullptr);
+
+  auto _r = record_command_buffer(image_index); // TODO
+
+  vk::PipelineStageFlags waitDestinationStageMask( vk::PipelineStageFlagBits::eColorAttachmentOutput );
+  const vk::SubmitInfo   submitInfo{
+    .waitSemaphoreCount   = 1,
+    .pWaitSemaphores      = &*present_complete_semaphore,
+    .pWaitDstStageMask    = &waitDestinationStageMask,
+    .commandBufferCount   = 1,
+    .pCommandBuffers      = &*command_buffer,
+    .signalSemaphoreCount = 1,
+    .pSignalSemaphores    = &*render_finished_semaphore
+  };
+
+  graphics_queue.submit(submitInfo, *draw_fence);
+
+  const vk::PresentInfoKHR presentInfoKHR{
+      .waitSemaphoreCount = 1,
+      .pWaitSemaphores    = &*render_finished_semaphore,
+      .swapchainCount     = 1,
+      .pSwapchains        = &*swap_chain,
+      .pImageIndices      = &image_index,
+  };
+
+  result = graphics_queue.presentKHR(presentInfoKHR);
+}
+
 // TODO
 //
-void VulkanRenderer::render() {}
-
 Result<void> VulkanRenderer::shutdown() {
   return bird::ok();
 }
