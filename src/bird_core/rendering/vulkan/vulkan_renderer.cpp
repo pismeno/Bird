@@ -740,6 +740,14 @@ Result<void> VulkanRenderer::shutdown() {
   return bird::ok();
 }
 
+bool VulkanRenderer::is_context_lost() const noexcept {
+  return is_context_lost_;
+}
+
+bool VulkanRenderer::needs_framebuffer_resize() const noexcept {
+  return needs_framebuffer_resize_;
+}
+
 // TODO
 //
 void VulkanRenderer::resize_frame_buffer(int width, int height) {}
