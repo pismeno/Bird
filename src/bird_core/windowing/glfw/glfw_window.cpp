@@ -1,17 +1,15 @@
-#include "glfw_window.hpp"
-
-#include <utility>
-
 #if defined(BIRD_PLATFORM_WINDOWS)
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(BIRD_PLATFORM_APPLE)
 #define  GLFW_EXPOSE_NATIVE_COCOA
 #endif
 
+#include "windowing/glfw/glfw_window.hpp"
+
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-#include "inputs/glfw_inputs.hpp"
+#include "inputs/glfw/glfw_inputs.hpp"
 
 namespace bird {
 
@@ -33,7 +31,7 @@ Result<void> GlfwWindow::init() {
   glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // Temporarily disabled until we handle resizing for Vulkan renderer.
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
   glfw_window = glfwCreateWindow(logical_width, logical_height, title.c_str(), nullptr, nullptr);
 

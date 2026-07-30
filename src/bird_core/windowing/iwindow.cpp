@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "windowing/glfw_window.hpp"
+#include "windowing/glfw/glfw_window.hpp"
 #include "utils/result.hpp"
 
 namespace bird {

@@ -2,7 +2,7 @@
 
 #include "GLFW/glfw3.h"
 
-#include "inputs.hpp"
+#include "inputs/inputs.hpp"
 
 namespace bird {
 class GlfwWindow;
