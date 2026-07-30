@@ -705,12 +705,14 @@ void VulkanRenderer::render() {
   result = graphics_queue.presentKHR(presentInfoKHR);
 }
 
-// TODO
-//
 Result<void> VulkanRenderer::shutdown() {
+  logical_device.waitIdle();
+
   return bird::ok();
 }
 
+// TODO
+//
 void VulkanRenderer::resize_frame_buffer(int width, int height) {}
 void VulkanRenderer::submit_quad(const RenderCommand render_command) {}
 void VulkanRenderer::handle_window_resize(int width, int height) {}
