@@ -24,44 +24,46 @@ struct Failure {
 template <typename T>
 class [[nodiscard]] Result {
  public:
-  Result(T value) : data(std::move(value)) {} // Accept by value and move, works for both copyable and move-only types
-  Result(bird::Failure failure) : data(std::move(failure.message)) {}
+  Result(T value) : data(std::in_place_index<0>, std::move(value)) {}
+
+  Result(bird::Failure failure) : data(std::in_place_index<1>, std::move(failure.message)) {}
 
   template <typename U>
   requires std::convertible_to<U, T> && (!std::same_as<std::decay_t<U>, Result<T>>)
-  Result(U&& value) : data(T(std::forward<U>(value))) {}
+  Result(U&& value) : data(std::in_place_index<0>, T(std::forward<U>(value))) {}
 
-  Result(Result&& other) noexcept = default; // moving the Result itself
+  Result(Result&& other) noexcept = default;
   Result& operator=(Result&& other) noexcept = default;
 
-  Result(const Result&) = default; // Disable copying if T is move-only
+  Result(const Result&) = default;
   Result& operator=(const Result&) = default;
 
-  [[nodiscard]] inline bool is_ok() const noexcept { return std::holds_alternative<T>(data); }
+  // Check the index directly instead of holds_alternative
+  [[nodiscard]] inline bool is_ok() const noexcept { return data.index() == 0; }
   explicit operator bool() const noexcept { return is_ok(); }
 
   /**
-   * @brief If the result is successful, returns the value, otherwise terminates the program. Only call this if the result is successful.
+   * @brief If the result is successful, returns the value, otherwise terminates the program.
    */
   [[nodiscard]] const T& value() const & noexcept {
     assert(is_ok() && "Error: tried to access value of a Result that is failed.");
-    return std::get<T>(data);
+    return std::get<0>(data); // Retrieve by index
   }
 
   /**
-   * @brief If the result is successful, returns the value, otherwise terminates the program. Only call this if the result is successful.
+   * @brief If the result is successful, returns the value, otherwise terminates the program.
    */
   [[nodiscard]] T&& value() && noexcept {
     assert(is_ok() && "Error: tried to access value of a Result that is failed.");
-    return std::get<T>(std::move(data));
+    return std::get<0>(std::move(data)); // Retrieve by index
   }
 
   /**
- * @brief If the result is failed, returns the error message, otherwise terminates the program. Only call this if the result is failed.
- */
+   * @brief If the result is failed, returns the error message, otherwise terminates the program.
+   */
   [[nodiscard]] const std::string& error() const {
     assert(!is_ok() && "Error: tried to access error of a Result that is successful.");
-    return std::get<std::string>(data);
+    return std::get<1>(data); // Retrieve by index
   }
 
  private:
@@ -69,7 +71,7 @@ class [[nodiscard]] Result {
 };
 
 /**
- * @brief A specialization of Result for void. It is to be used for functions that would return void and throw exceptions otherwise.'
+ * @brief A specialization of Result for void.
  */
 template <>
 class [[nodiscard]] Result<void> {
