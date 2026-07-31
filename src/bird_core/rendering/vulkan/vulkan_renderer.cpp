@@ -8,6 +8,9 @@
 #include <memory>
 #include <filesystem>
 
+#include <vulkan/vulkan_raii.hpp>
+#include <glm/glm.hpp>
+
 #include "rendering/shader_compiler.hpp"
 #include "utils/result.hpp"
 

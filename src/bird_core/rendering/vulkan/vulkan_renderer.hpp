@@ -14,6 +14,7 @@
 #define VULKAN_HPP_NO_EXCEPTIONS
 
 #include <vulkan/vulkan_raii.hpp>
+#include <glm/glm.hpp>
 
 #include <cstdint>
 #include <vector>
@@ -111,6 +112,20 @@ class VulkanRenderer : public IRenderer {
   // rendering states
   bool is_context_lost_ = false;
   bool needs_framebuffer_resize_ = false;
+
+  struct Vertex {
+    glm::vec2 pos;
+    glm::vec3 color;
+
+    static vk::VertexInputBindingDescription getBindingDescription() {
+      return {.binding = 0, .stride = sizeof(Vertex), .inputRate = vk::VertexInputRate::eVertex};
+    }
+
+    static std::array<vk::VertexInputAttributeDescription, 2> getAttributeDescriptions() {
+      return {{{.location = 0, .binding = 0, .format = vk::Format::eR32G32Sfloat, .offset = offsetof(Vertex, pos)},
+               {.location = 1, .binding = 0, .format = vk::Format::eR32G32B32Sfloat, .offset = offsetof(Vertex, color)}}};
+    }
+  };
 };
 
 } // namespace bird
