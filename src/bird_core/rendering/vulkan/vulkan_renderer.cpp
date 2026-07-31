@@ -491,15 +491,9 @@ Result<std::unique_ptr<vk::raii::ShaderModule>> VulkanRenderer::load_shader_modu
 
   std::vector<uint32_t> vert_spirv;
 
-  try {
-    vert_spirv = shader_compiler.compile_glsl_file_to_spirv(filepath);
-  } catch (const std::exception& e) {
-    return bird::fail(std::string("Shader exception caught: ") + e.what() + "\nDetails: " + shader_compiler.get_last_error());
-  }
-
-  if (vert_spirv.empty()) {
-    return bird::fail("Shader compilation failed: " + shader_compiler.get_last_error());
-  }
+  auto r_compile_glsl_file = shader_compiler.compile_glsl_file_to_spirv(filepath);
+  if (!r_compile_glsl_file) return bird::fail(r_compile_glsl_file.error());
+  vert_spirv = std::move(r_compile_glsl_file).value();
 
   vk::ShaderModuleCreateInfo create_info{
       .codeSize = vert_spirv.size() * sizeof(uint32_t), // Size in bytes
