@@ -26,47 +26,42 @@ Result<void> VulkanRenderer::attach_window(void* native_window_handle, uint32_t 
 Result<void> VulkanRenderer::init() {
   auto r_create_instance = create_instance();
   if (!r_create_instance) return r_create_instance;
-
   std::cout << "Vulkan Instance created successfully" << std::endl;
 
   auto r_pick_physical_device = pick_physical_device();
   if (!r_pick_physical_device) return r_pick_physical_device;
-
   std::cout << "Vulkan Physical Device selected successfully" << std::endl;
 
   auto r_create_logical_device = create_logical_device();
   if (!r_create_logical_device) return r_create_logical_device;
-
   std::cout << "Vulkan Logical Device created successfully" << std::endl;
 
   auto r_create_swap_chain = create_swap_chain();
   if (!r_create_swap_chain) return r_create_swap_chain;
-
   std::cout << "Vulkan Swap Chain created successfully" << std::endl;
 
   auto r_create_image_views = create_image_views();
   if (!r_create_image_views) return r_create_image_views;
-
   std::cout << "Vulkan Image Views created successfully" << std::endl;
 
   auto r_create_graphics_pipeline = create_graphics_pipeline();
   if (!r_create_graphics_pipeline) return r_create_graphics_pipeline;
-
   std::cout << "Vulkan Graphics Pipeline created successfully" << std::endl;
 
   auto r_create_command_pool = create_command_pool();
   if (!r_create_command_pool) return r_create_command_pool;
-
   std::cout << "Vulkan Command Pool created successfully" << std::endl;
+
+  auto r_create_vertex_buffer = create_vertex_buffer();
+  if (!r_create_vertex_buffer) return r_create_vertex_buffer;
+  std::cout << "Vulkan Vertex Buffer created successfully" << std::endl;
 
   auto r_create_command_buffer = create_command_buffer();
   if (!r_create_command_buffer) return r_create_command_buffer;
-
   std::cout << "Vulkan Command Buffer created successfully" << std::endl;
 
   auto r_create_sync_objects = create_sync_objects();
   if (!r_create_sync_objects) return r_create_sync_objects;
-
   std::cout << "Vulkan Sync Objects created successfully" << std::endl;
 
   std::cout << "Vulkan Renderer initialized successfully" << std::endl;
@@ -360,7 +355,7 @@ Result<void> VulkanRenderer::create_image_views() {
 
 Result<void> VulkanRenderer::create_graphics_pipeline() {
   // loading the shaders from files
-  auto r_load_vert_shader_module = load_shader_module("shaders/triangle.vert.glsl");
+  auto r_load_vert_shader_module = load_shader_module("shaders/vertices.vert.glsl");
   if (!r_load_vert_shader_module) return bird::fail(r_load_vert_shader_module.error());
 
   auto r_load_frag_shader_module = load_shader_module("shaders/triangle.frag.glsl");
@@ -394,7 +389,14 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
   };
 
   // vertex input create info
-  vk::PipelineVertexInputStateCreateInfo vertex_input_info;
+  auto binding_description    = Vertex::getBindingDescription();
+  auto attribute_descriptions = Vertex::getAttributeDescriptions();
+  vk::PipelineVertexInputStateCreateInfo   vertex_input_info{
+    .vertexBindingDescriptionCount   = 1,
+      .pVertexBindingDescriptions      = &binding_description,
+      .vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size()),
+      .pVertexAttributeDescriptions    = attribute_descriptions.data()
+  };
 
   // input assembly create info
   vk::PipelineInputAssemblyStateCreateInfo input_assembly{.topology = vk::PrimitiveTopology::eTriangleList};
@@ -528,6 +530,59 @@ Result<void> VulkanRenderer::create_command_pool() {
   return bird::ok();
 }
 
+Result<void> VulkanRenderer::create_vertex_buffer() {
+  vk::BufferCreateInfo buffer_info{
+    .size        = sizeof(vertices[0]) * vertices.size(),
+    .usage       = vk::BufferUsageFlagBits::eVertexBuffer,
+    .sharingMode = vk::SharingMode::eExclusive
+  };
+
+  auto vkr_create_vertex_buffer = logical_device.createBuffer(buffer_info);
+  if (vkr_create_vertex_buffer.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create vertex buffer");
+  }
+  vertex_buffer = std::move(vkr_create_vertex_buffer.value);
+
+  vk::MemoryRequirements mem_requirements = vertex_buffer.getMemoryRequirements();
+  auto r_find_memory_types = find_memory_type(mem_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+  if (!r_find_memory_types) return bird::fail(r_find_memory_types.error());
+
+  vk::MemoryAllocateInfo memoryAllocateInfo{
+      .allocationSize  = mem_requirements.size,
+      .memoryTypeIndex = r_find_memory_types.value()
+  };
+
+  auto vkr_allocate_memory = logical_device.allocateMemory(memoryAllocateInfo);
+  if (vkr_allocate_memory.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to allocate vertex buffer memory");
+  }
+  vertex_buffer_memory = std::move(vkr_allocate_memory.value);
+
+  vertex_buffer.bindMemory(*vertex_buffer_memory, 0);
+
+  auto vkr_map_memory = vertex_buffer_memory.mapMemory(0, buffer_info.size);
+  if (vkr_map_memory.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to map vertex buffer memory");
+  }
+  void* data = vkr_map_memory.value;
+  memcpy(data, vertices.data(), buffer_info.size);
+  vertex_buffer_memory.unmapMemory();
+
+  return bird::ok();
+}
+
+Result<uint32_t> VulkanRenderer::find_memory_type(uint32_t type_filter, vk::MemoryPropertyFlags properties) const {
+  vk::PhysicalDeviceMemoryProperties mem_properties = physical_device.getMemoryProperties();
+
+  for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++) {
+    if ((type_filter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties) {
+      return i;
+    }
+  }
+
+  return bird::fail("Failed to find suitable memory type");
+}
+
 Result<void> VulkanRenderer::create_command_buffer() {
   vk::CommandBufferAllocateInfo alloc_info{
     .commandPool = command_pool,
@@ -603,9 +658,10 @@ Result<void> VulkanRenderer::record_command_buffer(const uint32_t image_index) {
   command_buffer.beginRendering(renderingInfo);
 
   command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *graphics_pipeline);
+  command_buffer.bindVertexBuffers(0, *vertex_buffer, {0});
   command_buffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swap_chain_extent.width), static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f));
   command_buffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swap_chain_extent));
-  command_buffer.draw(3, 1, 0, 0);
+  command_buffer.draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
 
   // End rendering
   command_buffer.endRendering();
