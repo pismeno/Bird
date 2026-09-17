@@ -49,6 +49,7 @@ class SceneFactory {
  * @note Asserts that the manager name must be unique.
  */
   template <typename T>
+  requires std::derived_from<T, INodeManager> && std::default_initializable<T>
   void register_manager() {
     std::string name = T::MANAGER_NAME;
 
