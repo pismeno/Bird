@@ -1,14 +1,14 @@
 #pragma once
 
-#include <bird_core/node_system/scene.hpp>
-#include <bird_core/node_system/inode_manager.hpp>
+#include <node_system/scene.hpp>
+#include <node_system/inode_manager.hpp>
 
 #include <memory>
 #include <functional>
 #include <cassert>
 
-#include <bird_core/node_system/node_types.hpp>
-#include <bird_core/utils/result.hpp>
+#include <node_system/node_types.hpp>
+#include <utils/result.hpp>
 
 namespace bird::node_system {
 

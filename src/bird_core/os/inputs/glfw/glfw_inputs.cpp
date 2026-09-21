@@ -1,5 +1,5 @@
 #include "glfw_inputs.hpp"
-#include <bird_core/os/inputs.hpp>
+#include <os/inputs.hpp>
 
 #include "GLFW/glfw3.h"
 #include "os/windowing/glfw/glfw_window.hpp"

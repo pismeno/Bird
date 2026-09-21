@@ -1,5 +1,5 @@
-#include <bird_core/node_system/scene.hpp>
-#include <bird_core/node_system/node_types.hpp>
+#include <node_system/scene.hpp>
+#include <node_system/node_types.hpp>
 
 #include <memory>
 #include <utility>
@@ -7,10 +7,10 @@
 #include <cstdint>
 #include <algorithm>
 
-#include <bird_core/utils/result.hpp>
-#include <bird_core/node_system/managers/transform_manager.hpp>
-#include <bird_core/node_system/managers/drawable_manager.hpp>
-#include <bird_core/node_system/node_handle.hpp>
+#include <utils/result.hpp>
+#include <node_system/managers/transform_manager.hpp>
+#include <node_system/managers/drawable_manager.hpp>
+#include <node_system/node_handle.hpp>
 
 namespace bird::node_system {
 

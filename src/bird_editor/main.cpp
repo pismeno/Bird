@@ -3,8 +3,8 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include <bird_core/os/iwindow.hpp>
-#include <bird_core/rendering/irenderer.hpp>
+#include <os/iwindow.hpp>
+#include <rendering/irenderer.hpp>
 #include "glslang/Public/ShaderLang.h"
 
 int main() {

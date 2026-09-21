@@ -11,7 +11,7 @@
 #include <nlohmann/json.hpp>
 
 #include "node_types.hpp"
-#include <bird_core/utils/result.hpp>
+#include <utils/result.hpp>
 
 namespace bird::node_system {
 

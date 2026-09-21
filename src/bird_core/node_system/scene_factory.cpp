@@ -1,5 +1,5 @@
-#include <bird_core/node_system/scene_factory.hpp>
-#include <bird_core/node_system/scene.hpp>
+#include <node_system/scene_factory.hpp>
+#include <node_system/scene.hpp>
 
 #include <memory>
 #include <functional>
@@ -9,7 +9,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include <bird_core/utils/result.hpp>
+#include <utils/result.hpp>
 
 namespace bird::node_system {
 

@@ -1,10 +1,10 @@
-#include <bird_core/node_system/managers/drawable_manager.hpp>
+#include <node_system/managers/drawable_manager.hpp>
 
 #include <cstdint>
 
 #include <nlohmann/json.hpp>
 
-#include <bird_core/utils/result.hpp>
+#include <utils/result.hpp>
 
 namespace bird::node_system::managers {
 

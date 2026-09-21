@@ -1,11 +1,11 @@
 #pragma once
 
-#include <bird_core/os/iwindow.hpp>
+#include <os/iwindow.hpp>
 
 #include "GLFW/glfw3.h"
 
 #include "os/inputs/glfw/glfw_inputs.hpp"
-#include <bird_core/utils/result.hpp>
+#include <utils/result.hpp>
 
 namespace bird {
 

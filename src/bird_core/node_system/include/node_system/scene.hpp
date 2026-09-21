@@ -13,10 +13,10 @@
 #include <glm/vec2.hpp>
 #include <nlohmann/json.hpp>
 
-#include <bird_core/utils/result.hpp>
-#include <bird_core/utils/string_hash.hpp>
-#include <bird_core/node_system/inode_manager.hpp>
-#include <bird_core/node_system/node_handle.hpp>
+#include <utils/result.hpp>
+#include <utils/string_hash.hpp>
+#include <node_system/inode_manager.hpp>
+#include <node_system/node_handle.hpp>
 
 namespace bird::node_system {
 

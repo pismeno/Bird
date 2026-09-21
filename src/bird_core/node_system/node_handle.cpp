@@ -1,6 +1,6 @@
-#include <bird_core/node_system/node_handle.hpp>
+#include <node_system/node_handle.hpp>
 
-#include <bird_core/node_system/scene.hpp>
+#include <node_system/scene.hpp>
 
 namespace bird::node_system {
 

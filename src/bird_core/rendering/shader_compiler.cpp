@@ -1,4 +1,4 @@
-#include <bird_core/rendering/shader_compiler.hpp>
+#include <rendering/shader_compiler.hpp>
 
 #include <glslang/Public/ShaderLang.h>
 #include <glslang/Include/glslang_c_interface.h>

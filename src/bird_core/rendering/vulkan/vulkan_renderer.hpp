@@ -1,6 +1,6 @@
 #pragma once
 
-#include <bird_core/rendering/irenderer.hpp>
+#include <rendering/irenderer.hpp>
 
 #ifdef BIRD_PLATFORM_WINDOWS
 #ifndef NOMINMAX
@@ -20,8 +20,8 @@
 #include <string>
 #include <memory>
 
-#include <bird_core/utils/result.hpp>
-#include <bird_core/rendering/render_command.hpp>
+#include <utils/result.hpp>
+#include <resources/render_command.hpp>
 
 namespace bird {
 

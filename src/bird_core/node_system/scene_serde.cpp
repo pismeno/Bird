@@ -1,8 +1,9 @@
-#include <bird_core/node_system/scene.hpp>
+#include <node_system/scene.hpp>
 
 #include <iostream>
 
 #include <nlohmann/json.hpp>
+#include <utils/result.hpp>
 
 namespace bird::node_system {
 
