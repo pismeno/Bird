@@ -8,8 +8,8 @@
 #include <memory>
 #include <filesystem>
 
-#include "rendering/shader_compiler.hpp"
-#include "utils/result.hpp"
+#include <bird_core/rendering/shader_compiler.hpp>
+#include <bird_core/utils/result.hpp>
 
 namespace bird {
 

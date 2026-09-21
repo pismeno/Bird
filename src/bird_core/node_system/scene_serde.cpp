@@ -1,4 +1,4 @@
-#include "scene.hpp"
+#include <bird_core/node_system/scene.hpp>
 
 #include <iostream>
 

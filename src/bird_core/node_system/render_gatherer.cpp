@@ -1,13 +1,13 @@
-#include "node_system/render_gatherer.hpp"
+#include <bird_core/node_system/render_gatherer.hpp>
 
 #include <vector>
 
 #include <glm/glm.hpp>
 
-#include "node_system/scene.hpp"
-#include "node_system/managers/drawable_manager.hpp"
-#include "node_system/managers/transform_manager.hpp"
-#include "rendering/render_command.hpp"
+#include <bird_core/node_system/scene.hpp>
+#include <bird_core/node_system/managers/drawable_manager.hpp>
+#include <bird_core/node_system/managers/transform_manager.hpp>
+#include <bird_core/rendering/render_command.hpp>
 
 namespace bird::node_system {
 

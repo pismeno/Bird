@@ -1,4 +1,4 @@
-#include "inode_manager.hpp"
+#include <bird_core/node_system/inode_manager.hpp>
 
 namespace bird::node_system {
 

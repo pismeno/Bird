@@ -1,10 +1,10 @@
-#include "rendering/irenderer.hpp"
+#include <bird_core/rendering/irenderer.hpp>
 
 #ifdef BIRD_PLATFORM_APPLE
 #include "rendering/metal/metal_renderer.hpp"
 #endif
 
-#include "utils/result.hpp"
+#include <bird_core/utils/result.hpp>
 #include "rendering/vulkan/vulkan_renderer.hpp"
 
 namespace bird {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "node_system/inode_manager.hpp"
+#include <bird_core/node_system/inode_manager.hpp>
 
 #include <vector>
 #include <cstdint>
@@ -9,8 +9,8 @@
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
 
-#include "utils/result.hpp"
-#include "node_system/node_types.hpp"
+#include <bird_core/utils/result.hpp>
+#include <bird_core/node_system/node_types.hpp>
 
 namespace bird::node_system::managers {
 

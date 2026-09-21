@@ -1,12 +1,12 @@
 #pragma once
 
-#include "node_system/inode_manager.hpp"
+#include <bird_core/node_system/inode_manager.hpp>
 
 #include <vector>
 #include <cstdint>
 #include <limits>
 
-#include "node_system/node_types.hpp"
+#include <bird_core/node_system/node_types.hpp>
 
 namespace bird::node_system::managers {
 

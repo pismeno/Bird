@@ -1,8 +1,8 @@
-#include "rendering/texture.hpp"
+#include <bird_core/rendering/texture.hpp>
 #include <cassert>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
+#include <stb_image.h>
 
 #ifdef BIRD_PLATFORM_APPLE
 Texture2D::Texture2D(const char* filepath, MTL::Device* metal_device) {

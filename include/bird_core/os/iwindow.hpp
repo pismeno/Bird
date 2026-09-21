@@ -4,8 +4,8 @@
 #include <memory>
 #include <string>
 
-#include "inputs/inputs.hpp"
-#include "utils/result.hpp"
+#include <bird_core/os/inputs.hpp>
+#include <bird_core/utils/result.hpp>
 
 namespace bird {
 

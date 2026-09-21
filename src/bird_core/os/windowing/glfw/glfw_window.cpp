@@ -4,12 +4,12 @@
 #define  GLFW_EXPOSE_NATIVE_COCOA
 #endif
 
-#include "windowing/glfw/glfw_window.hpp"
+#include "glfw_window.hpp"
 
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-#include "inputs/glfw/glfw_inputs.hpp"
+#include "os/inputs/glfw/glfw_inputs.hpp"
 
 namespace bird {
 

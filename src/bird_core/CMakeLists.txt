@@ -1,33 +1,5 @@
-# It is highly recommended to use explicit file lists instead of GLOB,
-# but if using GLOB, let's make sure it doesn't grab .mm files on Windows at all.
-file(GLOB_RECURSE CORE_SOURCES "*.cpp" "*.hpp" "*.h")
-
-# Remove everything in the external/ and build/ directories from CORE_SOURCES
-list(FILTER CORE_SOURCES EXCLUDE REGEX "^${CMAKE_CURRENT_SOURCE_DIR}/external/.*")
-list(FILTER CORE_SOURCES EXCLUDE REGEX "^${CMAKE_CURRENT_SOURCE_DIR}/cmake-build-.*")
-
-# On Windows/MinGW, explicitly strip out any Objective-C++ (.mm) files if GLOB accidentally found them
-if (NOT APPLE)
-    list(FILTER CORE_SOURCES EXCLUDE REGEX ".*\\.mm$")
-endif()
-
-# Filter out Apple/Metal-exclusive files globally
-list(FILTER CORE_SOURCES EXCLUDE REGEX "metal_renderer\\.cpp")
-list(FILTER CORE_SOURCES EXCLUDE REGEX "mtl_implementation\\.cpp")
-list(FILTER CORE_SOURCES EXCLUDE REGEX "mtl_implementation\\.mm")
-list(FILTER CORE_SOURCES EXCLUDE REGEX "GLFWBridge\\.mm")
-
 if (APPLE)
-    # Re-add Apple/Metal files with explicit absolute paths
-    list(APPEND CORE_SOURCES
-            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/metal_renderer.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/mtl_implementation.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/mtl_implementation.mm"
-            "${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/CocoaBridge.mm"
-    )
-    # Define macro for conditional preprocessor guarding in C++
     add_compile_definitions(BIRD_PLATFORM_APPLE)
-
 elseif (UNIX AND NOT APPLE)
     add_compile_definitions(BIRD_PLATFORM_LINUX)
 
@@ -38,18 +10,132 @@ endif()
 # Force SPIRV-Cross to use assertions instead of 'throw' since exceptions are disabled
 add_compile_definitions(SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS=1)
 
-# Now create the library using the filtered/curated list
-add_library(BirdCore STATIC ${CORE_SOURCES})
+# Utils
+add_library(BirdUtils INTERFACE)
 
-# Find Vulkan on Windows
-if (WIN32)
-    find_package(Vulkan REQUIRED)
-endif()
+target_sources(BirdUtils INTERFACE
+        ${CMAKE_SOURCE_DIR}/include/bird_core/utils/result.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/utils/string_hash.hpp
+)
 
-# Public dependencies
-target_link_libraries(BirdCore
-        PUBLIC
+target_include_directories(BirdUtils INTERFACE ${CMAKE_SOURCE_DIR}/include)
+
+# OS Abstraction Layer
+add_library(BirdOS STATIC)
+
+target_sources(BirdOS
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/os/windowing/glfw/glfw_window.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/os/windowing/glfw/glfw_window.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/os/windowing/iwindow.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/os/inputs/glfw/glfw_inputs.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/os/inputs/glfw/glfw_inputs.hpp
+
+        ${CMAKE_SOURCE_DIR}/include/bird_core/os/iwindow.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/os/inputs.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/os/input_codes.hpp
+)
+
+target_include_directories(BirdOS PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(BirdOS PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(BirdOS PRIVATE
         glfw
+        glm::glm
+        BirdUtils
+)
+
+# Resource Management Layer
+add_library(BirdResources STATIC)
+
+target_sources(BirdResources
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/placeholder.cpp
+)
+
+target_include_directories(BirdResources PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(BirdResources PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(BirdResources PUBLIC
+        BirdOS
+        BirdUtils
+)
+
+# Node System Layer
+add_library(BirdNodeSystem STATIC)
+
+target_sources(BirdNodeSystem
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/node_system/inode_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_handle.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/node_system/render_gatherer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene_factory.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene_serde.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/node_system/managers/drawable_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/node_system/managers/transform_manager.cpp
+
+        ${CMAKE_SOURCE_DIR}/include/bird_core/node_system/inode_manager.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/node_system/node.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/node_system/node_handle.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/node_system/render_gatherer.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/node_system/node_types.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/node_system/scene.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/node_system/scene_factory.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/node_system/managers/drawable_manager.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/node_system/managers/transform_manager.hpp
+)
+
+target_include_directories(BirdNodeSystem PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(BirdNodeSystem PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        "${CMAKE_SOURCE_DIR}/external/json/include"
+)
+
+target_link_libraries(BirdNodeSystem PUBLIC BirdResources)
+
+target_link_libraries(BirdNodeSystem PRIVATE
+        glm::glm
+)
+
+add_custom_command(TARGET BirdNodeSystem POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/node_system"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_definitions.json"
+        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene_definitions.json"
+        "${CMAKE_BINARY_DIR}/node_system/"
+        COMMENT "Copying node and scene JSON definitions to build directory"
+)
+
+# Rendering Layer
+add_library(BirdRendering STATIC)
+
+target_sources(BirdRendering
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/irenderer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shader_compiler.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/stbi_image.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/texture.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.hpp
+
+        ${CMAKE_SOURCE_DIR}/include/bird_core/rendering/irenderer.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/rendering/render_command.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/rendering/shader_compiler.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/rendering/texture.hpp
+        ${CMAKE_SOURCE_DIR}/include/bird_core/rendering/vertex.hpp
+)
+
+target_include_directories(BirdRendering PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(BirdRendering PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        "${CMAKE_SOURCE_DIR}/external/stb"
+        "${CMAKE_SOURCE_DIR}/external/Vulkan-Headers/include"
+)
+
+target_link_libraries(BirdRendering PUBLIC BirdResources)
+
+target_link_libraries(BirdRendering PRIVATE
         glm::glm
         spirv-cross-core
         spirv-cross-glsl
@@ -59,14 +145,43 @@ target_link_libraries(BirdCore
         SPIRV
 )
 
+add_custom_command(TARGET BirdRendering POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/shaders"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders"
+        "${CMAKE_BINARY_DIR}/shaders"
+        COMMENT "Copying shaders to build directory"
+)
+
+# BirdCore Interface Library
+add_library(BirdCore INTERFACE)
+
+target_link_libraries(BirdCore INTERFACE
+        BirdNodeSystem
+        BirdRendering
+        BirdResources
+        BirdOS
+)
+
+# Find Vulkan on Windows
+if (WIN32)
+    find_package(Vulkan REQUIRED)
+endif()
+
+# Public dependencies
+target_link_libraries(BirdCore
+        INTERFACE
+        glm::glm
+)
+
 # Link Vulkan to BirdCore if it was found
 if (Vulkan_FOUND)
-    target_link_libraries(BirdCore PUBLIC Vulkan::Vulkan)
+    target_link_libraries(BirdCore INTERFACE Vulkan::Vulkan)
 endif()
 
 # Platform-specific private dependencies
 if (APPLE)
-    target_link_libraries(BirdCore PRIVATE
+    target_link_libraries(BirdCore INTERFACE
             "-framework Metal"
             "-framework Foundation"
             "-framework QuartzCore"
@@ -75,7 +190,7 @@ if (APPLE)
 endif()
 
 # Ensure we include the directories correctly.
-target_include_directories(BirdCore PUBLIC
+target_include_directories(BirdCore INTERFACE
         "${CMAKE_SOURCE_DIR}/external/metal-cpp"
         "${CMAKE_SOURCE_DIR}/external/glslang"
         "${CMAKE_SOURCE_DIR}/external/spirv-cross"
@@ -84,24 +199,4 @@ target_include_directories(BirdCore PUBLIC
         "${CMAKE_SOURCE_DIR}/external/json/include"
         "${CMAKE_SOURCE_DIR}/external/Vulkan-Headers/include"
         ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-# Automatically copy JSON definitions to the build directory every time BirdCore builds
-add_custom_command(TARGET BirdCore POST_BUILD
-        # Ensure the destination directory exists
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/node_system"
-        # Copy the files if they have been modified
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_definitions.json"
-        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene_definitions.json"
-        "${CMAKE_BINARY_DIR}/node_system/"
-        COMMENT "Copying node and scene JSON definitions to build directory"
-)
-
-add_custom_command(TARGET BirdCore POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/shaders"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders"
-        "${CMAKE_BINARY_DIR}/shaders"
-        COMMENT "Copying shaders to build directory"
 )

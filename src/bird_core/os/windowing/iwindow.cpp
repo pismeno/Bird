@@ -1,9 +1,9 @@
-#include "windowing/iwindow.hpp"
+#include <bird_core/os/iwindow.hpp>
 
 #include <memory>
 
-#include "windowing/glfw/glfw_window.hpp"
-#include "utils/result.hpp"
+#include "os/windowing/glfw/glfw_window.hpp"
+#include <bird_core/utils/result.hpp>
 
 namespace bird {
 

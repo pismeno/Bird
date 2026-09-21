@@ -1,17 +1,13 @@
 cmake_minimum_required(VERSION 3.28)
 
-# Set compiler before project() call
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(CMAKE_C_COMPILER clang)
-    set(CMAKE_CXX_COMPILER clang++)
-endif()
+# set the project name and languages
+project(Bird LANGUAGES CXX)
 
-project(Bird LANGUAGES C CXX)
-
+# set the C++ standard to C++20
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# External dependencies
+# external library flags
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
@@ -21,12 +17,12 @@ set(GLSLANG_TESTS OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
 set(ENABLE_OPT OFF CACHE BOOL "" FORCE)
 
+# external subdirectories
 add_subdirectory(external/glfw)
 add_subdirectory(external/glm)
 add_subdirectory(external/spirv-cross)
 add_subdirectory(external/glslang)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-
+# project subdirectories
 add_subdirectory(src/bird_core)
 add_subdirectory(src/bird_editor)

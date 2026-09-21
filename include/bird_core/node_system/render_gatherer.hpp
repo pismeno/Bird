@@ -1,7 +1,7 @@
 #pragma once
 
-#include "rendering/render_command.hpp"
-#include "node_system/scene.hpp"
+#include <bird_core/rendering/render_command.hpp>
+#include <bird_core/node_system/scene.hpp>
 
 namespace bird::node_system {
 

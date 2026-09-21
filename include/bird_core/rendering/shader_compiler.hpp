@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 
-#include "utils/result.hpp"
+#include <bird_core/utils/result.hpp>
 
 namespace bird {
 

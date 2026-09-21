@@ -4,8 +4,8 @@
 
 #include <cstdint>
 
-#include "rendering/render_command.hpp"
-#include "utils/result.hpp"
+#include <bird_core/rendering/render_command.hpp>
+#include <bird_core/utils/result.hpp>
 
 namespace bird {
 
