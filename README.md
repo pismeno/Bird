@@ -13,9 +13,15 @@ Bird Engine is a Specialized 2d game engine.
 - possibility to export scenes into lvl files
 - build in support for saving loading game states (in-game game save files)
 - uses FlatBuffers
+
 ### Plugins
 - 3rd party plugins
 - specialized plugins for specific tasks, like datalog, physics
+
+## Architecture
+This engine uses relaxed layered architecture, meaning that the layers are not strictly separated, but the layers on top can communicate with every layer bellow it.
+
+![BirdEngine Architecture](docs/assets/architecture.drawio.svg)
 
 ## Used libraries
 - FlatBuffers
