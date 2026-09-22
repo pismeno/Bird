@@ -10,7 +10,7 @@
 #include <node_system/node_types.hpp>
 #include <utils/result.hpp>
 
-namespace bird::node_system {
+namespace bird {
 
 using ManagerFactory = std::function<std::unique_ptr<INodeManager>()>;
 
@@ -73,4 +73,4 @@ class SceneFactory {
   std::unordered_map<std::string, SceneDefinition> scene_definitions;
 };
 
-} // bird::node_system
+} // bird

@@ -18,7 +18,7 @@
 #include <node_system/inode_manager.hpp>
 #include <node_system/node_handle.hpp>
 
-namespace bird::node_system {
+namespace bird {
 
 class Scene {
 
@@ -85,4 +85,4 @@ class Scene {
   std::unordered_map<std::string, NodeDefinition, StringHash, std::equal_to<>> node_type_definitions;
 };
 
-} // bird::node_system
+} // bird

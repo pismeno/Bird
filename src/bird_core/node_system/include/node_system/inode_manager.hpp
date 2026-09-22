@@ -13,7 +13,7 @@
 #include "node_types.hpp"
 #include <utils/result.hpp>
 
-namespace bird::node_system {
+namespace bird {
 
 using namespace bird;
 
@@ -52,4 +52,4 @@ class NodeManagerBase : public INodeManager {
   }
 };
 
-} // bird::node_system
+} // bird

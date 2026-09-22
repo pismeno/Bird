@@ -1,7 +1,7 @@
 #include <node_system/inode_manager.hpp>
 
-namespace bird::node_system {
+namespace bird {
 
 std::size_t INodeManager::next_id = 0;
 
-} // bird::node_system
+} // bird

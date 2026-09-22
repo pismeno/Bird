@@ -3,7 +3,7 @@
 #include <resources/render_command.hpp>
 #include <node_system/scene.hpp>
 
-namespace bird::node_system {
+namespace bird {
 
 class RenderGatherer {
  public:
@@ -17,4 +17,4 @@ class RenderGatherer {
   std::vector<RenderCommand> gather_render_commands(Scene& scene);
 };
 
-} // bird::node_system
+} // bird

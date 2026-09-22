@@ -2,7 +2,7 @@
 
 #include <node_system/scene.hpp>
 
-namespace bird::node_system {
+namespace bird {
 
 [[nodiscard]] bool NodeHandle::is_valid() const noexcept {
   return scene->generations[node_id.index()] == node_id.generation();
@@ -13,4 +13,4 @@ namespace bird::node_system {
   return &scene->nodes[node_id.index()];
 }
 
-} // bird::node_system
+} // bird

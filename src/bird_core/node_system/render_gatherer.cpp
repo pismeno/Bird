@@ -9,9 +9,7 @@
 #include <node_system/managers/transform_manager.hpp>
 #include <resources/render_command.hpp>
 
-namespace bird::node_system {
-
-using namespace managers;
+namespace bird {
 
 std::vector<RenderCommand> RenderGatherer::gather_render_commands(Scene& scene) {
   auto drawable_manager = scene.get_manager<DrawableManager>();
@@ -41,4 +39,4 @@ std::vector<RenderCommand> RenderGatherer::gather_render_commands(Scene& scene) 
   return commands;
 }
 
-} // bird::node_system
+} // bird

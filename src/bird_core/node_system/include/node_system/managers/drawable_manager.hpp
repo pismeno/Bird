@@ -8,7 +8,7 @@
 
 #include <node_system/node_types.hpp>
 
-namespace bird::node_system::managers {
+namespace bird {
 
 struct Drawable {
   bool is_visible = false;
@@ -50,4 +50,4 @@ class DrawableManager : public NodeManagerBase<DrawableManager> {
   std::vector<Drawable> drawables;
 };
 
-} // bird::node_system::managers
+} // bird

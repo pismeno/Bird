@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-namespace bird::node_system {
+namespace bird {
 
 /**
  * @brief Unique identifier for a node. It consists of a 32-bit index and a 32-bit generation-counter.
@@ -50,4 +50,4 @@ inline constexpr uint32_t MAX_ACTIVE_NODES = 50000;
  */
 inline constexpr NodeID INVALID_NODE_ID = { std::numeric_limits<uint64_t>::max() };
 
-} // bird::node_system
+} // bird

@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace bird::resources {
+namespace bird {
 
 class IAssetPool { public: virtual ~IAssetPool() = default; };
 
@@ -154,4 +154,4 @@ inline void AssetHandle<T>::release_ref() {
   }
 }
 
-} // bird::resources
+} // bird

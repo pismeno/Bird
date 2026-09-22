@@ -1,94 +1,33 @@
 #include <iostream>
 
 #define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
-#include <osal/iwindow.hpp>
-#include <rendering/irenderer.hpp>
 #include "glslang/Public/ShaderLang.h"
+
+#include <editor/editor.hpp>
 
 int main() {
   using namespace bird;
 
-  glslang::InitializeProcess();
+  Editor editor = Editor();
 
-    if (!glfwInit()) {
-      std::cerr << "Failed to initialize GLFW" << std::endl;
-      return -1;
-    }
+  auto r_init = editor.init();
+  if (!r_init) {
+    std::cerr << r_init.error() << std::endl;
+    return 1;
+  }
 
-    auto window_result =
-        IWindow::create(WindowOptions{800, 600, "Bird Editor"});
+  editor.make_context_current();
 
-    if (!window_result) {
-      std::cerr << window_result.error() << std::endl;
-      return -1;
-    }
+  auto r_run = editor.run();
+  if (!r_run) {
+    std::cerr << r_run.error() << std::endl;
+    return 1;
+  }
 
-    std::unique_ptr<IWindow> window = std::move(window_result).value();
+  auto r_shutdown = editor.shutdown();
+  if (!r_shutdown) {
+    std::cerr << r_shutdown.error() << std::endl;
+  }
 
-    if (!window->init()) {
-      std::cerr << "Failed to create window" << std::endl;
-      glfwTerminate();
-      return -1;
-    }
-
-    auto renderer_result = IRenderer::create(bird::RendererType::Vulkan);
-    if (!renderer_result) {
-      std::cerr << renderer_result.error() << std::endl;
-      return -1;
-    }
-
-    std::unique_ptr<IRenderer> renderer = std::move(renderer_result).value();
-    auto r_attach_window_result = renderer->attach_window(
-        window->get_native_handle(),
-        window->get_framebuffer_width(),
-        window->get_framebuffer_height()
-        );
-
-    if (!r_attach_window_result) {
-      std::cerr << r_attach_window_result.error() << std::endl;
-      return -1;
-    }
-
-    auto r_init_result = renderer->init();
-    if (!r_init_result) {
-      std::cerr << r_init_result.error() << std::endl;
-      return -1;
-    }
-
-    while (!window->should_close()) {
-      window->update();
-      renderer->render();
-
-      if (renderer->needs_framebuffer_resize()) {
-        auto r_resize_framebuffer = renderer->resize_framebuffer(window->get_framebuffer_width(),window->get_framebuffer_height());
-        if (!r_resize_framebuffer) {
-          std::cerr << r_resize_framebuffer.error() << std::endl;
-          return -1;
-        }
-      }
-
-      if (renderer->is_context_lost()) {
-        std::cerr << "Renderer context lost" << std::endl;
-        return -1;
-      }
-    }
-
-    auto r_shutdown_result = renderer->shutdown();
-
-    if (!r_shutdown_result) {
-      std::cerr << r_shutdown_result.error() << std::endl;
-      return -1;
-    }
-
-    auto window_close_result = window->close();
-    if (!window_close_result) {
-      std::cerr << window_close_result.error() << std::endl;
-      return -1;
-    }
-
-  glfwTerminate();
-  glslang::FinalizeProcess();
   return 0;
 }

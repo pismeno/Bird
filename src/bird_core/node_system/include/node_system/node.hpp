@@ -6,7 +6,7 @@
 
 #include "node_types.hpp"
 
-namespace bird::node_system {
+namespace bird {
 
 class Scene;
 
@@ -27,4 +27,4 @@ class Node {
   std::vector<NodeID> children_ids;
 };
 
-} // bird::node_system
+} // bird

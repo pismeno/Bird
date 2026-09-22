@@ -12,7 +12,7 @@
 #include <utils/result.hpp>
 #include <node_system/node_types.hpp>
 
-namespace bird::node_system::managers {
+namespace bird {
 
 using TransformIndex = uint32_t;
 inline constexpr TransformIndex invalid_transform_index = std::numeric_limits<uint32_t>::max();
@@ -91,4 +91,4 @@ class TransformManager : public NodeManagerBase<TransformManager> {
   std::vector<TransformIndex> node_to_transform; // The Lookup Table: index is NodeID, value is TransformIndex
 };
 
-} // bird::node_system::managers
+} // bird

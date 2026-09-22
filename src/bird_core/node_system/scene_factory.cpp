@@ -11,7 +11,7 @@
 
 #include <utils/result.hpp>
 
-namespace bird::node_system {
+namespace bird {
 
 Result<std::unique_ptr<Scene>> SceneFactory::create_scene(const std::string& scene_type) const {
   auto scene_def_it = scene_definitions.find(scene_type);
@@ -192,4 +192,4 @@ Result<std::unique_ptr<Scene>> SceneFactory::load_scene_from(const std::string& 
   return std::move(scene);
 }
 
-} // bird::node_system
+} // bird

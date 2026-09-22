@@ -5,7 +5,7 @@ namespace bird {
 class IFileSystem;
 
 struct OSContext {
-  IFileSystem& file_system;
+  IFileSystem* file_system;
 };
 
 } // bird

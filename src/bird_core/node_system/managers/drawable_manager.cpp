@@ -6,7 +6,7 @@
 
 #include <utils/result.hpp>
 
-namespace bird::node_system::managers {
+namespace bird {
 
 void DrawableManager::on_node_destroyed(NodeID node_id) noexcept {
   drawables[node_id.index()].is_visible = false;
@@ -71,4 +71,4 @@ Result<void> DrawableManager::on_deserialize_scene(const nlohmann::json &json) {
   return bird::ok();
 }
 
-} // bird::node_system::managers
+} // bird

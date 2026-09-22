@@ -2,10 +2,14 @@
 
 namespace bird {
 
+struct OSContext;
+
 class AssetManager;
 
 struct ResourcesContext {
-  AssetManager& asset_manager;
+  OSContext* os_context;
+
+  AssetManager* asset_manager;
 };
 
 } // bird

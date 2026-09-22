@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <limits>
 
-namespace bird::resources {
+namespace bird {
 
 // 1. Forward declare the pool
 template <typename T> class AssetPool;
@@ -42,4 +42,4 @@ class AssetHandle {
   uint32_t generation = 0;
 };
 
-} // bird::resources
+} // bird

@@ -12,9 +12,7 @@
 #include <node_system/managers/drawable_manager.hpp>
 #include <node_system/node_handle.hpp>
 
-namespace bird::node_system {
-
-using namespace managers;
+namespace bird {
 
 [[nodiscard]] NodeID Scene::generate_id() {
   if (!recycled_ids.empty()) {
@@ -195,4 +193,4 @@ void Scene::add_node_type(std::string_view node_type, std::span<const std::strin
   node_type_definitions.emplace(node_type, std::move(node_definition));
 }
 
-} // bird::node_system
+} // bird

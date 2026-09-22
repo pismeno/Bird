@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <glm/glm.hpp>
 
-namespace bird::node_system::managers {
+namespace bird {
 
 Result<void> TransformManager::set_node_position(NodeID node_id, glm::vec2 pos) {
   TransformInfo* transform = get_transform(node_id.index());
@@ -344,4 +344,4 @@ Result<void> TransformManager::on_deserialize_scene(const nlohmann::json& json) 
   return bird::ok();
 }
 
-} // bird::node_system::managers
+} // bird

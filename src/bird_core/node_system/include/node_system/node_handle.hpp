@@ -2,7 +2,7 @@
 
 #include "node_types.hpp"
 
-namespace bird::node_system {
+namespace bird {
 
 class Scene;
 class Node;
@@ -32,4 +32,4 @@ class NodeHandle {
   NodeID node_id;
 };
 
-} // bird::node_system
+} // bird
