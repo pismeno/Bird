@@ -1,8 +1,8 @@
-#include <os/iwindow.hpp>
+#include <osal/iwindow.hpp>
 
 #include <memory>
 
-#include "os/windowing/glfw/glfw_window.hpp"
+#include "osal/windowing/glfw/glfw_window.hpp"
 #include <utils/result.hpp>
 
 namespace bird {

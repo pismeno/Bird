@@ -1,10 +1,10 @@
 #pragma once
 
-#include <os/iwindow.hpp>
+#include <osal/iwindow.hpp>
 
 #include "GLFW/glfw3.h"
 
-#include "os/inputs/glfw/glfw_inputs.hpp"
+#include "osal/inputs/glfw/glfw_inputs.hpp"
 #include <utils/result.hpp>
 
 namespace bird {

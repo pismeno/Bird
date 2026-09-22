@@ -17,25 +17,29 @@ target_sources(BirdUtils INTERFACE
 
 target_include_directories(BirdUtils INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/utils/include)
 
-add_library(BirdOS STATIC)
+add_library(BirdOSAL STATIC)
 
-target_sources(BirdOS
+target_sources(BirdOSAL
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/os/windowing/glfw/glfw_window.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/os/windowing/glfw/glfw_window.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/os/windowing/iwindow.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/os/inputs/glfw/glfw_inputs.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/os/inputs/glfw/glfw_inputs.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/windowing/glfw/glfw_window.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/windowing/glfw/glfw_window.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/windowing/iwindow.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/inputs/glfw/glfw_inputs.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/inputs/glfw/glfw_inputs.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/file_system/ifile_system.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/file_system/windows_file_system.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/file_system/windows_file_system.hpp
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/os/include/os/iwindow.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/os/include/os/inputs.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/os/include/os/input_codes.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/include/osal/iwindow.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/include/osal/inputs.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/include/osal/input_codes.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/include/osal/ifile_system.hpp
 )
 
-target_include_directories(BirdOS PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/os/include)
-target_include_directories(BirdOS PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(BirdOSAL PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/osal/include)
+target_include_directories(BirdOSAL PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(BirdOS PRIVATE
+target_link_libraries(BirdOSAL PRIVATE
         glfw
         glm::glm
         BirdUtils
@@ -57,7 +61,7 @@ target_include_directories(BirdResources PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/reso
 target_include_directories(BirdResources PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(BirdResources PUBLIC
-        BirdOS
+        BirdOSAL
         BirdUtils
 )
 
@@ -154,7 +158,7 @@ target_link_libraries(BirdCore INTERFACE
         BirdNodeSystem
         BirdRendering
         BirdResources
-        BirdOS
+        BirdOSAL
 )
 
 if (WIN32)

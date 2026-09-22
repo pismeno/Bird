@@ -3,7 +3,7 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include <os/iwindow.hpp>
+#include <osal/iwindow.hpp>
 #include <rendering/irenderer.hpp>
 #include "glslang/Public/ShaderLang.h"
 
