@@ -45,9 +45,12 @@ add_library(BirdResources STATIC)
 
 target_sources(BirdResources
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/resources/placeholder.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_handle.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_pool.hpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/render_command.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/asset_handle.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/binary_asset_manager.hpp
 )
 
 target_include_directories(BirdResources PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/resources/include)
