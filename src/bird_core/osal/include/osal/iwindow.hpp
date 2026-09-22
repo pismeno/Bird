@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include <os/inputs.hpp>
+#include <osal/inputs.hpp>
 #include <utils/result.hpp>
 
 namespace bird {

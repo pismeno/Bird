@@ -1,8 +1,8 @@
 #include "glfw_inputs.hpp"
-#include <os/inputs.hpp>
+#include <osal/inputs.hpp>
 
 #include "GLFW/glfw3.h"
-#include "os/windowing/glfw/glfw_window.hpp"
+#include "osal/windowing/glfw/glfw_window.hpp"
 
 namespace bird::inputs {
 
