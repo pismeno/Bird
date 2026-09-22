@@ -1,6 +1,6 @@
 #include <resources/asset_handle.hpp>
 
-namespace bird::resources {
+namespace bird {
 
 template<typename T>
 [[nodiscard]] inline bool AssetHandle<T>::is_valid() const noexcept {
@@ -14,4 +14,4 @@ template<typename T>
   return pool->resolve(index, generation);
 }
 
-} // bird::resources
+} // bird

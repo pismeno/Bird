@@ -11,7 +11,7 @@
 #include <utils/string_hash.hpp>
 #include "resources/asset_pool.hpp"
 
-namespace bird::resources {
+namespace bird {
 
 struct BinaryAsset {
   alignas(8) std::vector<uint8_t> data;
@@ -45,4 +45,4 @@ class AssetManager {
   std::unordered_map<std::string, std::unique_ptr<IAssetPool>, StringHash, std::equal_to<>> asset_pools;
 };
 
-} // bird::resources
+} // bird

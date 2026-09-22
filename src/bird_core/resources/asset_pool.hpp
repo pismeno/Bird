@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-namespace bird::resources {
+namespace bird {
 
 class IAssetPool { public: virtual ~IAssetPool() = default; };
 
@@ -32,4 +32,4 @@ class AssetPool : public IAssetPool {
   std::vector<uint32_t> generations;
 };
 
-} // bird::resources
+} // bird
