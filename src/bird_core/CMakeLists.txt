@@ -34,6 +34,7 @@ target_sources(BirdOSAL
         ${CMAKE_CURRENT_SOURCE_DIR}/osal/include/osal/inputs.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/osal/include/osal/input_codes.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/osal/include/osal/ifile_system.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/include/osal/os_context.hpp
 )
 
 target_include_directories(BirdOSAL PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/osal/include)
