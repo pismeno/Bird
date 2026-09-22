@@ -20,14 +20,14 @@ struct BinaryAsset {
 struct ShaderAsset : public BinaryAsset { static constexpr const char* TYPE_ID = "shader_asset"; };
 struct GenericBinaryAsset : public BinaryAsset { static constexpr const char* TYPE_ID = "generic_binary_asset"; };
 
-class BinaryAssetManager {
+class AssetManager {
 
   template <typename> friend class AssetHandle;
 
  public:
-  template <typename T>
-  AssetHandle<T> acquire(const std::string& filepath) {
-    return get_pool<T>()->load(filepath);
+  template <typename T, typename... Args>
+  AssetHandle<T> acquire(const std::string& filepath, Args&&... args) {
+    return get_pool<T>()->load(filepath, std::forward<Args>(args)...);
   }
 
  private:
