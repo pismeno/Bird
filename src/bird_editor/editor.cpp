@@ -22,7 +22,6 @@ Result<void> Editor::init() {
   }
   file_system = std::move(r_create_file_system).value();
 
-  asset_manager = std::make_unique<AssetManager>();
   scene_factory = std::make_unique<SceneFactory>();
 
   glslang::InitializeProcess();
@@ -126,6 +125,8 @@ void Editor::make_context_current() {
       .os_context = &os_context,
       .asset_manager = asset_manager.get()
   };
+
+  asset_manager = std::make_unique<AssetManager>(resources_context);
 
   node_system_context = {
     .resources_context = &resources_context,

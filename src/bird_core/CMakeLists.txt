@@ -115,14 +115,12 @@ add_library(BirdRendering STATIC)
 target_sources(BirdRendering
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/irenderer.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shader_compiler.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/stbi_image.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/texture.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.hpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/irenderer.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/shader_compiler.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/texture.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/vertex.hpp
 )
