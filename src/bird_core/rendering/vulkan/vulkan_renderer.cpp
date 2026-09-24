@@ -361,10 +361,10 @@ Result<void> VulkanRenderer::create_image_views() {
 
 Result<void> VulkanRenderer::create_graphics_pipeline() {
   // loading the shaders from files
-  auto r_load_vert_shader_module = load_shader_module<VertexShaderAsset>("shaders/triangle.vert.glsl");
+  auto r_load_vert_shader_module = load_shader_module<VertexShaderAsset>("core://shaders/triangle.vert.spv");
   if (!r_load_vert_shader_module) return bird::fail(r_load_vert_shader_module.error());
 
-  auto r_load_frag_shader_module = load_shader_module<FragmentShaderAsset>("shaders/triangle.frag.glsl");
+  auto r_load_frag_shader_module = load_shader_module<FragmentShaderAsset>("core://shaders/triangle.frag.spv");
   if (!r_load_frag_shader_module) return bird::fail(r_load_frag_shader_module.error());
 
   std::unique_ptr<vk::raii::ShaderModule> vert_shader_module = std::move(r_load_vert_shader_module).value();

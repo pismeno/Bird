@@ -13,10 +13,6 @@ namespace bird {
 
 class ShaderCompiler {
  public:
-  ShaderCompiler(EditorContext &context)
-      : asset_manager(context.resources_context->asset_manager),
-        file_system(context.os_context->file_system) {}
-
   Result<void> compile_glsl_to_spirv(const std::string& glsl_filepath, const std::string& spv_output_filepath);
 
   Result<std::vector<uint32_t>> compile_source_to_spirv(const std::string& glsl_source, const std::string& stage);
@@ -24,7 +20,12 @@ class ShaderCompiler {
   Result<std::string> translate_spirv_to_msl(const std::vector<uint32_t>& spirv_code);
   Result<std::string> compile_glsl_to_msl(const std::string& glsl_source, const std::string& stage);
 
+  static Result<std::unique_ptr<ShaderCompiler>> create(EditorContext& editor_context);
  private:
+  ShaderCompiler() = default;
+
+  Result<void> init(EditorContext& editor_context);
+
   AssetManager* asset_manager;
   IFileSystem* file_system;
 };

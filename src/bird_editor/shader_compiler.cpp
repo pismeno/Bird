@@ -40,6 +40,19 @@ std::string extract_stage(std::string_view filepath) {
 }
 }
 
+Result<std::unique_ptr<ShaderCompiler>> ShaderCompiler::create(EditorContext& editor_context) {
+    auto compiler = std::unique_ptr<ShaderCompiler>(new ShaderCompiler());
+    auto r_init = compiler->init(editor_context);
+    if (!r_init) return bird::fail(r_init.error());
+    return std::move(compiler);
+}
+
+Result<void> ShaderCompiler::init(EditorContext& editor_context) {
+    file_system = editor_context.os_context->file_system;
+    asset_manager = editor_context.resources_context->asset_manager;
+    return bird::ok();
+}
+
 Result<std::vector<uint32_t>> ShaderCompiler::compile_source_to_spirv(const std::string& glsl_source, const std::string& stage) {
     auto r_glslang_stage = detect_glslang_stage(stage);
     if (!r_glslang_stage) return bird::fail(r_glslang_stage.error());

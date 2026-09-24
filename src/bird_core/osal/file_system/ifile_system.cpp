@@ -12,9 +12,10 @@ namespace bird {
 
 Result<std::unique_ptr<IFileSystem>> IFileSystem::create() {
 #ifdef BIRD_PLATFORM_WINDOWS
-  return std::make_unique<WindowsFileSystem>();
-#endif
+  return std::unique_ptr<IFileSystem>(new WindowsFileSystem());
+#else
   return bird::fail("Unsupported platform");
+#endif
 }
 
-} // bird
+} //

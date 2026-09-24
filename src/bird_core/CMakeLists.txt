@@ -147,13 +147,6 @@ target_link_libraries(BirdRendering PRIVATE
         SPIRV
 )
 
-add_custom_command(TARGET BirdRendering POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/shaders"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders"
-        "${CMAKE_BINARY_DIR}/shaders"
-)
-
 add_library(BirdCore INTERFACE)
 
 target_link_libraries(BirdCore INTERFACE

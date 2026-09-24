@@ -12,6 +12,7 @@
 #include <osal/ifile_system.hpp>
 #include <resources/asset_manager.hpp>
 #include <node_system/scene_factory.hpp>
+#include "editor/shader_compiler.hpp"
 
 namespace bird {
 
@@ -21,6 +22,9 @@ Result<void> Editor::init() {
     return bird::fail(r_create_file_system.error());
   }
   file_system = std::move(r_create_file_system).value();
+
+  file_system->mount("core", "../engine_data/core");
+  file_system->mount("editor", "../engine_data/editor");
 
   scene_factory = std::make_unique<SceneFactory>();
 
@@ -68,19 +72,35 @@ Result<void> Editor::init() {
       window->get_framebuffer_height()
   };
 
-  auto renderer_result = IRenderer::create(renderer_options, rendering_context);
-  if (!renderer_result) {
-    return bird::fail(renderer_result.error());
-  }
-
-  renderer = std::move(renderer_result).value();
-
   context = {
       .node_system_context = &node_system_context,
       .rendering_context = &rendering_context,
       .os_context = &os_context,
       .resources_context = &resources_context
   };
+
+  auto r_create_sc = ShaderCompiler::create(context);
+  if (!r_create_sc) return bird::fail(r_create_sc.error());
+
+  shader_compiler = std::move(r_create_sc).value();
+
+  context.shader_compiler = shader_compiler.get();
+
+  auto r_s_c1 = shader_compiler->compile_glsl_to_spirv("core://shaders/forward_2d.vert.glsl", "core://shaders/forward_2d.vert.spv");
+  if (!r_s_c1) return bird::fail(r_s_c1.error());
+  auto r_s_c2 = shader_compiler->compile_glsl_to_spirv("core://shaders/forward_2d.frag.glsl", "core://shaders/forward_2d.frag.spv");
+  if (!r_s_c2) return bird::fail(r_s_c2.error());
+  auto r_s_c3 = shader_compiler->compile_glsl_to_spirv("core://shaders/triangle.vert.glsl", "core://shaders/triangle.vert.spv");
+  if (!r_s_c3) return bird::fail(r_s_c3.error());
+  auto r_s_c4 = shader_compiler->compile_glsl_to_spirv("core://shaders/triangle.frag.glsl", "core://shaders/triangle.frag.spv");
+  if (!r_s_c4) return bird::fail(r_s_c4.error());
+
+  auto renderer_result = IRenderer::create(renderer_options, rendering_context);
+  if (!renderer_result) {
+    return bird::fail(renderer_result.error());
+  }
+
+  renderer = std::move(renderer_result).value();
 
   return bird::ok();
 }
@@ -134,4 +154,4 @@ Result<void> Editor::shutdown() {
   return bird::ok();
 }
 
-} // namespace bird
+} // bird
