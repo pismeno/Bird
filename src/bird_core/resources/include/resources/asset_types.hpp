@@ -63,13 +63,13 @@ struct GeometryShaderAsset : public ShaderAsset {
   static constexpr const char* EXTENSION = "geom";
 };
 
-struct TesselationControlShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "tesselation_control_shader_asset";
+struct TessControlShaderAsset : public ShaderAsset {
+  static constexpr const char* TYPE_ID = "tess_control_shader_asset";
   static constexpr const char* EXTENSION = "tesc";
 };
 
-struct TesselationEvaluationShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "tesselation_evaluation_shader_asset";
+struct TessEvaluationShaderAsset : public ShaderAsset {
+  static constexpr const char* TYPE_ID = "tess_evaluation_shader_asset";
   static constexpr const char* EXTENSION = "tese";
 };
 
