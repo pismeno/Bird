@@ -105,14 +105,6 @@ target_link_libraries(BirdNodeSystem PRIVATE
         glm::glm
 )
 
-add_custom_command(TARGET BirdNodeSystem POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/node_system"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_definitions.json"
-        "${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene_definitions.json"
-        "${CMAKE_BINARY_DIR}/node_system/"
-)
-
 add_library(BirdRendering STATIC)
 
 target_sources(BirdRendering

@@ -12,7 +12,8 @@
 #include <osal/ifile_system.hpp>
 #include <resources/asset_manager.hpp>
 #include <node_system/scene_factory.hpp>
-#include "editor/shader_compiler.hpp"
+#include <editor/shader_compiler.hpp>
+#include <resources/asset_types.hpp>
 
 namespace bird {
 
@@ -25,8 +26,6 @@ Result<void> Editor::init() {
 
   file_system->mount("core", "../engine_data/core");
   file_system->mount("editor", "../engine_data/editor");
-
-  scene_factory = std::make_unique<SceneFactory>();
 
   glslang::InitializeProcess();
 
@@ -58,8 +57,12 @@ Result<void> Editor::init() {
 
   node_system_context = {
       .resources_context = &resources_context,
-      .scene_factory = scene_factory.get()
   };
+
+  auto r_create_sf = SceneFactory::create(node_system_context);
+  if (!r_create_sf) return bird::fail(r_create_sf.error());
+  scene_factory = std::move(r_create_sf).value();
+  node_system_context.scene_factory = scene_factory.get();
 
   rendering_context = {
       .resources_context = &resources_context
@@ -85,6 +88,17 @@ Result<void> Editor::init() {
   shader_compiler = std::move(r_create_sc).value();
 
   context.shader_compiler = shader_compiler.get();
+
+  auto r_get_scene_defs = asset_manager->acquire<TextAsset>("editor://scene_definitions.json");
+  if (!r_get_scene_defs) return bird::fail(r_get_scene_defs.error());
+  auto r_load_scene_defs = scene_factory->load_scene_definitions_from(r_get_scene_defs.value()->as_string_view());
+  if (!r_load_scene_defs) return bird::fail(r_load_scene_defs.error());
+
+  auto r_get_node_defs = asset_manager->acquire<TextAsset>("editor://node_definitions.json");
+  if (!r_get_node_defs) return bird::fail(r_get_node_defs.error());
+  auto r_load_node_defs = scene_factory->load_node_definitions_from(r_get_node_defs.value()->as_string_view());
+  if (!r_load_node_defs) return bird::fail(r_load_node_defs.error());
+
 
   auto r_s_c1 = shader_compiler->compile_glsl_to_spirv("core://shaders/forward_2d.vert.glsl", "core://shaders/forward_2d.vert.spv");
   if (!r_s_c1) return bird::fail(r_s_c1.error());
