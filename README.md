@@ -33,6 +33,10 @@ This engine uses relaxed layered architecture, meaning that the layers are not s
 - Vulkan
 - Metal
 - GLFW
+- doctest
+- SPIRV-Cross
+- stb_image
+- glslang
 
 ## Repository
 this repository uses the conventional commits format: https://www.conventionalcommits.org/en/v1.0.0/  
