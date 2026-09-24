@@ -73,6 +73,4 @@ struct TesselationEvaluationShaderAsset : public ShaderAsset {
   static constexpr const char* EXTENSION = "tese";
 };
 
-
-
 }

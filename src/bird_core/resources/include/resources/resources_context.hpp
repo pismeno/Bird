@@ -6,6 +6,9 @@ struct OSContext;
 
 class AssetManager;
 
+/**
+ * @brief Context for the resources layer.
+ */
 struct ResourcesContext {
   OSContext* os_context;
 

@@ -9,6 +9,9 @@ struct ResourcesContext;
 
 class ShaderCompiler;
 
+/**
+ * @brief Context for the editor Application layer.
+ */
 struct EditorContext {
   NodeSystemContext* node_system_context;
   RenderingContext* rendering_context;

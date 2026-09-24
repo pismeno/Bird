@@ -7,7 +7,7 @@
 namespace bird::inputs {
 
 /**
- * @brief Abstract static class for querying the engine about inputs
+ * @brief Abstract static class for querying some IWindow about inputs.
  */
 class Inputs {
  public:
@@ -34,6 +34,9 @@ class Inputs {
   [[nodiscard]] virtual float get_scroll_delta_x() noexcept = 0;
   [[nodiscard]] virtual float get_scroll_delta_y() noexcept = 0;
 
+  /**
+   * @brief Should be called after every frame.
+   */
   virtual void end_frame() noexcept = 0;
 };
 

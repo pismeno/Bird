@@ -59,6 +59,9 @@ class SceneFactory {
     manager_registry[name] = []() -> std::unique_ptr<INodeManager> { return std::make_unique<T>(); };
   }
 
+  /**
+   * @brief Creates a SceneFactory instance.
+   */
   static Result<std::unique_ptr<SceneFactory>> create(const NodeSystemContext& context);
  private:
   explicit SceneFactory() = default;

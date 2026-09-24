@@ -6,6 +6,9 @@ struct ResourcesContext;
 
 class SceneFactory;
 
+/**
+ * @brief Context for the node system layer.
+ */
 struct NodeSystemContext {
   ResourcesContext* resources_context;
 
