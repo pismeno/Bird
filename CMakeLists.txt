@@ -22,7 +22,9 @@ add_subdirectory(external/glfw)
 add_subdirectory(external/glm)
 add_subdirectory(external/spirv-cross)
 add_subdirectory(external/glslang)
+add_subdirectory(external/doctest)
 
 # project subdirectories
 add_subdirectory(src/bird_core)
 add_subdirectory(src/bird_editor)
+add_subdirectory(tests/)
