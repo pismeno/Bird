@@ -5,7 +5,6 @@
 #include <string>
 #include <unordered_map>
 
-#include <resources/resources_context.hpp>
 #include <osal/ifile_system.hpp>
 #include <osal/os_context.hpp>
 #include <utils/result.hpp>
@@ -17,7 +16,7 @@ class IAssetPool { public: virtual ~IAssetPool() = default; };
 template<typename T>
 class AssetPool : public IAssetPool { // Implemented using Gemini AI
  public:
-  AssetPool(ResourcesContext& context) : file_system(context.os_context->file_system) {};
+  AssetPool(IFileSystem* file_system) : file_system(file_system) {};
 
   Result<AssetHandle<T>> load(const std::string &filepath) {
     // Check if the asset is already loaded
@@ -41,7 +40,12 @@ class AssetPool : public IAssetPool { // Implemented using Gemini AI
       filepaths.push_back("");
     }
 
-    data[index].data = file_system->read_bytes(filepath);
+    auto r_read_bytes = file_system->read_bytes(filepath);
+    if (!r_read_bytes) {
+      return bird::fail(r_read_bytes.error());
+    }
+
+    data[index].data = std::move(r_read_bytes).value();
 
     filepaths[index] = filepath;
     cache[filepath] = index;

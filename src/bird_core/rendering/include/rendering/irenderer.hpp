@@ -4,6 +4,7 @@
 
 #include <cstdint>
 
+#include <rendering/rendering_context.hpp>
 #include <resources/render_command.hpp>
 #include <utils/result.hpp>
 
@@ -33,7 +34,7 @@ public:
   /**
    * @brief Factory method to create the specific implementation
    */
-  static Result<std::unique_ptr<IRenderer>> create(RendererType type);
+  static Result<std::unique_ptr<IRenderer>> create(RendererType type, RenderingContext* rendering_context);
 };
 
 } // namespace bird

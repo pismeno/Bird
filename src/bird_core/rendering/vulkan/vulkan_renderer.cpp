@@ -8,7 +8,9 @@
 #include <memory>
 #include <filesystem>
 
-#include <rendering/shader_compiler.hpp>
+#include <resources/asset_handle.hpp>
+#include <resources/asset_manager.hpp>
+#include <resources/asset_types.hpp>
 #include <utils/result.hpp>
 
 namespace bird {
@@ -357,10 +359,10 @@ Result<void> VulkanRenderer::create_image_views() {
 
 Result<void> VulkanRenderer::create_graphics_pipeline() {
   // loading the shaders from files
-  auto r_load_vert_shader_module = load_shader_module("shaders/triangle.vert.glsl");
+  auto r_load_vert_shader_module = load_shader_module<VertexShaderAsset>("shaders/triangle.vert.glsl");
   if (!r_load_vert_shader_module) return bird::fail(r_load_vert_shader_module.error());
 
-  auto r_load_frag_shader_module = load_shader_module("shaders/triangle.frag.glsl");
+  auto r_load_frag_shader_module = load_shader_module<FragmentShaderAsset>("shaders/triangle.frag.glsl");
   if (!r_load_frag_shader_module) return bird::fail(r_load_frag_shader_module.error());
 
   std::unique_ptr<vk::raii::ShaderModule> vert_shader_module = std::move(r_load_vert_shader_module).value();
@@ -480,33 +482,6 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
   graphics_pipeline = std::move(vkr_create_graphics_pipeline.value);
 
   return bird::ok();
-}
-
-Result<std::unique_ptr<vk::raii::ShaderModule>> VulkanRenderer::load_shader_module(const std::string filepath) const {
-  if (!std::filesystem::exists(filepath)) {
-    return bird::fail("Shader file not found at path: " + std::filesystem::absolute(filepath).string());
-  }
-
-  ShaderCompiler shader_compiler;
-
-  std::vector<uint32_t> vert_spirv;
-
-  auto r_compile_glsl_file = shader_compiler.compile_glsl_file_to_spirv(filepath);
-  if (!r_compile_glsl_file) return bird::fail(r_compile_glsl_file.error());
-  vert_spirv = std::move(r_compile_glsl_file).value();
-
-  vk::ShaderModuleCreateInfo create_info{
-      .codeSize = vert_spirv.size() * sizeof(uint32_t), // Size in bytes
-      .pCode    = vert_spirv.data()                    // Pointer to uint32_t data
-  };
-
-
-  auto vkr_create_shader_module = logical_device.createShaderModule(create_info);
-  if (vkr_create_shader_module.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create shader module");
-  }
-
-  return std::make_unique<vk::raii::ShaderModule>(std::move(vkr_create_shader_module.value));
 }
 
 Result<void> VulkanRenderer::create_command_pool() {

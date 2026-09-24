@@ -20,13 +20,20 @@
 #include <string>
 #include <memory>
 
-#include <utils/result.hpp>
+#include <rendering/rendering_context.hpp>
 #include <resources/render_command.hpp>
+#include <resources/asset_handle.hpp>
+#include <resources/asset_manager.hpp>
+#include <resources/asset_types.hpp>
+#include <utils/result.hpp>
 
 namespace bird {
 
 class VulkanRenderer : public IRenderer {
  public:
+  VulkanRenderer(RenderingContext* rendering_context)
+    : asset_manager(rendering_context->resources_context->asset_manager) {}
+
   Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) override;
   Result<void> init() override;
   void render() override;
@@ -59,13 +66,36 @@ class VulkanRenderer : public IRenderer {
 
   [[nodiscard]] bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
 
-  [[nodiscard]] Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string filepath) const;
+  template <std::derived_from<ShaderAsset> T>
+  Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string& filepath) const {
+    auto r_shader_asset = asset_manager->acquire<T>(filepath);
+    if (!r_shader_asset) {
+      return bird::fail(r_shader_asset.error());
+    }
+
+    AssetHandle<T> shader_handle = std::move(r_shader_asset).value();
+
+    vk::ShaderModuleCreateInfo create_info{
+        .codeSize = shader_handle->data.size(),      // Size in bytes
+        .pCode    = shader_handle->as_32bit_words()  // Pointer to aligned uint32_t data
+    };
+
+    auto vkr_create_shader_module = logical_device.createShaderModule(create_info);
+    if (vkr_create_shader_module.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to create shader module for: " + filepath);
+    }
+
+    return std::make_unique<vk::raii::ShaderModule>(std::move(vkr_create_shader_module.value));
+  }
 
   // other vulkan methods
   Result<void> recreate_swap_chain();
 
   // rendering helper methods
   Result<void> record_command_buffer(const uint32_t image_index);
+
+  // other helper methods
+  Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string& filepath) const;
 
   void transition_image_layout(
       uint32_t                imageIndex,
@@ -111,6 +141,9 @@ class VulkanRenderer : public IRenderer {
   // rendering states
   bool is_context_lost_ = false;
   bool needs_framebuffer_resize_ = false;
+
+  // bird systems
+  AssetManager* asset_manager;
 };
 
 } // namespace bird

@@ -42,28 +42,6 @@ Result<void> Editor::init() {
     return bird::fail("Failed to create window");
   }
 
-  auto renderer_result = IRenderer::create(bird::RendererType::Vulkan);
-  if (!renderer_result) {
-    return bird::fail(renderer_result.error());
-  }
-
-  renderer = std::move(renderer_result).value();
-
-  auto r_attach_window_result = renderer->attach_window(
-      window->get_native_handle(),
-      window->get_framebuffer_width(),
-      window->get_framebuffer_height()
-  );
-
-  if (!r_attach_window_result) {
-    return bird::fail(r_attach_window_result.error());
-  }
-
-  auto r_init_result = renderer->init();
-  if (!r_init_result) {
-    return bird::fail(r_init_result.error());
-  }
-
   return bird::ok();
 }
 
@@ -116,17 +94,22 @@ Result<void> Editor::shutdown() {
   return bird::ok();
 }
 
-void Editor::make_context_current() {
+Result<void> Editor::make_context_current() {
   os_context = {
       .file_system = file_system.get()
   };
+
+  asset_manager = std::make_unique<AssetManager>();
 
   resources_context = {
       .os_context = &os_context,
       .asset_manager = asset_manager.get()
   };
 
-  asset_manager = std::make_unique<AssetManager>(resources_context);
+  auto r_init_am = asset_manager->init(resources_context);
+  if (!r_init_am) {
+    return r_init_am;
+  }
 
   node_system_context = {
     .resources_context = &resources_context,
@@ -137,12 +120,36 @@ void Editor::make_context_current() {
     .resources_context = &resources_context
   };
 
+  auto renderer_result = IRenderer::create(bird::RendererType::Vulkan, &rendering_context);
+  if (!renderer_result) {
+    return bird::fail(renderer_result.error());
+  }
+
+  renderer = std::move(renderer_result).value();
+
+  auto r_attach_window_result = renderer->attach_window(
+      window->get_native_handle(),
+      window->get_framebuffer_width(),
+      window->get_framebuffer_height()
+  );
+
+  if (!r_attach_window_result) {
+    return bird::fail(r_attach_window_result.error());
+  }
+
+  auto r_init_result = renderer->init();
+  if (!r_init_result) {
+    return bird::fail(r_init_result.error());
+  }
+
   context = {
       .node_system_context = &node_system_context,
       .rendering_context = &rendering_context,
       .os_context = &os_context,
       .resources_context = &resources_context
   };
+
+  return bird::ok();
 }
 
 } // namespace bird

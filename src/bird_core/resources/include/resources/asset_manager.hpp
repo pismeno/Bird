@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <memory>
 
+#include <resources/asset_types.hpp>
 #include <resources/resources_context.hpp>
 #include <resources/asset_handle.hpp>
 #include <utils/string_hash.hpp>
@@ -15,51 +16,17 @@
 
 namespace bird {
 
-struct BinaryAsset {
-  alignas(8) std::vector<uint8_t> data;
-};
-
-struct ShaderAsset : public BinaryAsset {};
-
-struct VertexShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "vertex_shader_asset";
-  static constexpr const char* EXTENSION = "vert";
-};
-
-struct FragmentShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "fragment_shader_asset";
-  static constexpr const char* EXTENSION = "frag";
-};
-
-struct ComputeShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "compute_shader_asset";
-  static constexpr const char* EXTENSION = "comp";
-};
-
-struct GeometryShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "geometry_shader_asset";
-  static constexpr const char* EXTENSION = "geom";
-};
-
-struct TesselationControlShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "tesselation_control_shader_asset";
-  static constexpr const char* EXTENSION = "tesc";
-};
-
-struct TesselationEvaluationShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "tesselation_evaluation_shader_asset";
-  static constexpr const char* EXTENSION = "tese";
-};
-
-
-struct GenericBinaryAsset : public BinaryAsset { static constexpr const char* TYPE_ID = "generic_binary_asset"; };
-
 class AssetManager {
 
   template <typename> friend class AssetHandle;
 
  public:
-  AssetManager(ResourcesContext& context) : context(&context) {}
+  AssetManager() = default;
+
+  Result<void> init(ResourcesContext& context) {
+    file_system = context.os_context->file_system;
+    return bird::ok();
+  }
 
   template <std::derived_from<ShaderAsset> T, typename... Args>
   Result<AssetHandle<T>> acquire(const std::string& filepath, Args&&... args) { // acquire implementation for shader assets
@@ -85,7 +52,7 @@ class AssetManager {
     auto it = asset_pools.find(T::TYPE_ID);
 
     if (it == asset_pools.end()) {
-      it = asset_pools.emplace(T::TYPE_ID, std::make_unique<AssetPool<T>>()).first;
+      it = asset_pools.emplace(T::TYPE_ID, std::make_unique<AssetPool<T>>(file_system)).first;
     }
 
     return static_cast<AssetPool<T>*>(it->second.get());
@@ -93,7 +60,7 @@ class AssetManager {
 
   std::unordered_map<std::string, std::unique_ptr<IAssetPool>, StringHash, std::equal_to<>> asset_pools;
 
-  ResourcesContext* context;
+  IFileSystem* file_system{};
 };
 
 } // bird

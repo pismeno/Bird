@@ -4,12 +4,16 @@
 #include "rendering/metal/metal_renderer.hpp"
 #endif
 
-#include <utils/result.hpp>
+#ifdef BIRD_PLATFORM_WINDOWS
 #include "rendering/vulkan/vulkan_renderer.hpp"
+#endif
+
+#include <utils/result.hpp>
+#include <rendering/rendering_context.hpp>
 
 namespace bird {
 
-Result<std::unique_ptr<IRenderer>> IRenderer::create(RendererType type) {
+Result<std::unique_ptr<IRenderer>> IRenderer::create(RendererType type, RenderingContext* rendering_context) {
   switch (type) {
     case RendererType::Metal: {
 #ifdef BIRD_PLATFORM_APPLE
@@ -20,7 +24,7 @@ Result<std::unique_ptr<IRenderer>> IRenderer::create(RendererType type) {
     }
     case RendererType::Vulkan: {
 #ifdef BIRD_PLATFORM_WINDOWS
-      return std::make_unique<VulkanRenderer>();
+      return std::make_unique<VulkanRenderer>(rendering_context);
 #else
       return bird::fail("Vulkan renderer is only supported on Windows");
 #endif
