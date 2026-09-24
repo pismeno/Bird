@@ -32,15 +32,10 @@ Result<void> Editor::init() {
 
   auto window_result = IWindow::create(WindowOptions{800, 600, "Bird Editor"});
   if (!window_result) {
+    glfwTerminate();
     return bird::fail(window_result.error());
   }
-
   window = std::move(window_result).value();
-
-  if (!window->init()) {
-    glfwTerminate();
-    return bird::fail("Failed to create window");
-  }
 
   return bird::ok();
 }
@@ -99,17 +94,16 @@ Result<void> Editor::make_context_current() {
       .file_system = file_system.get()
   };
 
-  asset_manager = std::make_unique<AssetManager>();
-
   resources_context = {
       .os_context = &os_context,
-      .asset_manager = asset_manager.get()
   };
 
-  auto r_init_am = asset_manager->init(resources_context);
-  if (!r_init_am) {
-    return r_init_am;
+  auto r_create_am = AssetManager::create(resources_context);
+  if (!r_create_am) {
+    return bird::fail(r_create_am.error());
   }
+  asset_manager = std::move(r_create_am).value();
+  resources_context.asset_manager = asset_manager.get();
 
   node_system_context = {
     .resources_context = &resources_context,
@@ -120,27 +114,19 @@ Result<void> Editor::make_context_current() {
     .resources_context = &resources_context
   };
 
-  auto renderer_result = IRenderer::create(bird::RendererType::Vulkan, &rendering_context);
+  RendererOptions renderer_options{
+    RendererType::Vulkan,
+      window->get_native_handle(),
+      window->get_framebuffer_width(),
+      window->get_framebuffer_height()
+  };
+
+  auto renderer_result = IRenderer::create(renderer_options, rendering_context);
   if (!renderer_result) {
     return bird::fail(renderer_result.error());
   }
 
   renderer = std::move(renderer_result).value();
-
-  auto r_attach_window_result = renderer->attach_window(
-      window->get_native_handle(),
-      window->get_framebuffer_width(),
-      window->get_framebuffer_height()
-  );
-
-  if (!r_attach_window_result) {
-    return bird::fail(r_attach_window_result.error());
-  }
-
-  auto r_init_result = renderer->init();
-  if (!r_init_result) {
-    return bird::fail(r_init_result.error());
-  }
 
   context = {
       .node_system_context = &node_system_context,

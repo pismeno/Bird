@@ -22,7 +22,9 @@ Result<void> VulkanRenderer::attach_window(void* native_window_handle, uint32_t 
   return bird::ok();
 }
 
-Result<void> VulkanRenderer::init() {
+Result<void> VulkanRenderer::init(RenderingContext& context) {
+  asset_manager = context.resources_context->asset_manager;
+
   auto r_create_instance = create_instance();
   if (!r_create_instance) return r_create_instance;
 

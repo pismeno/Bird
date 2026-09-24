@@ -14,9 +14,9 @@ using namespace inputs;
 class GlfwWindow : public IWindow {
 
   friend class inputs::GlfwInputs;
+  friend class IWindow;
 
  public:
-  GlfwWindow(const WindowOptions& options);
   virtual ~GlfwWindow();
 
   Result<void> init() override;
@@ -34,6 +34,8 @@ class GlfwWindow : public IWindow {
   void* get_native_handle() const override;
 
  private:
+  GlfwWindow(const WindowOptions& options);
+
   GLFWwindow* glfw_window{};
 
   std::string title{};

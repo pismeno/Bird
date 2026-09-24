@@ -31,11 +31,8 @@ namespace bird {
 
 class VulkanRenderer : public IRenderer {
  public:
-  VulkanRenderer(RenderingContext* rendering_context)
-    : asset_manager(rendering_context->resources_context->asset_manager) {}
-
   Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) override;
-  Result<void> init() override;
+  Result<void> init(RenderingContext& context) override;
   void render() override;
   Result<void> shutdown() override;
   void resize_frame_buffer(int width, int height);

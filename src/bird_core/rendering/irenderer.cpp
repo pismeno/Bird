@@ -13,7 +13,8 @@
 
 namespace bird {
 
-Result<std::unique_ptr<IRenderer>> IRenderer::create(RendererType type, RenderingContext* rendering_context) {
+namespace {
+Result<std::unique_ptr<IRenderer>> make_renderer(RendererType type) {
   switch (type) {
     case RendererType::Metal: {
 #ifdef BIRD_PLATFORM_APPLE
@@ -24,7 +25,7 @@ Result<std::unique_ptr<IRenderer>> IRenderer::create(RendererType type, Renderin
     }
     case RendererType::Vulkan: {
 #ifdef BIRD_PLATFORM_WINDOWS
-      return std::make_unique<VulkanRenderer>(rendering_context);
+      return std::make_unique<VulkanRenderer>();
 #else
       return bird::fail("Vulkan renderer is only supported on Windows");
 #endif
@@ -36,6 +37,21 @@ Result<std::unique_ptr<IRenderer>> IRenderer::create(RendererType type, Renderin
       return bird::fail("Unsupported renderer type");
     }
   }
+}
+}
+
+Result<std::unique_ptr<IRenderer>> IRenderer::create(RendererOptions options, RenderingContext& context) {
+  auto r_make_renderer = make_renderer(options.type);
+  if (!r_make_renderer) return r_make_renderer;
+  std::unique_ptr<IRenderer> renderer = std::move(r_make_renderer).value();
+
+  auto r_attach_window = renderer->attach_window(options.native_window_handle, options.window_width, options.window_height);
+  if (!r_attach_window) return bird::fail(r_attach_window.error());
+
+  auto r_init = renderer->init(context);
+  if (!r_init) return bird::fail(r_init.error());
+
+  return std::move(renderer);
 }
 
 } // bird

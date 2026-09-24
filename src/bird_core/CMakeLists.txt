@@ -52,6 +52,7 @@ target_sources(BirdResources
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_pool.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_types.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_manager.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/render_command.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/asset_handle.hpp

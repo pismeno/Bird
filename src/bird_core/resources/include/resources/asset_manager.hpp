@@ -21,13 +21,6 @@ class AssetManager {
   template <typename> friend class AssetHandle;
 
  public:
-  AssetManager() = default;
-
-  Result<void> init(ResourcesContext& context) {
-    file_system = context.os_context->file_system;
-    return bird::ok();
-  }
-
   template <std::derived_from<ShaderAsset> T, typename... Args>
   Result<AssetHandle<T>> acquire(const std::string& filepath, Args&&... args) { // acquire implementation for shader assets
 
@@ -46,7 +39,11 @@ class AssetManager {
     return get_pool<T>()->load(filepath, std::forward<Args>(args)...);
   }
 
+  static Result<std::unique_ptr<AssetManager>> create(ResourcesContext& context);
  private:
+  AssetManager() = default;
+  Result<void> init(ResourcesContext& context);
+
   template <typename T>
   AssetPool<T>* get_pool() {
     auto it = asset_pools.find(T::TYPE_ID);
@@ -60,7 +57,7 @@ class AssetManager {
 
   std::unordered_map<std::string, std::unique_ptr<IAssetPool>, StringHash, std::equal_to<>> asset_pools;
 
-  IFileSystem* file_system{};
+  IFileSystem* file_system = nullptr;
 };
 
 } // bird

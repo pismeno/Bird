@@ -24,7 +24,6 @@ class IWindow {
   explicit IWindow() = default;
   virtual ~IWindow() noexcept = default;
 
-  virtual Result<void> init() = 0;
   virtual void update() = 0;
   virtual Result<void> close() = 0;
 
@@ -46,6 +45,8 @@ class IWindow {
    * @brief Factory method to create the specific implementation
    */
   static Result<std::unique_ptr<IWindow>> create(const WindowOptions& options);
+ private:
+  virtual Result<void> init() = 0;
 };
 
 } // bird
