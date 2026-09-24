@@ -23,8 +23,6 @@ class Editor {
   Result<void> run();
   Result<void> shutdown();
 
-  Result<void> make_context_current();
-
  private:
   EditorContext context;
   OSContext os_context;

@@ -37,6 +37,51 @@ Result<void> Editor::init() {
   }
   window = std::move(window_result).value();
 
+  os_context = {
+      .file_system = file_system.get()
+  };
+
+  resources_context = {
+      .os_context = &os_context,
+  };
+
+  auto r_create_am = AssetManager::create(resources_context);
+  if (!r_create_am) {
+    return bird::fail(r_create_am.error());
+  }
+  asset_manager = std::move(r_create_am).value();
+  resources_context.asset_manager = asset_manager.get();
+
+  node_system_context = {
+      .resources_context = &resources_context,
+      .scene_factory = scene_factory.get()
+  };
+
+  rendering_context = {
+      .resources_context = &resources_context
+  };
+
+  RendererOptions renderer_options{
+      RendererType::Vulkan,
+      window->get_native_handle(),
+      window->get_framebuffer_width(),
+      window->get_framebuffer_height()
+  };
+
+  auto renderer_result = IRenderer::create(renderer_options, rendering_context);
+  if (!renderer_result) {
+    return bird::fail(renderer_result.error());
+  }
+
+  renderer = std::move(renderer_result).value();
+
+  context = {
+      .node_system_context = &node_system_context,
+      .rendering_context = &rendering_context,
+      .os_context = &os_context,
+      .resources_context = &resources_context
+  };
+
   return bird::ok();
 }
 
@@ -85,55 +130,6 @@ Result<void> Editor::shutdown() {
 
   glfwTerminate();
   glslang::FinalizeProcess();
-
-  return bird::ok();
-}
-
-Result<void> Editor::make_context_current() {
-  os_context = {
-      .file_system = file_system.get()
-  };
-
-  resources_context = {
-      .os_context = &os_context,
-  };
-
-  auto r_create_am = AssetManager::create(resources_context);
-  if (!r_create_am) {
-    return bird::fail(r_create_am.error());
-  }
-  asset_manager = std::move(r_create_am).value();
-  resources_context.asset_manager = asset_manager.get();
-
-  node_system_context = {
-    .resources_context = &resources_context,
-    .scene_factory = scene_factory.get()
-  };
-
-  rendering_context = {
-    .resources_context = &resources_context
-  };
-
-  RendererOptions renderer_options{
-    RendererType::Vulkan,
-      window->get_native_handle(),
-      window->get_framebuffer_width(),
-      window->get_framebuffer_height()
-  };
-
-  auto renderer_result = IRenderer::create(renderer_options, rendering_context);
-  if (!renderer_result) {
-    return bird::fail(renderer_result.error());
-  }
-
-  renderer = std::move(renderer_result).value();
-
-  context = {
-      .node_system_context = &node_system_context,
-      .rendering_context = &rendering_context,
-      .os_context = &os_context,
-      .resources_context = &resources_context
-  };
 
   return bird::ok();
 }

@@ -16,12 +16,6 @@ int main() {
     return 1;
   }
 
-  auto r_make_context_curr = editor.make_context_current();
-  if (!r_make_context_curr) {
-    std::cerr << r_make_context_curr.error() << std::endl;
-    return 1;
-  }
-
   auto r_run = editor.run();
   if (!r_run) {
     std::cerr << r_run.error() << std::endl;
