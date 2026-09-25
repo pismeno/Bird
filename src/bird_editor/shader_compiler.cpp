@@ -86,28 +86,29 @@ Result<std::vector<uint32_t>> ShaderCompiler::compile_source_to_spirv(const std:
     return spirv;
 }
 
-Result<void> ShaderCompiler::compile_glsl_to_spirv(const std::string& glsl_filepath, const std::string& spv_output_filepath) {
-    // Read
-    auto r_acquire_glsl = asset_manager->acquire<TextAsset>(glsl_filepath);
-    if (!r_acquire_glsl) return bird::fail(r_acquire_glsl.error());
-    std::string source_str = r_acquire_glsl.value()->as_string();
-    std::string stage = extract_stage(glsl_filepath);
+Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_to_spirv(const std::string& glsl_filepath, const std::string& spv_output_filepath) {
+  // Read
+  auto r_acquire_glsl = asset_manager->acquire<TextAsset>(glsl_filepath);
+  if (!r_acquire_glsl) return bird::fail(r_acquire_glsl.error());
+  std::string source_str = r_acquire_glsl.value()->as_string();
+  std::string stage = extract_stage(glsl_filepath);
 
-    // Compile
-    auto r_spirv = compile_source_to_spirv(source_str, stage);
-    if (!r_spirv) return bird::fail(r_spirv.error());
+  // Compile
+  auto r_spirv = compile_source_to_spirv(source_str, stage);
+  if (!r_spirv) return bird::fail(r_spirv.error());
 
-    // Write
-    const auto& spirv = r_spirv.value();
-    const auto* byte_ptr = reinterpret_cast<const uint8_t*>(spirv.data());
-    std::size_t byte_size = spirv.size() * sizeof(uint32_t);
+  // Write
+  auto& spirv = r_spirv.value(); // Get mutable reference to move from later
+  const auto* byte_ptr = reinterpret_cast<const uint8_t*>(spirv.data());
+  std::size_t byte_size = spirv.size() * sizeof(uint32_t);
 
-    std::vector<uint8_t> binary(byte_ptr, byte_ptr + byte_size);
+  std::vector<uint8_t> binary(byte_ptr, byte_ptr + byte_size);
 
-    auto r_write_spv = file_system->write_bytes(spv_output_filepath, std::move(binary));
-    if (!r_write_spv) return r_write_spv;
+  auto r_write_spv = file_system->write_bytes(spv_output_filepath, std::move(binary));
+  if (!r_write_spv) return bird::fail(r_write_spv.error());
 
-    return bird::ok();
+  // Return the SPIR-V data directly to the caller using std::move
+  return std::move(spirv);
 }
 
 Result<std::string> ShaderCompiler::translate_spirv_to_msl(const std::vector<uint32_t>& spirv_code) {

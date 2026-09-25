@@ -14,9 +14,10 @@ namespace bird {
 class ShaderCompiler {
  public:
   /**
-   * Compiles a GLSL shader file to SPIR-V file
+   * Compiles a GLSL shader file to SPIR-V file.
+   * @return A result with vector of SPIR-V code, fail if unsuccessful
    */
-  Result<void> compile_glsl_to_spirv(const std::string& glsl_filepath, const std::string& spv_output_filepath);
+  Result<std::vector<uint32_t>> compile_glsl_to_spirv(const std::string& glsl_filepath, const std::string& spv_output_filepath);
 
   /**
    * Compiles GLSL source code to SPIR-V code
