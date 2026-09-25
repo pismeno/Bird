@@ -50,7 +50,7 @@ The engine's api is designed to never throw exceptions. Instead, it relies on th
 - Every node is instance of the same class `Node`, which is essentially just a `NodeID` (see `node_type_definitions.hpp`) wrapper, that holds information about who is it's parent and children.
 - The `Scene` defines, what managers will be used to manage the nodes.
 - The managers are responsible for the actual node behavior.
-- `Scene` is created using `SceneFactory::create_scene(std::string scene_type_name)`, scene types can be loaded using `SceneFactory::load_scene_definitions_from(const std::string_view definitions_source)`.
+- `Scene` is created using `SceneFactory::create_scene(std::string scene_type_name)`, scene types can be loaded using `SceneFactory::load_scene_definitions_from(std::string path)`.
 - `Scene` also holds node_type_definitions you can create using the factory method listed bellow.
 
 #### Managers
@@ -61,7 +61,7 @@ The engine's api is designed to never throw exceptions. Instead, it relies on th
 #### Nodes
 - Nodes are instantiated using the factory method  `Scene::create_node(NodeID parent_id, std::string node_type)`
 - By instantiation we mean creating `NodeID` and calling `IManager::on_node_created(NodeID node_id)` on the associated managers.
-- Node types can be loaded into `SceneFactory` using `SceneFactory::load_node_definitions_from(const std::string_view definitions_source)`
+- Node types can be loaded into `SceneFactory` using `SceneFactory::load_node_definitions_from(std::string path)`
 
 ## Used libraries
 - FlatBuffers

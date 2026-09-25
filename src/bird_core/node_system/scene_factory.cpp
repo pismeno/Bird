@@ -104,15 +104,6 @@ Result<void> SceneFactory::load_scene_definitions_from(const std::string_view de
   return bird::ok();
 }
 
-Result<void> SceneFactory::load_scene_definitions_from_file(const std::string& path) {
-  auto r_get_scene_defs = asset_manager->acquire<TextAsset>(path);
-  if (!r_get_scene_defs) return bird::fail(r_get_scene_defs.error());
-  auto r_load_scene_defs = load_scene_definitions_from(r_get_scene_defs.value()->as_string_view());
-  if (!r_load_scene_defs) return r_load_scene_defs;
-
-  return bird::ok();
-}
-
 Result<void> SceneFactory::load_node_definitions_from(const std::string_view definitions_source) {
   nlohmann::json data = nlohmann::json::parse(definitions_source, nullptr, false);
 
@@ -141,15 +132,6 @@ Result<void> SceneFactory::load_node_definitions_from(const std::string_view def
 
     node_definitions.emplace(item["name"].get<std::string>(), std::move(node_definition));
   }
-
-  return bird::ok();
-}
-
-Result<void> SceneFactory::load_node_definitions_from_file(const std::string& path) {
-  auto r_get_node_defs = asset_manager->acquire<TextAsset>(path);
-  if (!r_get_node_defs) return bird::fail(r_get_node_defs.error());
-  auto r_load_node_defs = load_node_definitions_from(r_get_node_defs.value()->as_string_view());
-  if (!r_load_node_defs) return r_load_node_defs;
 
   return bird::ok();
 }
@@ -204,15 +186,6 @@ Result<std::unique_ptr<Scene>> SceneFactory::load_scene_from(const std::string_v
   }
 
   return std::move(scene);
-}
-
-Result<std::unique_ptr<Scene>> SceneFactory::load_scene_from_file(const std::string& path) const {
-  auto r_get_scene_source = asset_manager->acquire<TextAsset>(path);
-  if (!r_get_scene_source) return bird::fail(r_get_scene_source.error());
-  auto r_load_scene = load_scene_from(r_get_scene_source.value()->as_string_view());
-  if (!r_load_scene) return bird::fail(r_load_scene.error());
-
-  return std::move(r_load_scene).value();
 }
 
 } // bird
