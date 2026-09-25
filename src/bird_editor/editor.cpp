@@ -89,16 +89,10 @@ Result<void> Editor::init() {
 
   context.shader_compiler = shader_compiler.get();
 
-  auto r_get_scene_defs = asset_manager->acquire<TextAsset>("editor://scene_definitions.json");
-  if (!r_get_scene_defs) return bird::fail(r_get_scene_defs.error());
-  auto r_load_scene_defs = scene_factory->load_scene_definitions_from(r_get_scene_defs.value()->as_string_view());
+  auto r_load_scene_defs = scene_factory->load_scene_definitions_from_file("editor://scene_definitions.json");
   if (!r_load_scene_defs) return bird::fail(r_load_scene_defs.error());
-
-  auto r_get_node_defs = asset_manager->acquire<TextAsset>("editor://node_definitions.json");
-  if (!r_get_node_defs) return bird::fail(r_get_node_defs.error());
-  auto r_load_node_defs = scene_factory->load_node_definitions_from(r_get_node_defs.value()->as_string_view());
+  auto r_load_node_defs = scene_factory->load_node_definitions_from_file("editor://node_definitions.json");;
   if (!r_load_node_defs) return bird::fail(r_load_node_defs.error());
-
 
   auto r_s_c1 = shader_compiler->compile_glsl_to_spirv("core://shaders/forward_2d.vert.glsl", "core://shaders/forward_2d.vert.spv");
   if (!r_s_c1) return bird::fail(r_s_c1.error());
