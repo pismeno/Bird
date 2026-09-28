@@ -4,8 +4,11 @@ Bird Engine is a specialized 2d game engine.
 
 ## Features of the editor for the end user
 ### Nodes
-- nodes are the basic building blocks of the engine, they can be used to create anything from a simple sprite to a complex game object
-- prefabs, possibility to use them and override specific traits on them
+- nodes are the basic building blocks of the engine
+- everything is a node approach
+- a node is never a hybrid, it holds only a single responsibility: `Node2D`, `Sprite2D`, `ScriptNode`
+- this system should encourage the "Call Down, Signal Up" approach
+- `Node2D`'s transform works as an offset to its nearest parent's transform
 
 ### Embedded AngelScript
 - possibility to use it as a script component
