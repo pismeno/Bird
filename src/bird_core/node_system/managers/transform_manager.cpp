@@ -60,7 +60,7 @@ Result<void> TransformManager::set_node_rotation(NodeID node_id, float rotation)
 void TransformManager::mark_spatial_children_dirty(NodeID parent_id) {
   TransformInfo* parent = get_transform(parent_id.index());
 
-  if (!parent || parent->is_dirty) return;
+  if (!parent) return;
 
   parent->is_dirty = true;
   uint32_t current_child_idx = parent->first_child_idx;
@@ -215,6 +215,8 @@ void TransformManager::remove_from_parent(NodeID child_id) noexcept {
   // Clear the child's links
   child->parent_idx = INVALID_NODE_ID.index();
   child->next_sibling_idx = INVALID_NODE_ID.index();
+
+  mark_spatial_children_dirty(child_id);
 }
 
 void TransformManager::set_parent(NodeID child_id, NodeID new_parent_id) noexcept {
