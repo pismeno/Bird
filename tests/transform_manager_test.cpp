@@ -77,7 +77,7 @@ TEST_CASE("TransformManager - Spatial Hierarchy") {
   REQUIRE(tm.set_node_position(child, glm::vec2(5.0f, -5.0f)));
 
   // Link them spatially
-  tm.set_parent(child, parent);
+    tm.set_spatial_parent(child, parent);
   tm.on_update();
 
   // Parent should be exactly where we put it
@@ -90,7 +90,7 @@ SUBCASE("Scale cascades down and scales child translation") {
   REQUIRE(tm.set_node_scale(parent, glm::vec2(2.0f, 2.0f)));
   REQUIRE(tm.set_node_position(child, glm::vec2(10.0f, 0.0f)));
 
-  tm.set_parent(child, parent);
+  tm.set_spatial_parent(child, parent);
   tm.on_update();
 
   // The child is 10 units to the right in LOCAL space.
@@ -104,8 +104,8 @@ SUBCASE("Scale cascades down and scales child translation") {
   REQUIRE(tm.set_node_position(child, glm::vec2(50.0f, 0.0f)));
   REQUIRE(tm.set_node_position(grandchild, glm::vec2(25.0f, 0.0f)));
 
-  tm.set_parent(child, parent);
-  tm.set_parent(grandchild, child);
+    tm.set_spatial_parent(child, parent);
+    tm.set_spatial_parent(grandchild, child);
   tm.on_update();
 
   CHECK_TRANSLATION(tm.get_global_matrix(grandchild), 175.0f, 0.0f);
@@ -127,20 +127,20 @@ TEST_CASE("TransformManager - Reparenting and Detaching") {
   REQUIRE(tm.set_node_position(child, glm::vec2(0.0f, 0.0f)));
 
   SUBCASE("Removing a parent resets child to local transform") {
-    tm.set_parent(child, old_parent);
+    tm.set_spatial_parent(child, old_parent);
     tm.on_update();
     CHECK_TRANSLATION(tm.get_global_matrix(child), 10.0f, 10.0f);
 
-    tm.remove_from_parent(child);
+    tm.remove_from_spatial_parent(child);
     tm.on_update();
     CHECK_TRANSLATION(tm.get_global_matrix(child), 0.0f, 0.0f); // Back to local 0,0
   }
 
   SUBCASE("Switching parents updates global transform") {
-    tm.set_parent(child, old_parent);
+    tm.set_spatial_parent(child, old_parent);
     tm.on_update();
 
-    tm.set_parent(child, new_parent);
+    tm.set_spatial_parent(child, new_parent);
     tm.on_update();
     CHECK_TRANSLATION(tm.get_global_matrix(child), 50.0f, 50.0f);
     }

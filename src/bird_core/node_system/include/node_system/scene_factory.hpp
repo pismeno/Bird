@@ -58,7 +58,7 @@ class SceneFactory {
   template <typename T>
   requires std::derived_from<T, INodeManager> && std::default_initializable<T>
   void register_manager() {
-    std::string name = T::MANAGER_NAME;
+    std::string name = T::TYPE_ID;
 
     assert(manager_registry.find(name) == manager_registry.end() && "Manager name already registered!");
 

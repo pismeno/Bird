@@ -157,7 +157,7 @@ void TransformManager::update_node_hierarchy(NodeID node_id, const glm::mat3& pa
 void TransformManager::on_node_destroyed(NodeID node_id) noexcept {
   if (!has_transform(node_id)) return;
 
-  remove_from_parent(node_id);
+  remove_from_spatial_parent(node_id);
 
   TransformIndex index = node_to_transform[node_id.index()];
 
@@ -187,7 +187,7 @@ void TransformManager::on_frame_end() noexcept {
   }
 }
 
-void TransformManager::remove_from_parent(NodeID child_id) noexcept {
+void TransformManager::remove_from_spatial_parent(NodeID child_id) noexcept {
   TransformInfo* child = get_transform(child_id.index());
   if (!child || child->parent_idx == INVALID_NODE_ID.index()) return;
 
@@ -219,20 +219,20 @@ void TransformManager::remove_from_parent(NodeID child_id) noexcept {
   mark_spatial_children_dirty(child_id);
 }
 
-void TransformManager::set_parent(NodeID child_id, NodeID new_parent_id) noexcept {
+void TransformManager::set_spatial_parent(NodeID child_id, NodeID parent_id) noexcept {
   TransformInfo* child = get_transform(child_id.index());
   if (!child) return;
 
   // Unlink from current parent to avoid corrupting the list
   if (child->parent_idx != INVALID_NODE_ID.index()) {
-    remove_from_parent(child_id);
+    remove_from_spatial_parent(child_id);
   }
 
   // Link to new parent
-  if (new_parent_id != INVALID_NODE_ID) {
-    TransformInfo* parent = get_transform(new_parent_id.index());
+  if (parent_id != INVALID_NODE_ID) {
+    TransformInfo* parent = get_transform(parent_id.index());
     if (parent) {
-      child->parent_idx = new_parent_id.index();
+      child->parent_idx = parent_id.index();
       child->next_sibling_idx = parent->first_child_idx;
       parent->first_child_idx = child_id.index();
     }
@@ -242,7 +242,7 @@ void TransformManager::set_parent(NodeID child_id, NodeID new_parent_id) noexcep
 }
 
 void TransformManager::on_node_reparented(NodeID node_id, NodeID new_parent_id, NodeID old_parent_id) noexcept {
-  set_parent(node_id, new_parent_id);
+  set_spatial_parent(node_id, new_parent_id);
 }
 
 void TransformManager::on_scene_clear() noexcept {

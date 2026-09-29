@@ -57,7 +57,7 @@ class Scene {
 
   template <typename T>
   T* get_manager() const {
-    auto it = managers_map.find(T::MANAGER_NAME);
+    auto it = managers_map.find(T::TYPE_ID);
     if (it != managers_map.end()) {
       return static_cast<T*>(it->second.get());
     }

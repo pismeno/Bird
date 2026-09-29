@@ -25,15 +25,15 @@ class TransformManager : public NodeManagerBase<TransformManager> {
     transforms.reserve(MAX_ACTIVE_NODES);
   }
 
-  static constexpr const char* MANAGER_NAME = "transform_manager";
+  static constexpr const char* TYPE_ID = "transform_manager";
 
   [[nodiscard]] bool has_transform(NodeID node_id) const noexcept;
 
   /**
    * Sets the parent of the given child node, in this manager, this is needed for mantaining the hierarchy.
    */
-  void set_parent(NodeID child_id, NodeID parent_id) noexcept;
-  void remove_from_parent(NodeID child_id) noexcept;
+  void set_spatial_parent(NodeID child_id, NodeID parent_id) noexcept;
+  void remove_from_spatial_parent(NodeID child_id) noexcept;
 
   /**
    * @brief Gets the global transformation matrix of the given node, this represents scale, translation, shear and rotation.

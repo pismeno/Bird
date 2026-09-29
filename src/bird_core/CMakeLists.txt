@@ -73,7 +73,6 @@ add_library(BirdNodeSystem STATIC)
 
 target_sources(BirdNodeSystem
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/node_system/inode_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_handle.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/render_gatherer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene.cpp

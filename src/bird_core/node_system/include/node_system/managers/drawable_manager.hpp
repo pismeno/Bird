@@ -23,7 +23,7 @@ class DrawableManager : public NodeManagerBase<DrawableManager> {
     drawables.resize(MAX_ACTIVE_NODES, Drawable{});
   }
 
-  static constexpr const char* MANAGER_NAME = "drawable_manager";
+  static constexpr const char* TYPE_ID = "drawable_manager";
 
   [[nodiscard]] inline bool has_drawable(NodeID node_id) const noexcept { return drawables[node_id.index()].is_visible; }
 
