@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdint>
 #include <string>
+#include <string_view>
 #include <typeindex>
 #include <unordered_map>
 #include <memory>
@@ -12,6 +13,7 @@
 #include <resources/asset_handle.hpp>
 #include <utils/string_hash.hpp>
 #include <utils/result.hpp>
+
 #include "resources/asset_pool.hpp"
 
 namespace bird {
@@ -30,7 +32,7 @@ class AssetManager {
    * @return Result containing a handle to the loaded shader, or an error message.
    */
   template <std::derived_from<ShaderAsset> T, typename... Args>
-  Result<AssetHandle<T>> acquire(const std::string& filepath, Args&&... args) { // acquire implementation for shader assets
+  Result<AssetHandle<T>> acquire(const std::string_view filepath, Args&&... args) { // acquire implementation for shader assets
 
     std::string expected_suffix = std::string(".") + T::EXTENSION + ".spv";
 
@@ -48,7 +50,7 @@ class AssetManager {
    */
   template <typename T, typename... Args>
   requires (!std::derived_from<T, ShaderAsset>)
-  Result<AssetHandle<T>> acquire(const std::string& filepath, Args&&... args) {
+  Result<AssetHandle<T>> acquire(const std::string_view filepath, Args&&... args) {
     return get_pool<T>()->load(filepath, std::forward<Args>(args)...);
   }
 

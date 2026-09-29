@@ -8,6 +8,7 @@
 #include <osal/ifile_system.hpp>
 #include <osal/os_context.hpp>
 #include <utils/result.hpp>
+#include <utils/string_hash.hpp>
 
 namespace bird {
 
@@ -18,7 +19,7 @@ class AssetPool : public IAssetPool { // Implemented using Gemini AI
  public:
   AssetPool(IFileSystem* file_system) : file_system(file_system) {};
 
-  Result<AssetHandle<T>> load(const std::string &filepath) {
+  Result<AssetHandle<T>> load(std::string_view filepath) {
     // Check if the asset is already loaded
     auto it = cache.find(filepath);
     if (it != cache.end()) {
@@ -27,28 +28,28 @@ class AssetPool : public IAssetPool { // Implemented using Gemini AI
       return AssetHandle<T>(this, index, generations[index]);
     }
 
-    // If the asset is loaded, use it, else allocate for a new asset
-    uint32_t index;
-    if (!free_indices.empty()) {
-      index = free_indices.back();
-      free_indices.pop_back();
-    } else {
-      index = data.size();
-      data.emplace_back();
-      generations.push_back(1);
-      ref_counts.push_back(0);
-      filepaths.push_back("");
-    }
-
+    // Perform I/O before touching any internal index state
     auto r_read_bytes = file_system->read_bytes(filepath);
     if (!r_read_bytes) {
       return bird::fail(r_read_bytes.error());
     }
 
-    data[index].data = std::move(r_read_bytes).value();
+    // I/O succeeded: now acquire/allocate an index safely
+    uint32_t index;
+    if (!free_indices.empty()) {
+      index = free_indices.back();
+      free_indices.pop_back();
+    } else {
+      index = static_cast<uint32_t>(data.size());
+      data.emplace_back();
+      generations.push_back(1);
+      ref_counts.push_back(0);
+      filepaths.emplace_back();
+    }
 
+    data[index].data = std::move(r_read_bytes).value();
     filepaths[index] = filepath;
-    cache[filepath] = index;
+    cache.try_emplace(filepaths[index], index);
     ref_counts[index] = 1;
 
     return AssetHandle<T>(this, index, generations[index]);
@@ -85,7 +86,7 @@ class AssetPool : public IAssetPool { // Implemented using Gemini AI
   std::vector<uint32_t> ref_counts;
   std::vector<std::string> filepaths;
   std::vector<uint32_t> free_indices;
-  std::unordered_map<std::string, uint32_t> cache;
+  std::unordered_map<std::string, uint32_t, StringHash, std::equal_to<>> cache;
 
   IFileSystem* file_system;
 };
