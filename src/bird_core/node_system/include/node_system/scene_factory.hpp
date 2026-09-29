@@ -28,9 +28,19 @@ class SceneFactory {
   Result<void> load_scene_definitions_from(const std::string_view definitions_source);
 
   /**
+   * @brief Loads scene definitions from a json file, into this instance of SceneFactory.
+   */
+  Result<void> load_scene_definitions_from_file(const std::string_view path);
+
+  /**
  * @brief Loads node definitions from a json source, into this instance of SceneFactory.
  */
   Result<void> load_node_definitions_from(const std::string_view definitions_source);
+
+  /**
+   * @brief Loads node definitions from a json file, into this instance of SceneFactory.
+   */
+  Result<void> load_node_definitions_from_file(const std::string_view path);
 
   /**
    * @brief Creates a scene of the given type, this method looks up scene types in this instance of SceneFactory.
@@ -38,7 +48,8 @@ class SceneFactory {
    */
   Result<std::unique_ptr<Scene>> create_scene(const std::string& scene_type) const;
   Result<std::unique_ptr<Scene>> load_scene_from(const std::string_view scene_source) const;
-  Result<void> save_scene_to(const Scene& scene, const std::string& path) const;
+  Result<std::unique_ptr<Scene>> load_scene_from_file(const std::string_view path) const;
+  Result<void> save_scene_to(const Scene& scene, std::string_view path) const;
 
   /**
  * @brief Registers a manager for this SceneFactory instance.
