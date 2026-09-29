@@ -86,7 +86,7 @@ Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_source_to_spirv(const
     return spirv;
 }
 
-Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_file_to_spirv(const std::string& glsl_filepath, const std::string& spv_output_filepath) {
+Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_file_to_spirv(std::string_view glsl_filepath, std::string_view spv_output_filepath) {
   // Read
   auto r_acquire_glsl = asset_manager->acquire<TextAsset>(glsl_filepath);
   if (!r_acquire_glsl) return bird::fail(r_acquire_glsl.error());

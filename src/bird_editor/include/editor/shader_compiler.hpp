@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 #include <memory>
 
@@ -18,7 +19,7 @@ class ShaderCompiler {
    * @param glsl_filepath Path to the GLSL source file.
    * @param spv_output_filepath Path where the compiled SPIR-V file should be saved.
    */
-  Result<std::vector<uint32_t>> compile_glsl_file_to_spirv(const std::string& glsl_filepath, const std::string& spv_output_filepath);
+  Result<std::vector<uint32_t>> compile_glsl_file_to_spirv(std::string_view glsl_filepath, std::string_view spv_output_filepath);
 
   /**
    * Compiles GLSL source code to SPIR-V code
