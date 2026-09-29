@@ -53,7 +53,7 @@ Result<void> ShaderCompiler::init(EditorContext& editor_context) {
     return bird::ok();
 }
 
-Result<std::vector<uint32_t>> ShaderCompiler::compile_source_to_spirv(const std::string& glsl_source, const std::string& stage) {
+Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_source_to_spirv(const std::string& glsl_source, const std::string& stage) {
     auto r_glslang_stage = detect_glslang_stage(stage);
     if (!r_glslang_stage) return bird::fail(r_glslang_stage.error());
 
@@ -86,7 +86,7 @@ Result<std::vector<uint32_t>> ShaderCompiler::compile_source_to_spirv(const std:
     return spirv;
 }
 
-Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_to_spirv(const std::string& glsl_filepath, const std::string& spv_output_filepath) {
+Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_file_to_spirv(const std::string& glsl_filepath, const std::string& spv_output_filepath) {
   // Read
   auto r_acquire_glsl = asset_manager->acquire<TextAsset>(glsl_filepath);
   if (!r_acquire_glsl) return bird::fail(r_acquire_glsl.error());
@@ -94,7 +94,7 @@ Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_to_spirv(const std::s
   std::string stage = extract_stage(glsl_filepath);
 
   // Compile
-  auto r_spirv = compile_source_to_spirv(source_str, stage);
+  auto r_spirv = compile_glsl_source_to_spirv(source_str, stage);
   if (!r_spirv) return bird::fail(r_spirv.error());
 
   // Write
@@ -125,8 +125,8 @@ Result<std::string> ShaderCompiler::translate_spirv_to_msl(const std::vector<uin
     }
 }
 
-Result<std::string> ShaderCompiler::compile_glsl_to_msl(const std::string& glsl_source, const std::string& stage) {
-    auto r_spirv = compile_source_to_spirv(glsl_source, stage);
+Result<std::string> ShaderCompiler::compile_glsl_source_to_msl(const std::string& glsl_source, const std::string& stage) {
+    auto r_spirv = compile_glsl_source_to_spirv(glsl_source, stage);
     if (!r_spirv) return bird::fail(r_spirv.error());
 
     auto r_msl = translate_spirv_to_msl(r_spirv.value());

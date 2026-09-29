@@ -100,13 +100,17 @@ Result<void> Editor::init() {
   if (!r_load_node_defs) return bird::fail(r_load_node_defs.error());
 
 
-  auto r_s_c1 = shader_compiler->compile_glsl_to_spirv("core://shaders/forward_2d.vert.glsl", "core://shaders/forward_2d.vert.spv");
+  auto r_s_c1 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/forward_2d.vert.glsl",
+                                                            "core://shaders/forward_2d.vert.spv");
   if (!r_s_c1) return bird::fail(r_s_c1.error());
-  auto r_s_c2 = shader_compiler->compile_glsl_to_spirv("core://shaders/forward_2d.frag.glsl", "core://shaders/forward_2d.frag.spv");
+  auto r_s_c2 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/forward_2d.frag.glsl",
+                                                            "core://shaders/forward_2d.frag.spv");
   if (!r_s_c2) return bird::fail(r_s_c2.error());
-  auto r_s_c3 = shader_compiler->compile_glsl_to_spirv("core://shaders/triangle.vert.glsl", "core://shaders/triangle.vert.spv");
+  auto r_s_c3 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/triangle.vert.glsl",
+                                                            "core://shaders/triangle.vert.spv");
   if (!r_s_c3) return bird::fail(r_s_c3.error());
-  auto r_s_c4 = shader_compiler->compile_glsl_to_spirv("core://shaders/triangle.frag.glsl", "core://shaders/triangle.frag.spv");
+  auto r_s_c4 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/triangle.frag.glsl",
+                                                            "core://shaders/triangle.frag.spv");
   if (!r_s_c4) return bird::fail(r_s_c4.error());
 
   auto renderer_result = IRenderer::create(renderer_options, rendering_context);
