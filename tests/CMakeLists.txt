@@ -1,9 +1,11 @@
 # Enables CTest
 enable_testing()
 
-file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
-
-add_executable(BirdTests ${TEST_SOURCES})
+add_executable(BirdTests
+        test_main.cpp
+        test_test.cpp
+        transform_manager_test.cpp
+)
 
 target_link_libraries(BirdTests
         PRIVATE

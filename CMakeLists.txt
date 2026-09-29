@@ -7,6 +7,14 @@ project(Bird LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if (MSVC)
+    add_compile_options(/MP)
+    add_compile_options("$<$<CONFIG:Debug>:/Zf>")
+    add_link_options("$<$<CONFIG:Debug>:/DEBUG:FASTLINK>")
+else()
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
+endif()
+
 # external library flags
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)

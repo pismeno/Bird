@@ -37,12 +37,18 @@ target_sources(BirdOSAL
         ${CMAKE_CURRENT_SOURCE_DIR}/osal/include/osal/os_context.hpp
 )
 
-target_include_directories(BirdOSAL PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/osal/include)
+target_include_directories(BirdOSAL PUBLIC 
+        ${CMAKE_CURRENT_SOURCE_DIR}/osal/include
+        "${CMAKE_SOURCE_DIR}/external/json/include"
+)
 target_include_directories(BirdOSAL PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(BirdOSAL PUBLIC
+        glm::glm
+)
 
 target_link_libraries(BirdOSAL PRIVATE
         glfw
-        glm::glm
         BirdUtils
 )
 
