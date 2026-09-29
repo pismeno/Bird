@@ -23,23 +23,18 @@ using ManagerFactory = std::function<std::unique_ptr<INodeManager>()>;
 class SceneFactory {
  public:
   /**
-   * @brief Loads scene definitions from a json file, into this instance of SceneFactory.
-   * @param path Path to the json file.
-   * @return Result of the operation.
+   * @brief Loads scene definitions from a json source, into this instance of SceneFactory.
    */
   Result<void> load_scene_definitions_from(const std::string_view definitions_source);
 
   /**
- * @brief Loads node definitions from a json file, into this instance of SceneFactory.
- * @param path Path to the json file.
- * @return Result of the operation.
+ * @brief Loads node definitions from a json source, into this instance of SceneFactory.
  */
   Result<void> load_node_definitions_from(const std::string_view definitions_source);
 
   /**
    * @brief Creates a scene of the given type, this method looks up scene types in this instance of SceneFactory.
    * @param scene_type the string id of the scene type to create.
-   * @return created scene.
    */
   Result<std::unique_ptr<Scene>> create_scene(const std::string& scene_type) const;
   Result<std::unique_ptr<Scene>> load_scene_from(const std::string_view scene_source) const;

@@ -26,6 +26,7 @@ class AssetManager {
  public:
   /**
    * @brief Acquires a shader asset, enforcing strict file suffix matching based on the specific shader type.
+   * @param args Additional arguments to pass to the shader asset constructor.
    * @return Result containing a handle to the loaded shader, or an error message.
    */
   template <std::derived_from<ShaderAsset> T, typename... Args>
@@ -42,6 +43,7 @@ class AssetManager {
 
   /**
    * @brief Acquires a standard (non-shader) asset.
+   * @param args Additional arguments to pass to the asset constructor.
    * @return Result containing a handle to the loaded asset, or an error message.
    */
   template <typename T, typename... Args>

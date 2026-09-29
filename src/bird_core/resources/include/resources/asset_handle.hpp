@@ -53,6 +53,9 @@ class AssetHandle {
  private:
   /**
    * @brief Internal constructor used by AssetPool.
+   * @param pool The pool that manages this asset.
+   * @param index The index of the asset in the pool.
+   * @param generation The generation of the asset.
    */
   AssetHandle(AssetPool<T>* pool, uint32_t index, uint32_t generation) noexcept;
 

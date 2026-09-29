@@ -23,6 +23,7 @@ class NodeHandle {
 
   /**
    * @brief safely fetches the raw pointer. Returns nullptr if the node was destroyed.
+   * @return Pointer to the node, or nullptr if invalid.
    */
   [[nodiscard]] Node* get() const noexcept;
 

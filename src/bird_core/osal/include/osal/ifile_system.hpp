@@ -23,6 +23,7 @@ class IFileSystem {
   virtual void mount(std::string_view prefix, const std::filesystem::path& physical_path) = 0;
 
   /**
+   * @param virtual_path The virtual path to resolve.
    * @return Resolved path for the given virtual path.
    */
   virtual Result<std::filesystem::path> resolve(std::string_view virtual_path) const = 0;
@@ -51,7 +52,6 @@ class IFileSystem {
 
   /**
    * Factory method to create the specific implementation.
-   * @return
    */
   static Result<std::unique_ptr<IFileSystem>> create();
 };

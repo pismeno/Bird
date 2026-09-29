@@ -15,7 +15,8 @@ class ShaderCompiler {
  public:
   /**
    * Compiles a GLSL shader file to SPIR-V file.
-   * @return A result with vector of SPIR-V code, fail if unsuccessful
+   * @param glsl_filepath Path to the GLSL source file.
+   * @param spv_output_filepath Path where the compiled SPIR-V file should be saved.
    */
   Result<std::vector<uint32_t>> compile_glsl_to_spirv(const std::string& glsl_filepath, const std::string& spv_output_filepath);
 
@@ -23,7 +24,6 @@ class ShaderCompiler {
    * Compiles GLSL source code to SPIR-V code
    * @param glsl_source Glsl source string
    * @param stage The shader stage
-   * @return A result with vector of SPIR-V code, fail if unsuccessful
    */
   Result<std::vector<uint32_t>> compile_source_to_spirv(const std::string& glsl_source, const std::string& stage);
 
@@ -31,7 +31,7 @@ class ShaderCompiler {
   Result<std::string> compile_glsl_to_msl(const std::string& glsl_source, const std::string& stage);
 
   /**
-   * @return Factory method to create a ShaderCompiler instance.
+   * Factory method to create a ShaderCompiler instance.
    */
   static Result<std::unique_ptr<ShaderCompiler>> create(EditorContext& editor_context);
  private:

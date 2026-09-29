@@ -31,16 +31,12 @@ class TransformManager : public NodeManagerBase<TransformManager> {
 
   /**
    * Sets the parent of the given child node, in this manager, this is needed for mantaining the hierarchy.
-   * @param child_id
-   * @param parent_id
    */
   void set_parent(NodeID child_id, NodeID parent_id) noexcept;
   void remove_from_parent(NodeID child_id) noexcept;
 
   /**
    * @brief Gets the global transformation matrix of the given node, this represents scale, translation, shear and rotation.
-   * @param node_id ID of the node to get the matrix for.
-   * @return The 3x3 global transformation matrix.
    */
   [[nodiscard]] inline const glm::mat3x3& get_global_matrix(NodeID node_id) const noexcept { return global_matrices[node_id.index()]; }
 
