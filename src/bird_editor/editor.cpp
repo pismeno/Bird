@@ -5,13 +5,15 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include <osal/iwindow.hpp>
 #include <rendering/irenderer.hpp>
 #include <glslang/Public/ShaderLang.h>
 
+#include <osal/iwindow.hpp>
 #include <osal/ifile_system.hpp>
 #include <resources/asset_manager.hpp>
 #include <node_system/scene_factory.hpp>
+#include <node_system/managers/drawable_manager.hpp>
+#include <node_system/managers/transform_manager.hpp>
 #include <editor/shader_compiler.hpp>
 #include <resources/asset_types.hpp>
 
@@ -64,6 +66,14 @@ Result<void> Editor::init() {
   scene_factory = std::move(r_create_sf).value();
   node_system_context.scene_factory = scene_factory.get();
 
+  scene_factory->register_manager<TransformManager>();
+  scene_factory->register_manager<DrawableManager>();
+
+  auto r_load_scene_defs = scene_factory->load_scene_definitions_from_file("editor://scene_definitions.json");
+  if (!r_load_scene_defs) return bird::fail(r_load_scene_defs.error());
+  auto r_load_node_defs = scene_factory->load_node_definitions_from_file("editor://node_definitions.json");
+  if (!r_load_node_defs) return bird::fail(r_load_node_defs.error());
+
   rendering_context = {
       .resources_context = &resources_context
   };
@@ -88,13 +98,6 @@ Result<void> Editor::init() {
   shader_compiler = std::move(r_create_sc).value();
 
   context.shader_compiler = shader_compiler.get();
-
-  auto r_load_scene_defs = scene_factory->load_scene_definitions_from_file("editor://scene_definitions.json");
-  if (!r_load_scene_defs) return bird::fail(r_load_scene_defs.error());
-
-  auto r_load_node_defs = scene_factory->load_node_definitions_from_file("editor://node_definitions.json");
-  if (!r_load_node_defs) return bird::fail(r_load_node_defs.error());
-
 
   auto r_s_c1 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/forward_2d.vert.glsl",
                                                             "core://shaders/forward_2d.vert.spv");

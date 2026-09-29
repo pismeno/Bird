@@ -87,6 +87,16 @@ Result<void> SceneFactory::load_scene_definitions_from(const std::string_view de
         return bird::fail("Scene definition 'managers' property is not an array in source.");
       }
 
+      for (const auto& manager_name : item["managers"]) {
+        if (!manager_name.is_string()) {
+          return bird::fail("Node definition 'managers' array contains non-string value in source.");
+        }
+
+        if (manager_registry.find(manager_name.get<std::string>()) == manager_registry.end()) {
+          return bird::fail("Node definition 'managers' array contains unknown manager '" + manager_name.get<std::string>() + "' in source.");
+        }
+      }
+
       scene_definition.managers = item["managers"].get<std::vector<std::string>>();
     }
 
@@ -132,6 +142,16 @@ Result<void> SceneFactory::load_node_definitions_from(const std::string_view def
     if (item.contains("managers")) {
       if (!item["managers"].is_array()) {
         return bird::fail("Node definition 'managers' property is not an array in source.");
+      }
+
+      for (const auto& manager_name : item["managers"]) {
+        if (!manager_name.is_string()) {
+          return bird::fail("Node definition 'managers' array contains non-string value in source.");
+        }
+
+        if (manager_registry.find(manager_name.get<std::string>()) == manager_registry.end()) {
+          return bird::fail("Node definition 'managers' array contains unknown manager '" + manager_name.get<std::string>() + "' in source.");
+        }
       }
 
       node_definition.managers = item["managers"].get<std::vector<std::string>>();
