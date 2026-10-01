@@ -1,43 +1,31 @@
 #include <iostream>
 
 #define GLFW_INCLUDE_NONE
-#include "GLFW/glfw3.h"
+#include "glslang/Public/ShaderLang.h"
 
-#include "window.hpp"
-#include "../bird_core/inputs/inputs.hpp"
-#include "../bird_core/inputs/input_codes.hpp"
+#include <editor/editor.hpp>
 
 int main() {
+  using namespace bird;
 
-    using namespace bird;
-    using namespace bird::editor;
+  Editor editor = Editor();
 
-    if (!glfwInit()) {
-        // Handle initialization failure
-        return -1;
-    }
+  auto r_init = editor.init();
+  if (!r_init) {
+    std::cerr << r_init.error() << std::endl;
+    return 1;
+  }
 
-    std::unique_ptr<Window> window = Window::create(800, 600, "Bird Editor");
-    window->init();
+  auto r_run = editor.run();
+  if (!r_run) {
+    std::cerr << r_run.error() << std::endl;
+    return 1;
+  }
 
-    std::cout << "Hello, Bird Editor!" << std::endl;
+  auto r_shutdown = editor.shutdown();
+  if (!r_shutdown) {
+    std::cerr << r_shutdown.error() << std::endl;
+  }
 
-    while (!window->shouldClose())
-    {
-      window->update();
-
-      if (Inputs::isKeyPressed(KeyCode::Space)) {
-        std::cout << "Space is pressed!" << std::endl;
-      }
-
-      if (Inputs::isMouseButtonReleased(MouseCode::Left)) {
-        std::cout << "Left mouse button is released!" << std::endl;
-      }
-
-      Inputs::endFrame();
-    }
-
-    window->close();
-
-    glfwTerminate();
+  return 0;
 }

@@ -1,13 +1,35 @@
-set(EDITOR_SOURCES
-        "main.cpp"
-        "window.hpp"
-        "window.cpp"
-        "glfw_window.hpp"
-        "glfw_window.cpp"
+add_executable(BirdEditor)
+
+target_sources(BirdEditor
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/editor/editor.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/editor/editor_context.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/editor/shader_compiler.hpp
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/shader_compiler.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/editor.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
 
-add_executable(BirdEditor ${EDITOR_SOURCES})
+target_link_libraries(BirdEditor
+        PRIVATE
+        BirdCore
+        glfw
+)
 
-target_link_libraries(BirdEditor PRIVATE BirdCore)
+target_include_directories(BirdEditor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_include_directories(BirdEditor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+if(APPLE)
+    target_link_libraries(BirdEditor
+            PRIVATE
+            "-framework Cocoa"
+            "-framework QuartzCore"
+            "-framework Metal"
+            "-framework MetalKit"
+            "-framework CoreGraphics"
+    )
+
+    target_include_directories(BirdEditor PRIVATE
+            "${CMAKE_SOURCE_DIR}/external/metal-cpp"
+    )
+endif()
