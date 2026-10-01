@@ -64,10 +64,12 @@ The engine's api is designed to never throw exceptions. Instead, it relies on th
 ## Rendering
 There's an abstract `IRenderer` class, which has different implementation, for now mainly Vulkan.
 ### What should the renderer be able to do?
-- **It should render to Framebuffers**, which allows to render to different targets, like Window, ImGui component, or images
-- It should be able to **draw Images, Text (High-Quality), Shapes (Rectangles, Circles, Polygons, Lines)**
-- Accepts **Materials**, which can contain: shaders, textures, colors, normal maps
-- **Work with lights**: Directional, Point, Highlights based on normal maps, casting shadows
+- **Targets & Passes:** Render to custom Framebuffers to support multiple viewports (Window, ImGui panels, off-screen textures) and a Post-Processing pipeline.
+- **Primitives:** High-quality batched rendering of Sprites, Text (MSDF/SDF), and primitives (Rectangles, Circles, Polygons, Lines).
+- **Camera & Culling:** Support World-Space and Screen-Space rendering via View/Projection matrices, with automated AABB frustum culling for off-screen objects.
+- **Sorting & Batching:** Automatically sort drawables by Z-Index/Y-Position, and dynamically batch draw calls by Material/Texture to minimize state changes.
+- **Material System:** Accept flexible Materials supporting custom shaders, textures, and normal maps, utilizing SSBOs for highly efficient per-object data overrides.
+- **Lighting Environment:** Support 2D lighting (Directional, Point), normal-mapped specular highlights, and 2D shadow casting.
 ### Renderer frame lifecycle
 - `Renderer::BeginFrame(target_texture)` - Begins frame with a target texture to draw onto
 - `Renderer::BeginPass()` - Begin Render pass
