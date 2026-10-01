@@ -23,17 +23,14 @@ class TransformManager : public NodeManagerBase<TransformManager> {
     global_matrices.resize(MAX_ACTIVE_NODES, glm::mat3x3(1.0f));
     node_to_transform.resize(MAX_ACTIVE_NODES, invalid_transform_index);
     transforms.reserve(MAX_ACTIVE_NODES);
+
+    logical_node_parents.resize(MAX_ACTIVE_NODES, INVALID_NODE_ID.index());
+    logical_children.resize(MAX_ACTIVE_NODES);
   }
 
   static constexpr const char* TYPE_ID = "transform_manager";
 
   [[nodiscard]] bool has_transform(NodeID node_id) const noexcept;
-
-  /**
-   * Sets the parent of the given child node, in this manager, this is needed for mantaining the hierarchy.
-   */
-  void set_spatial_parent(NodeID child_id, NodeID parent_id) noexcept;
-  void remove_from_spatial_parent(NodeID child_id) noexcept;
 
   /**
    * @brief Gets the global transformation matrix of the given node, this represents scale, translation, shear and rotation.
@@ -50,6 +47,12 @@ class TransformManager : public NodeManagerBase<TransformManager> {
   Result<void> set_node_scale(NodeID node_id, glm::vec2 scale);
   Result<void> set_node_shear(NodeID node_id, glm::vec2 shear);
   Result<void> set_node_rotation(NodeID node_id, float rotation);
+
+  /**
+   * Sets the parent of the given child node, in this manager, this is needed for mantaining the hierarchy.
+   */
+  void set_spatial_parent(NodeID child_id, NodeID parent_id) noexcept;
+  void remove_from_spatial_parent(NodeID child_id) noexcept;
 
   void on_update() noexcept override;
   void on_node_destroyed(NodeID node_id) noexcept override;
@@ -81,6 +84,16 @@ class TransformManager : public NodeManagerBase<TransformManager> {
   TransformInfo* get_transform(uint32_t node_idx);
   void update_node_hierarchy(NodeID node_id, const glm::mat3& parent_global_mat);
   void mark_spatial_children_dirty(NodeID parent_id);
+
+
+  void detach_from_old_logical_parent(NodeID node_id, NodeID old_parent_id) noexcept;
+  void attach_to_new_logical_parent(NodeID node_id, NodeID new_parent_id) noexcept;
+  [[nodiscard]] NodeID find_nearest_spatial_parent(NodeID node_id) const noexcept;
+  /// Walks down the logical subtree to bind any descendants with a transform to the new spatial parent
+  void relink_spatial_children_to_new_parent(NodeID start_node_id, NodeID new_spatial_parent) noexcept;
+
+  std::vector<uint32_t> logical_node_parents;
+  std::vector<std::vector<uint32_t>> logical_children;
 
   std::vector<TransformInfo> transforms;           // Indexed by NodeID
   std::vector<glm::mat3x3> global_matrices;      // Sorted hierarchically by tree depth
