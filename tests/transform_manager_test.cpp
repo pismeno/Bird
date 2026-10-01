@@ -157,3 +157,62 @@ TEST_CASE("TransformManager - Scene Clear") {
 
   CHECK_FALSE(tm.has_transform(node));
 }
+
+TEST_CASE("TransformManager - Nearest Spatial Parent Resolution") {
+  TransformManager tm;
+
+  NodeID root = NodeID::from(1, 0);
+  NodeID logical_middle1 = NodeID::from(2, 0);
+  NodeID logical_middle2 = NodeID::from(3, 0);
+  NodeID leaf = NodeID::from(4, 0);
+
+  // Only the root and the leaf get transforms initially.
+  // The middle nodes act purely as logical organizers (e.g. empty folders/groups).
+  tm.on_node_require_manager(root);
+  tm.on_node_require_manager(leaf);
+
+  REQUIRE(tm.set_node_position(root, glm::vec2(100.0f, 50.0f)).is_ok());
+  REQUIRE(tm.set_node_position(leaf, glm::vec2(10.0f, 10.0f)).is_ok());
+
+  SUBCASE("Leaf inherits transform from distant root through transform-less logical nodes") {
+    // Build the logical chain: root -> middle1 -> middle2 -> leaf
+    tm.on_node_reparented(logical_middle1, root, INVALID_NODE_ID);
+    tm.on_node_reparented(logical_middle2, logical_middle1, INVALID_NODE_ID);
+    tm.on_node_reparented(leaf, logical_middle2, INVALID_NODE_ID);
+
+    tm.on_update();
+
+    // Leaf's spatial parent should resolve to 'root', completely skipping middle1 and middle2.
+    // Expected Global: Root(100, 50) + Leaf(10, 10) = (110, 60)
+    CHECK_TRANSLATION(tm.get_global_matrix(leaf), 110.0f, 60.0f);
+  }
+
+  SUBCASE("Inserting a spatial node into the logical chain intercepts the spatial hierarchy") {
+    // Build initial chain: root -> logical_middle1 -> leaf
+    tm.on_node_reparented(logical_middle1, root, INVALID_NODE_ID);
+    tm.on_node_reparented(leaf, logical_middle1, INVALID_NODE_ID);
+
+    tm.on_update();
+    CHECK_TRANSLATION(tm.get_global_matrix(leaf), 110.0f, 60.0f); // Inherits from root
+
+    // Create a NEW node that already has a transform initialized correctly
+    NodeID spatial_middle = NodeID::from(5, 0);
+    tm.on_node_require_manager(spatial_middle);
+    REQUIRE(tm.set_node_position(spatial_middle, glm::vec2(20.0f, 0.0f)).is_ok());
+
+    // Insert it between root and logical_middle1
+    // 1. Attach the new node to root
+    tm.on_node_reparented(spatial_middle, root, INVALID_NODE_ID);
+    // 2. Reparent logical_middle1 from root to spatial_middle
+    tm.on_node_reparented(logical_middle1, spatial_middle, root);
+
+    tm.on_update();
+
+    // spatial_middle global: Root(100, 50) + SpatialMiddle(20, 0) = (120, 50)
+    CHECK_TRANSLATION(tm.get_global_matrix(spatial_middle), 120.0f, 50.0f);
+
+    // leaf global: SpatialMiddle_Global(120, 50) + Leaf(10, 10) = (130, 60)
+    // This proves the leaf's spatial parent was successfully redirected to spatial_middle!
+    CHECK_TRANSLATION(tm.get_global_matrix(leaf), 130.0f, 60.0f);
+  }
+}
