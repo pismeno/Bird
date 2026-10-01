@@ -38,7 +38,7 @@ Result<void> Scene::serialize(nlohmann::json &json) const {
 
 Result<void> Scene::deserialize(const nlohmann::json &json) {
 
-  clear();
+  clear_nodes();
 
   if (!json.contains("nodes") || !json["nodes"].is_array()) {
     return bird::fail("Invalid scene JSON: missing 'nodes' array");

@@ -28,6 +28,10 @@ class INodeManager {
 
   [[nodiscard]] virtual std::string get_name() const = 0;
 
+  /**
+   * @brief Called when a node is destroyed.
+   * @note This is also called when the node doesnt have this manager in its definition's managers list.
+   */
   virtual void on_node_destroyed(NodeID node_id) noexcept {};
 
   /**
@@ -36,13 +40,13 @@ class INodeManager {
   virtual void on_node_created(NodeID node_id) noexcept {};
 
   /**
-   * @brief Called for nodes that have this manager in their definition's managers list.
+   * @brief Called for nodes (when created) that have this manager in their definition's managers list.
    */
   virtual void on_node_require_manager(NodeID node_id) noexcept {};
 
   /**
    * @brief Called when a node is reparented.
-   * @note This is also called when node is first created and has a parent.
+   * @note This is also called when node is first created and has a parent. And is called even for nodes that do not have this manager in their definition's managers list.'
    */
   virtual void on_node_reparented(NodeID node_id, NodeID new_parent_id, NodeID old_parent_id) noexcept {};
 

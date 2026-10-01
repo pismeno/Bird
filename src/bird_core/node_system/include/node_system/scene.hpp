@@ -47,7 +47,7 @@ class Scene {
   void update();
   void end_frame();
 
-  void clear();
+  void clear_nodes();
 
   Result<void> serialize(nlohmann::json& json) const;
   Result<void> deserialize(const nlohmann::json& json);

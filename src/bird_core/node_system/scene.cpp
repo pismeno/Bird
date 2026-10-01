@@ -98,7 +98,7 @@ void Scene::destroy_node(NodeID node_id) {
   return {this, node_id};
 }
 
-void Scene::clear() {
+void Scene::clear_nodes() {
   for (auto& manager : managers_flat_array) {
     manager->on_scene_clear();
   }
