@@ -52,6 +52,7 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_image_views();
   Result<void> create_graphics_pipeline();
   Result<void> create_command_pool();
+  Result<void> create_vertex_buffer();
   Result<void> create_command_buffer();
   Result<void> create_sync_objects();
 
@@ -60,6 +61,7 @@ class VulkanRenderer : public IRenderer {
   vk::PresentModeKHR choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes);
   vk::Extent2D choose_swap_extent(vk::SurfaceCapabilitiesKHR const &capabilities);
   uint32_t choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities);
+  Result<uint32_t> find_memory_type(uint32_t type_filter, vk::MemoryPropertyFlags properties) const;
 
   [[nodiscard]] bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
 
@@ -125,6 +127,9 @@ class VulkanRenderer : public IRenderer {
 
   vk::raii::PipelineLayout pipeline_layout = nullptr;
   vk::raii::Pipeline graphics_pipeline = nullptr;
+
+  vk::raii::Buffer vertex_buffer = nullptr;
+  vk::raii::DeviceMemory vertex_buffer_memory = nullptr;
 
   vk::raii::CommandPool command_pool = nullptr;
   vk::raii::CommandBuffer command_buffer = nullptr;
