@@ -1,17 +1,15 @@
-#include "node_system/render_gatherer.hpp"
+#include <node_system/render_gatherer.hpp>
 
 #include <vector>
 
 #include <glm/glm.hpp>
 
-#include "node_system/scene.hpp"
-#include "node_system/managers/drawable_manager.hpp"
-#include "node_system/managers/transform_manager.hpp"
-#include "rendering/render_command.hpp"
+#include <node_system/scene.hpp>
+#include <node_system/managers/drawable_manager.hpp>
+#include <node_system/managers/transform_manager.hpp>
+#include <resources/render_command.hpp>
 
-namespace bird::node_system {
-
-using namespace managers;
+namespace bird {
 
 std::vector<RenderCommand> RenderGatherer::gather_render_commands(Scene& scene) {
   auto drawable_manager = scene.get_manager<DrawableManager>();
@@ -41,4 +39,4 @@ std::vector<RenderCommand> RenderGatherer::gather_render_commands(Scene& scene) 
   return commands;
 }
 
-} // bird::node_system
+} // bird

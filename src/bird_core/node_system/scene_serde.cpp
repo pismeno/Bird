@@ -1,10 +1,11 @@
-#include "scene.hpp"
+#include <node_system/scene.hpp>
 
 #include <iostream>
 
 #include <nlohmann/json.hpp>
+#include <utils/result.hpp>
 
-namespace bird::node_system {
+namespace bird {
 
 Result<void> Scene::serialize(nlohmann::json &json) const {
 
@@ -37,7 +38,7 @@ Result<void> Scene::serialize(nlohmann::json &json) const {
 
 Result<void> Scene::deserialize(const nlohmann::json &json) {
 
-  clear();
+  clear_nodes();
 
   if (!json.contains("nodes") || !json["nodes"].is_array()) {
     return bird::fail("Invalid scene JSON: missing 'nodes' array");
@@ -106,4 +107,4 @@ Result<void> Scene::deserialize(const nlohmann::json &json) {
   return bird::ok();
 }
 
-} // bird::node_system
+} // bird

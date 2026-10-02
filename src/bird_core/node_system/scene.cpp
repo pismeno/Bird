@@ -1,5 +1,5 @@
-#include "scene.hpp"
-#include "node_types.hpp"
+#include <node_system/scene.hpp>
+#include <node_system/node_types.hpp>
 
 #include <memory>
 #include <utility>
@@ -7,14 +7,12 @@
 #include <cstdint>
 #include <algorithm>
 
-#include "utils/result.hpp"
-#include "node_system/managers/transform_manager.hpp"
-#include "node_system/managers/drawable_manager.hpp"
-#include "node_system/node_handle.hpp"
+#include <utils/result.hpp>
+#include <node_system/managers/transform_manager.hpp>
+#include <node_system/managers/drawable_manager.hpp>
+#include <node_system/node_handle.hpp>
 
-namespace bird::node_system {
-
-using namespace managers;
+namespace bird {
 
 [[nodiscard]] NodeID Scene::generate_id() {
   if (!recycled_ids.empty()) {
@@ -100,7 +98,7 @@ void Scene::destroy_node(NodeID node_id) {
   return {this, node_id};
 }
 
-void Scene::clear() {
+void Scene::clear_nodes() {
   for (auto& manager : managers_flat_array) {
     manager->on_scene_clear();
   }
@@ -195,4 +193,4 @@ void Scene::add_node_type(std::string_view node_type, std::span<const std::strin
   node_type_definitions.emplace(node_type, std::move(node_definition));
 }
 
-} // bird::node_system
+} // bird
