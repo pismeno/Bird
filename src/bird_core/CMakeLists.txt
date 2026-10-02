@@ -119,6 +119,7 @@ target_sources(BirdRendering
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/texture.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vk_mem_alloc.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/irenderer.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/texture.hpp
@@ -142,6 +143,8 @@ target_link_libraries(BirdRendering PRIVATE
         glslang
         glslang-default-resource-limits
         SPIRV
+        GPUOpen::VulkanMemoryAllocator
+        VulkanMemoryAllocator-Hpp::VulkanMemoryAllocator-Hpp
 )
 
 add_library(BirdCore INTERFACE)

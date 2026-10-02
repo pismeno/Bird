@@ -14,6 +14,7 @@
 #define VULKAN_HPP_NO_EXCEPTIONS
 
 #include <vulkan/vulkan_raii.hpp>
+#include <vk_mem_alloc_raii.hpp>
 
 #include <cstdint>
 #include <vector>
@@ -48,6 +49,7 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_surface();
   Result<void> pick_physical_device();
   Result<void> create_logical_device();
+  Result<void> create_vma();
   Result<void> create_swap_chain();
   Result<void> create_image_views();
   Result<void> create_graphics_pipeline();
@@ -62,7 +64,6 @@ class VulkanRenderer : public IRenderer {
   vk::PresentModeKHR choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes);
   vk::Extent2D choose_swap_extent(vk::SurfaceCapabilitiesKHR const &capabilities);
   uint32_t choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities);
-  Result<uint32_t> find_memory_type(uint32_t type_filter, vk::MemoryPropertyFlags properties) const;
 
   [[nodiscard]] bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
 
@@ -86,6 +87,35 @@ class VulkanRenderer : public IRenderer {
     }
 
     return std::make_unique<vk::raii::ShaderModule>(std::move(vkr_create_shader_module.value));
+  }
+
+  template <typename T>
+  Result<void> create_buffer(vk::BufferUsageFlagBits usage, const std::vector<T>& src_data, vma::raii::Buffer& dest_buffer) {
+    vk::BufferCreateInfo buffer_info{
+        .size        = sizeof(src_data[0]) * src_data.size(),
+        .usage       = usage,
+        .sharingMode = vk::SharingMode::eExclusive
+    };
+
+    vma::AllocationCreateInfo alloc_info{
+        .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite |
+                 vma::AllocationCreateFlagBits::eMapped,
+        .usage = vma::MemoryUsage::eAuto
+    };
+
+    auto vkr_create_buffer = vma_allocator.createBuffer(buffer_info, alloc_info);
+    if (vkr_create_buffer.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to create and allocate Buffer via VMA-Hpp");
+    }
+
+    dest_buffer = std::move(vkr_create_buffer.value);
+
+    const vma::raii::Allocation& allocation = dest_buffer.getAllocation();
+    void* data = allocation.getInfo().pMappedData;
+
+    memcpy(data, src_data.data(), buffer_info.size);
+
+    return bird::ok();
   }
 
   // other vulkan methods
@@ -114,13 +144,15 @@ class VulkanRenderer : public IRenderer {
   // vulkan members
   vk::raii::Context context;
 
-  vk::raii::Instance instance = nullptr;
+  vk::raii::Instance vk_instance = nullptr;
   vk::raii::PhysicalDevice physical_device = nullptr;
   vk::raii::Device logical_device = nullptr;
   uint32_t queue_index = ~0;
   vk::raii::Queue graphics_queue = nullptr;
   vk::raii::SurfaceKHR surface = nullptr;
   vk::raii::SwapchainKHR swap_chain = nullptr;
+
+  vma::raii::Allocator vma_allocator = nullptr;
 
   std::vector<vk::Image> swap_chain_images;
   vk::SurfaceFormatKHR   swap_chain_surface_format;
@@ -129,9 +161,9 @@ class VulkanRenderer : public IRenderer {
   vk::raii::PipelineLayout pipeline_layout = nullptr;
   vk::raii::Pipeline graphics_pipeline = nullptr;
 
-  vk::raii::Buffer vertex_buffer = nullptr;
+  vma::raii::Buffer vertex_buffer = nullptr;
   vk::raii::DeviceMemory vertex_buffer_memory = nullptr;
-  vk::raii::Buffer index_buffer = nullptr;
+  vma::raii::Buffer index_buffer = nullptr;
   vk::raii::DeviceMemory index_buffer_memory = nullptr;
 
   vk::raii::CommandPool command_pool = nullptr;

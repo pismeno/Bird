@@ -31,6 +31,7 @@ add_subdirectory(external/glm)
 add_subdirectory(external/spirv-cross)
 add_subdirectory(external/glslang)
 add_subdirectory(external/doctest)
+add_subdirectory(external/vma-hpp)
 
 # project subdirectories
 add_subdirectory(src/bird_core)

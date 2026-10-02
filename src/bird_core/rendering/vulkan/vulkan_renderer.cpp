@@ -6,10 +6,8 @@
 #include <algorithm>
 #include <string>
 #include <memory>
-#include <filesystem>
 
 #include <resources/asset_handle.hpp>
-#include <resources/asset_manager.hpp>
 #include <resources/asset_types.hpp>
 #include <utils/result.hpp>
 
@@ -36,6 +34,10 @@ Result<void> VulkanRenderer::init(RenderingContext& context) {
   auto r_create_logical_device = create_logical_device();
   if (!r_create_logical_device) return r_create_logical_device;
   std::cout << "Vulkan Logical Device created successfully" << std::endl;
+
+  auto r_create_vma = create_vma();
+  if (!r_create_vma) return r_create_vma;
+  std::cout << "Vulkan AMD memory allocator created successfully" << std::endl;
 
   auto r_create_swap_chain = create_swap_chain();
   if (!r_create_swap_chain) return r_create_swap_chain;
@@ -106,7 +108,7 @@ Result<void> VulkanRenderer::create_instance() {
   }
 
   // STEP 2: Transfer ownership to RAII wrapper
-  instance = vk::raii::Instance(context, inst_res.value);
+  vk_instance = vk::raii::Instance(context, inst_res.value);
 
   // We must create the surface immediately after the instance
   return create_surface();
@@ -119,18 +121,18 @@ Result<void> VulkanRenderer::create_surface() {
   };
 
   // Dereference RAII object to get the raw vk::Instance wrapper to call creation
-  vk::Instance raw_instance = *instance;
+  vk::Instance raw_instance = *vk_instance;
   auto surf_res = raw_instance.createWin32SurfaceKHR(createInfo);
   if (surf_res.result != vk::Result::eSuccess) {
     return bird::fail("Failed to create Win32 Surface");
   }
 
-  surface = vk::raii::SurfaceKHR(instance, surf_res.value);
+  surface = vk::raii::SurfaceKHR(vk_instance, surf_res.value);
   return bird::ok();
 }
 
 Result<void> VulkanRenderer::pick_physical_device() {
-  auto phys_devs_res = instance.enumeratePhysicalDevices();
+  auto phys_devs_res = vk_instance.enumeratePhysicalDevices();
   if (phys_devs_res.result != vk::Result::eSuccess) {
     return bird::fail("Failed to enumerate physical devices");
   }
@@ -241,6 +243,24 @@ Result<void> VulkanRenderer::create_logical_device() {
   logical_device = std::move(vkr_create_logical_device.value);
 
   graphics_queue = logical_device.getQueue(queue_index, 0);
+
+  return bird::ok();
+}
+
+Result<void> VulkanRenderer::create_vma() {
+  vma::AllocatorCreateInfo create_info{
+      .physicalDevice = *physical_device,
+      .preferredLargeHeapBlockSize = 0,
+
+      .vulkanApiVersion = VK_API_VERSION_1_3
+  };
+
+  auto vkr_create_allocator = vma::raii::createAllocator(vk_instance, logical_device, create_info);
+  if (vkr_create_allocator.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create AMD VMA allocator");
+  }
+
+  vma_allocator = std::move(vkr_create_allocator.value);
 
   return bird::ok();
 }
@@ -509,99 +529,11 @@ Result<void> VulkanRenderer::create_command_pool() {
 }
 
 Result<void> VulkanRenderer::create_vertex_buffer() {
-  vk::BufferCreateInfo buffer_info{
-    .size        = sizeof(vertices[0]) * vertices.size(),
-    .usage       = vk::BufferUsageFlagBits::eVertexBuffer,
-    .sharingMode = vk::SharingMode::eExclusive
-  };
-
-  auto vkr_create_vertex_buffer = logical_device.createBuffer(buffer_info);
-  if (vkr_create_vertex_buffer.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create vertex buffer");
-  }
-  vertex_buffer = std::move(vkr_create_vertex_buffer.value);
-
-  // calculate memory requirements, which might be larger than info.size because of alignment etc.
-  vk::MemoryRequirements mem_requirements = vertex_buffer.getMemoryRequirements();
-  auto r_find_memory_types = find_memory_type(mem_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-  if (!r_find_memory_types) return bird::fail(r_find_memory_types.error());
-
-  vk::MemoryAllocateInfo memoryAllocateInfo{
-      .allocationSize  = mem_requirements.size,
-      .memoryTypeIndex = r_find_memory_types.value()
-  };
-
-  auto vkr_allocate_memory = logical_device.allocateMemory(memoryAllocateInfo);
-  if (vkr_allocate_memory.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to allocate vertex buffer memory");
-  }
-  vertex_buffer_memory = std::move(vkr_allocate_memory.value);
-
-  vertex_buffer.bindMemory(*vertex_buffer_memory, 0);
-
-  auto vkr_map_memory = vertex_buffer_memory.mapMemory(0, buffer_info.size);
-  if (vkr_map_memory.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to map vertex buffer memory");
-  }
-  void* data = vkr_map_memory.value;
-  memcpy(data, vertices.data(), buffer_info.size);
-  vertex_buffer_memory.unmapMemory();
-
-  return bird::ok();
+  return create_buffer(vk::BufferUsageFlagBits::eVertexBuffer, vertices, vertex_buffer);
 }
 
 Result<void> VulkanRenderer::create_index_buffer() {
-  vk::BufferCreateInfo buffer_info{
-      .size        = sizeof(indices[0]) * indices.size(),
-      .usage       = vk::BufferUsageFlagBits::eIndexBuffer,
-      .sharingMode = vk::SharingMode::eExclusive
-  };
-
-  auto vkr_create_index_buffer = logical_device.createBuffer(buffer_info);
-  if (vkr_create_index_buffer.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create index buffer");
-  }
-  index_buffer = std::move(vkr_create_index_buffer.value);
-
-  // calculate memory requirements, which might be larger than info.size because of alignment etc.
-  vk::MemoryRequirements mem_requirements = index_buffer.getMemoryRequirements();
-  auto r_find_memory_types = find_memory_type(mem_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-  if (!r_find_memory_types) return bird::fail(r_find_memory_types.error());
-
-  vk::MemoryAllocateInfo memoryAllocateInfo{
-      .allocationSize  = mem_requirements.size,
-      .memoryTypeIndex = r_find_memory_types.value()
-  };
-
-  auto vkr_allocate_memory = logical_device.allocateMemory(memoryAllocateInfo);
-  if (vkr_allocate_memory.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to allocate index buffer memory");
-  }
-  index_buffer_memory = std::move(vkr_allocate_memory.value);
-
-  index_buffer.bindMemory(*index_buffer_memory, 0);
-
-  auto vkr_map_memory = index_buffer_memory.mapMemory(0, buffer_info.size);
-  if (vkr_map_memory.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to map index buffer memory");
-  }
-  void* data = vkr_map_memory.value;
-  memcpy(data, indices.data(), buffer_info.size);
-  index_buffer_memory.unmapMemory();
-
-  return bird::ok();
-}
-
-Result<uint32_t> VulkanRenderer::find_memory_type(uint32_t type_filter, vk::MemoryPropertyFlags properties) const {
-  vk::PhysicalDeviceMemoryProperties mem_properties = physical_device.getMemoryProperties();
-
-  for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++) {
-    if ((type_filter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties) {
-      return i;
-    }
-  }
-
-  return bird::fail("Failed to find suitable memory type");
+  return create_buffer(vk::BufferUsageFlagBits::eIndexBuffer, indices, index_buffer);;
 }
 
 Result<void> VulkanRenderer::create_command_buffer() {

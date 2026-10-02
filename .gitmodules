@@ -25,3 +25,9 @@
 [submodule "external/doctest"]
 	path = external/doctest
 	url = https://github.com/doctest/doctest.git
+[submodule "external/vma"]
+	path = external/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "external/vma-hpp"]
+	path = external/vma-hpp
+	url = https://github.com/YaaZ/VulkanMemoryAllocator-Hpp.git

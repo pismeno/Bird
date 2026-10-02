@@ -78,9 +78,6 @@ There's an abstract `IRenderer` class, which has different implementation, for n
 - `Renderer::EndFrame()` - Ends the frame, draws onto the target texture
 
 # Used libraries
-- FlatBuffers
-- AngelScript
-- Dear ImGui
 - nlohmann/json
 - GLM
 - Vulkan
@@ -90,6 +87,10 @@ There's an abstract `IRenderer` class, which has different implementation, for n
 - SPIRV-Cross
 - stb_image
 - glslang
+- Vulkan Memory Allocator 
+- FlatBuffers (not yet)
+- AngelScript (not yet)
+- Dear ImGui (not yet)
 
 # About the Repository
 this repository uses the conventional commits format: https://www.conventionalcommits.org/en/v1.0.0/  
