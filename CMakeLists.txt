@@ -34,6 +34,6 @@ add_subdirectory(external/doctest)
 add_subdirectory(external/vma-hpp)
 
 # project subdirectories
-add_subdirectory(src/bird_core)
-add_subdirectory(src/bird_editor)
+add_subdirectory(src/core)
+add_subdirectory(src/editor)
 add_subdirectory(tests/)
