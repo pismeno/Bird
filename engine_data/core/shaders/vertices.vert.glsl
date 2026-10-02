@@ -1,5 +1,11 @@
 #version 450
 
+layout(binding = 0) uniform ViewData {
+    mat4 view;
+    mat4 proj;
+    mat4 viewProj;
+} ubo;
+
 layout(location = 0) in vec2 inPosition;
 layout(location = 1) in vec3 inColor;
 

@@ -6,6 +6,7 @@
 
 #include <rendering/rendering_context.hpp>
 #include <resources/render_command.hpp>
+#include <resources/view_data.hpp>
 #include <utils/result.hpp>
 
 namespace bird {
@@ -30,7 +31,7 @@ public:
   virtual Result<void> shutdown() = 0;
 
   virtual void begin_frame() = 0;
-  virtual void begin_pass() = 0;
+  virtual void begin_pass(const ViewData& view_data) = 0;
   virtual void submit(const RenderCommand render_command) = 0;
   virtual void end_pass() = 0;
   virtual void end_frame() = 0;

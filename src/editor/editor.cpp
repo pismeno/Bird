@@ -128,7 +128,7 @@ Result<void> Editor::run() {
   while (!window->should_close()) {
     window->update();
     renderer->begin_frame();
-    renderer->begin_pass();
+    renderer->begin_pass({});
     renderer->end_pass();
     renderer->end_frame();
 

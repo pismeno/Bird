@@ -32,12 +32,14 @@ namespace bird {
 
 class VulkanRenderer : public IRenderer {
  public:
+  static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+
   Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) override;
   Result<void> init(RenderingContext& context) override;
   Result<void> shutdown() override;
 
   void begin_frame() override;
-  void begin_pass() override;
+  void begin_pass(const ViewData& view_data) override;
   void submit(const RenderCommand render_command) override;
   void end_pass() override;
   void end_frame() override;
@@ -54,10 +56,12 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_vma();
   Result<void> create_swap_chain();
   Result<void> create_image_views();
+  Result<void> create_descriptor_set_layout();
   Result<void> create_graphics_pipeline();
   Result<void> create_command_pool();
   Result<void> create_vertex_buffer();
   Result<void> create_index_buffer();
+  Result<void> create_uniform_buffers();
   Result<void> create_command_buffer();
   Result<void> create_sync_objects();
 
@@ -93,8 +97,13 @@ class VulkanRenderer : public IRenderer {
 
   template <typename T>
   Result<void> create_buffer(vk::BufferUsageFlagBits usage, const std::vector<T>& src_data, vma::raii::Buffer& dest_buffer) {
+    return create_buffer(usage, sizeof(src_data[0]) * src_data.size(), src_data, dest_buffer);
+  }
+
+  template <typename T>
+  Result<void> create_buffer(vk::BufferUsageFlagBits usage, vk::DeviceSize size, const std::vector<T>& src_data, vma::raii::Buffer& dest_buffer) {
     vk::BufferCreateInfo buffer_info{
-        .size        = sizeof(src_data[0]) * src_data.size(),
+        .size        = size,
         .usage       = usage,
         .sharingMode = vk::SharingMode::eExclusive
     };
@@ -160,13 +169,12 @@ class VulkanRenderer : public IRenderer {
   vk::SurfaceFormatKHR   swap_chain_surface_format;
   vk::Extent2D           swap_chain_extent;
 
+  vk::raii::DescriptorSetLayout descriptor_set_layout = nullptr;
   vk::raii::PipelineLayout pipeline_layout = nullptr;
   vk::raii::Pipeline graphics_pipeline = nullptr;
 
   vma::raii::Buffer vertex_buffer = nullptr;
-  vk::raii::DeviceMemory vertex_buffer_memory = nullptr;
   vma::raii::Buffer index_buffer = nullptr;
-  vk::raii::DeviceMemory index_buffer_memory = nullptr;
 
   vk::raii::CommandPool command_pool = nullptr;
   vk::raii::CommandBuffer command_buffer = nullptr;

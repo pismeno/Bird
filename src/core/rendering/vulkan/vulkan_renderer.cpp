@@ -47,6 +47,10 @@ Result<void> VulkanRenderer::init(RenderingContext& context) {
   if (!r_create_image_views) return r_create_image_views;
   std::cout << "Vulkan Image Views created successfully" << std::endl;
 
+  auto r_create_descriptor_set_layout = create_descriptor_set_layout();
+  if (!r_create_descriptor_set_layout) return r_create_descriptor_set_layout;
+  std::cout << "Vulkan Descriptor Set Layout created successfully" << std::endl;
+
   auto r_create_graphics_pipeline = create_graphics_pipeline();
   if (!r_create_graphics_pipeline) return r_create_graphics_pipeline;
   std::cout << "Vulkan Graphics Pipeline created successfully" << std::endl;
@@ -378,6 +382,29 @@ Result<void> VulkanRenderer::create_image_views() {
   return bird::ok();
 }
 
+Result<void> VulkanRenderer::create_descriptor_set_layout() {
+  vk::DescriptorSetLayoutBinding binding{
+    .binding = 0,
+    .descriptorType = vk::DescriptorType::eUniformBuffer,
+    .descriptorCount = 1,
+    .stageFlags = vk::ShaderStageFlagBits::eVertex,
+    .pImmutableSamplers = nullptr // optional
+  };
+
+  vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_info{
+    .bindingCount = 1,
+    .pBindings = &binding
+  };
+
+  auto vkr_create_desc_set_layout = logical_device.createDescriptorSetLayout(descriptor_set_layout_info);
+  if (vkr_create_desc_set_layout.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create descriptor set layout");
+  }
+  descriptor_set_layout = std::move(vkr_create_desc_set_layout.value);
+
+  return bird::ok();
+}
+
 Result<void> VulkanRenderer::create_graphics_pipeline() {
   // loading the shaders from files
   auto r_load_vert_shader_module = load_shader_module<VertexShaderAsset>("core://shaders/vertices.vert.spv");
@@ -469,10 +496,7 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
   };
 
   // pipeline layout create info
-  vk::PipelineLayoutCreateInfo pipeline_layout_info{
-    .setLayoutCount = 0,
-    .pushConstantRangeCount = 0
-  };
+  vk::PipelineLayoutCreateInfo pipeline_layout_info({}, *descriptor_set_layout);
 
   // creating the pipeline layout
   auto vkr_create_pipeline_layout = logical_device.createPipelineLayout(pipeline_layout_info);
@@ -693,7 +717,7 @@ void VulkanRenderer::begin_frame() {
   logical_device.resetFences(*draw_fence);
 }
 
-void VulkanRenderer::begin_pass() {
+void VulkanRenderer::begin_pass(const ViewData& view_data) {
   if (needs_framebuffer_resize_ || is_context_lost_) {
     return;
   }
