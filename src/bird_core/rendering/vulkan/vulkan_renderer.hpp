@@ -64,7 +64,6 @@ class VulkanRenderer : public IRenderer {
   vk::PresentModeKHR choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes);
   vk::Extent2D choose_swap_extent(vk::SurfaceCapabilitiesKHR const &capabilities);
   uint32_t choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities);
-  Result<uint32_t> find_memory_type(uint32_t type_filter, vk::MemoryPropertyFlags properties) const;
 
   [[nodiscard]] bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
 
@@ -88,6 +87,35 @@ class VulkanRenderer : public IRenderer {
     }
 
     return std::make_unique<vk::raii::ShaderModule>(std::move(vkr_create_shader_module.value));
+  }
+
+  template <typename T>
+  Result<void> create_buffer(vk::BufferUsageFlagBits usage, const std::vector<T>& src_data, vma::raii::Buffer& dest_buffer) {
+    vk::BufferCreateInfo buffer_info{
+        .size        = sizeof(src_data[0]) * src_data.size(),
+        .usage       = usage,
+        .sharingMode = vk::SharingMode::eExclusive
+    };
+
+    vma::AllocationCreateInfo alloc_info{
+        .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite |
+                 vma::AllocationCreateFlagBits::eMapped,
+        .usage = vma::MemoryUsage::eAuto
+    };
+
+    auto vkr_create_buffer = vma_allocator.createBuffer(buffer_info, alloc_info);
+    if (vkr_create_buffer.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to create and allocate Buffer via VMA-Hpp");
+    }
+
+    dest_buffer = std::move(vkr_create_buffer.value);
+
+    const vma::raii::Allocation& allocation = dest_buffer.getAllocation();
+    void* data = allocation.getInfo().pMappedData;
+
+    memcpy(data, src_data.data(), buffer_info.size);
+
+    return bird::ok();
   }
 
   // other vulkan methods
@@ -133,9 +161,9 @@ class VulkanRenderer : public IRenderer {
   vk::raii::PipelineLayout pipeline_layout = nullptr;
   vk::raii::Pipeline graphics_pipeline = nullptr;
 
-  vk::raii::Buffer vertex_buffer = nullptr;
+  vma::raii::Buffer vertex_buffer = nullptr;
   vk::raii::DeviceMemory vertex_buffer_memory = nullptr;
-  vk::raii::Buffer index_buffer = nullptr;
+  vma::raii::Buffer index_buffer = nullptr;
   vk::raii::DeviceMemory index_buffer_memory = nullptr;
 
   vk::raii::CommandPool command_pool = nullptr;
