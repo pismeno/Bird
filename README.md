@@ -71,11 +71,11 @@ There's an abstract `IRenderer` class, which has different implementation, for n
 - **Material System:** Accept flexible Materials supporting custom shaders, textures, and normal maps, utilizing SSBOs for highly efficient per-object data overrides.
 - **Lighting Environment:** Support 2D lighting (Directional, Point), normal-mapped specular highlights, and 2D shadow casting.
 ### Renderer frame lifecycle
-- `Renderer::BeginFrame(target_texture)` - Begins frame with a target texture to draw onto
-- `Renderer::BeginPass()` - Begin Render pass
-- `Renderer::Submit(RenderCommand)` - Submits a render command to be rendered
-- `Renderer::EndPass()` - End Render pass, creates a new clear Command Queue
-- `Renderer::EndFrame()` - Ends the frame, draws onto the target texture
+- `Renderer::begin_frame(target_texture)` - Begins frame with a target texture to draw onto
+- `Renderer::begin_pass()` - Begin Render pass
+- `Renderer::submit(RenderCommand)` - Submits a render command to be rendered
+- `Renderer::end_pass()` - End Render pass, creates a new clear Command Queue
+- `Renderer::end_frame()` - Ends the frame, draws onto the target texture
 
 # Used libraries
 - nlohmann/json
