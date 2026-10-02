@@ -27,11 +27,15 @@ public:
   explicit IRenderer() = default;
   virtual ~IRenderer() = default;
 
-  virtual void render() = 0;
   virtual Result<void> shutdown() = 0;
-  virtual void submit_quad(const RenderCommand render_command) = 0;
-  virtual Result<void> resize_framebuffer(uint32_t width, uint32_t height) = 0;
 
+  virtual void begin_frame() = 0;
+  virtual void begin_pass() = 0;
+  virtual void submit(const RenderCommand render_command) = 0;
+  virtual void end_pass() = 0;
+  virtual void end_frame() = 0;
+
+  virtual Result<void> resize_framebuffer(uint32_t width, uint32_t height) = 0;
   virtual bool needs_framebuffer_resize() const noexcept = 0;
   virtual bool is_context_lost() const noexcept = 0;
 

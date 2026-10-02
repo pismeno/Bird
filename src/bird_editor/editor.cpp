@@ -127,7 +127,10 @@ Result<void> Editor::init() {
 Result<void> Editor::run() {
   while (!window->should_close()) {
     window->update();
-    renderer->render();
+    renderer->begin_frame();
+    renderer->begin_pass();
+    renderer->end_pass();
+    renderer->end_frame();
 
     if (renderer->needs_framebuffer_resize()) {
       auto r_resize_framebuffer = renderer->resize_framebuffer(

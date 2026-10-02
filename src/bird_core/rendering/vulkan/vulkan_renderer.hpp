@@ -34,13 +34,15 @@ class VulkanRenderer : public IRenderer {
  public:
   Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) override;
   Result<void> init(RenderingContext& context) override;
-  void render() override;
   Result<void> shutdown() override;
-  void resize_frame_buffer(int width, int height);
-  void submit_quad(const RenderCommand render_command) override;
+
+  void begin_frame() override;
+  void begin_pass() override;
+  void submit(const RenderCommand render_command) override;
+  void end_pass() override;
+  void end_frame() override;
 
   Result<void> resize_framebuffer(uint32_t width, uint32_t height) override;
-
   bool needs_framebuffer_resize() const noexcept override;
   bool is_context_lost() const noexcept override;
  private:
@@ -178,6 +180,7 @@ class VulkanRenderer : public IRenderer {
   // rendering states
   bool is_context_lost_ = false;
   bool needs_framebuffer_resize_ = false;
+  uint32_t current_image_index_ = 0;
 
   // bird systems
   AssetManager* asset_manager;

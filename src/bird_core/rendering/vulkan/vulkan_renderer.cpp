@@ -676,7 +676,7 @@ void VulkanRenderer::transition_image_layout(
   command_buffer.pipelineBarrier2(dependency_info);
 }
 
-void VulkanRenderer::render() {
+void VulkanRenderer::begin_frame() {
   if (needs_framebuffer_resize_ || is_context_lost_) {
     return;
   }
@@ -691,15 +691,20 @@ void VulkanRenderer::render() {
   }
 
   logical_device.resetFences(*draw_fence);
+}
 
-  uint32_t image_index = 0;
+void VulkanRenderer::begin_pass() {
+  if (needs_framebuffer_resize_ || is_context_lost_) {
+    return;
+  }
+
   VkResult vkr_acquire_next_image = vkAcquireNextImageKHR(
       *logical_device,
       *swap_chain,
       UINT64_MAX,
       *present_complete_semaphore,
       VK_NULL_HANDLE,
-      &image_index
+      &current_image_index_
   );
 
   if (vkr_acquire_next_image == VK_ERROR_OUT_OF_DATE_KHR || vkr_acquire_next_image == VK_SUBOPTIMAL_KHR) {
@@ -712,8 +717,20 @@ void VulkanRenderer::render() {
     std::cerr << "Fatal: Failed to acquire swap chain image. Result: " << vkr_acquire_next_image << std::endl;
     return;
   }
+}
 
-  auto _r = record_command_buffer(image_index);
+void VulkanRenderer::end_pass() {
+  if (needs_framebuffer_resize_ || is_context_lost_) {
+    return;
+  }
+
+  auto _r = record_command_buffer(current_image_index_);
+}
+
+void VulkanRenderer::end_frame() {
+  if (needs_framebuffer_resize_ || is_context_lost_) {
+    return;
+  }
 
   vk::PipelineStageFlags waitDestinationStageMask( vk::PipelineStageFlagBits::eColorAttachmentOutput );
   const vk::SubmitInfo   submitInfo{
@@ -733,7 +750,7 @@ void VulkanRenderer::render() {
       .pWaitSemaphores    = &*render_finished_semaphore,
       .swapchainCount     = 1,
       .pSwapchains        = &*swap_chain,
-      .pImageIndices      = &image_index,
+      .pImageIndices      = &current_image_index_,
   };
 
   VkResult vkr_present = vkQueuePresentKHR(
@@ -795,6 +812,6 @@ Result<void> VulkanRenderer::resize_framebuffer(uint32_t width, uint32_t height)
 
 // TODO
 //
-void VulkanRenderer::submit_quad(const RenderCommand render_command) {}
+void VulkanRenderer::submit(const RenderCommand render_command) {}
 //
 } // namespace bird
