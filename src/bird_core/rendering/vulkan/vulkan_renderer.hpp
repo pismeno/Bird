@@ -14,6 +14,7 @@
 #define VULKAN_HPP_NO_EXCEPTIONS
 
 #include <vulkan/vulkan_raii.hpp>
+#include <vk_mem_alloc_raii.hpp>
 
 #include <cstdint>
 #include <vector>
@@ -48,6 +49,7 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_surface();
   Result<void> pick_physical_device();
   Result<void> create_logical_device();
+  Result<void> create_vma();
   Result<void> create_swap_chain();
   Result<void> create_image_views();
   Result<void> create_graphics_pipeline();
@@ -114,13 +116,15 @@ class VulkanRenderer : public IRenderer {
   // vulkan members
   vk::raii::Context context;
 
-  vk::raii::Instance instance = nullptr;
+  vk::raii::Instance vk_instance = nullptr;
   vk::raii::PhysicalDevice physical_device = nullptr;
   vk::raii::Device logical_device = nullptr;
   uint32_t queue_index = ~0;
   vk::raii::Queue graphics_queue = nullptr;
   vk::raii::SurfaceKHR surface = nullptr;
   vk::raii::SwapchainKHR swap_chain = nullptr;
+
+  vma::raii::Allocator vma_allocator = nullptr;
 
   std::vector<vk::Image> swap_chain_images;
   vk::SurfaceFormatKHR   swap_chain_surface_format;
