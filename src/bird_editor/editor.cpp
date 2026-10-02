@@ -111,6 +111,8 @@ Result<void> Editor::init() {
   auto r_s_c4 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/triangle.frag.glsl",
                                                             "core://shaders/triangle.frag.spv");
   if (!r_s_c4) return bird::fail(r_s_c4.error());
+  auto r_s_c5 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/vertices.vert.glsl",
+                                                            "core://shaders/vertices.vert.spv");
 
   auto renderer_result = IRenderer::create(renderer_options, rendering_context);
   if (!renderer_result) {

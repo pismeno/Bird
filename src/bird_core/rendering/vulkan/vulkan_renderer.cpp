@@ -57,6 +57,10 @@ Result<void> VulkanRenderer::init(RenderingContext& context) {
   if (!r_create_vertex_buffer) return r_create_vertex_buffer;
   std::cout << "Vulkan Vertex Buffer created successfully" << std::endl;
 
+  auto r_create_index_buffer = create_index_buffer();
+  if (!r_create_index_buffer) return r_create_index_buffer;
+  std::cout << "Vulkan index Buffer created successfully" << std::endl;
+
   auto r_create_command_buffer = create_command_buffer();
   if (!r_create_command_buffer) return r_create_command_buffer;
   std::cout << "Vulkan Command Buffer created successfully" << std::endl;
@@ -356,7 +360,7 @@ Result<void> VulkanRenderer::create_image_views() {
 
 Result<void> VulkanRenderer::create_graphics_pipeline() {
   // loading the shaders from files
-  auto r_load_vert_shader_module = load_shader_module<VertexShaderAsset>("core://shaders/triangle.vert.spv");
+  auto r_load_vert_shader_module = load_shader_module<VertexShaderAsset>("core://shaders/vertices.vert.spv");
   if (!r_load_vert_shader_module) return bird::fail(r_load_vert_shader_module.error());
 
   auto r_load_frag_shader_module = load_shader_module<FragmentShaderAsset>("core://shaders/triangle.frag.spv");
@@ -517,6 +521,7 @@ Result<void> VulkanRenderer::create_vertex_buffer() {
   }
   vertex_buffer = std::move(vkr_create_vertex_buffer.value);
 
+  // calculate memory requirements, which might be larger than info.size because of alignment etc.
   vk::MemoryRequirements mem_requirements = vertex_buffer.getMemoryRequirements();
   auto r_find_memory_types = find_memory_type(mem_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
   if (!r_find_memory_types) return bird::fail(r_find_memory_types.error());
@@ -541,6 +546,48 @@ Result<void> VulkanRenderer::create_vertex_buffer() {
   void* data = vkr_map_memory.value;
   memcpy(data, vertices.data(), buffer_info.size);
   vertex_buffer_memory.unmapMemory();
+
+  return bird::ok();
+}
+
+Result<void> VulkanRenderer::create_index_buffer() {
+  vk::BufferCreateInfo buffer_info{
+      .size        = sizeof(indices[0]) * indices.size(),
+      .usage       = vk::BufferUsageFlagBits::eIndexBuffer,
+      .sharingMode = vk::SharingMode::eExclusive
+  };
+
+  auto vkr_create_index_buffer = logical_device.createBuffer(buffer_info);
+  if (vkr_create_index_buffer.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create index buffer");
+  }
+  index_buffer = std::move(vkr_create_index_buffer.value);
+
+  // calculate memory requirements, which might be larger than info.size because of alignment etc.
+  vk::MemoryRequirements mem_requirements = index_buffer.getMemoryRequirements();
+  auto r_find_memory_types = find_memory_type(mem_requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+  if (!r_find_memory_types) return bird::fail(r_find_memory_types.error());
+
+  vk::MemoryAllocateInfo memoryAllocateInfo{
+      .allocationSize  = mem_requirements.size,
+      .memoryTypeIndex = r_find_memory_types.value()
+  };
+
+  auto vkr_allocate_memory = logical_device.allocateMemory(memoryAllocateInfo);
+  if (vkr_allocate_memory.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to allocate index buffer memory");
+  }
+  index_buffer_memory = std::move(vkr_allocate_memory.value);
+
+  index_buffer.bindMemory(*index_buffer_memory, 0);
+
+  auto vkr_map_memory = index_buffer_memory.mapMemory(0, buffer_info.size);
+  if (vkr_map_memory.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to map index buffer memory");
+  }
+  void* data = vkr_map_memory.value;
+  memcpy(data, indices.data(), buffer_info.size);
+  index_buffer_memory.unmapMemory();
 
   return bird::ok();
 }
@@ -633,9 +680,10 @@ Result<void> VulkanRenderer::record_command_buffer(const uint32_t image_index) {
 
   command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *graphics_pipeline);
   command_buffer.bindVertexBuffers(0, *vertex_buffer, {0});
+  command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint16);
   command_buffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swap_chain_extent.width), static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f));
   command_buffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swap_chain_extent));
-  command_buffer.draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+  command_buffer.drawIndexed(indices.size(), 1, 0, 0, 0);
 
   // End rendering
   command_buffer.endRendering();

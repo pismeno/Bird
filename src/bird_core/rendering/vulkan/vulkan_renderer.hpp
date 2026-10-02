@@ -53,6 +53,7 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_graphics_pipeline();
   Result<void> create_command_pool();
   Result<void> create_vertex_buffer();
+  Result<void> create_index_buffer();
   Result<void> create_command_buffer();
   Result<void> create_sync_objects();
 
@@ -130,6 +131,8 @@ class VulkanRenderer : public IRenderer {
 
   vk::raii::Buffer vertex_buffer = nullptr;
   vk::raii::DeviceMemory vertex_buffer_memory = nullptr;
+  vk::raii::Buffer index_buffer = nullptr;
+  vk::raii::DeviceMemory index_buffer_memory = nullptr;
 
   vk::raii::CommandPool command_pool = nullptr;
   vk::raii::CommandBuffer command_buffer = nullptr;
@@ -162,9 +165,15 @@ class VulkanRenderer : public IRenderer {
   };
 
   const std::vector<Vertex> vertices = {
-      {{0.0f, -0.5f}, {1.0f, 0.0f, 1.0f}},
+      {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}},
       {{0.5f, 0.5f}, {0.0f, 1.0f, 1.0f}},
-      {{-0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}}};
+      {{-0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}},
+      {{0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}}};
+
+  const std::vector<uint16_t> indices = {
+      0, 3, 1,   // Top-Left -> Top-Right -> Bottom-Right (CW)
+      0, 1, 2    // Top-Left -> Bottom-Right -> Bottom-Left (CW)
+  };
 };
 
 } // namespace bird
