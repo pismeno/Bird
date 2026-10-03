@@ -13,8 +13,7 @@
 
 namespace bird {
 
-namespace {
-Result<std::unique_ptr<IRenderer>> make_renderer(RendererType type) {
+Result<std::unique_ptr<IRenderer>> IRenderer::make_renderer(RendererType type) {
   switch (type) {
     case RendererType::Metal: {
 #ifdef BIRD_PLATFORM_APPLE
@@ -25,7 +24,7 @@ Result<std::unique_ptr<IRenderer>> make_renderer(RendererType type) {
     }
     case RendererType::Vulkan: {
 #ifdef BIRD_PLATFORM_WINDOWS
-      return std::make_unique<VulkanRenderer>();
+      return std::unique_ptr<IRenderer>(new VulkanRenderer());
 #else
       return bird::fail("Vulkan renderer is only supported on Windows");
 #endif
@@ -37,7 +36,6 @@ Result<std::unique_ptr<IRenderer>> make_renderer(RendererType type) {
       return bird::fail("Unsupported renderer type");
     }
   }
-}
 }
 
 Result<std::unique_ptr<IRenderer>> IRenderer::create(RendererOptions options, RenderingContext& context) {

@@ -13,6 +13,12 @@
 
 namespace bird {
 
+VulkanRenderer::VulkanRenderer() {
+  draw_fences.reserve(MAX_FRAMES_IN_FLIGHT);
+  render_finished_semaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+  present_complete_semaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+}
+
 Result<void> VulkanRenderer::attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) {
   this->native_window_handle = native_window_handle;
   this->window_width = window_width;
@@ -67,7 +73,7 @@ Result<void> VulkanRenderer::init(RenderingContext& context) {
   if (!r_create_index_buffer) return r_create_index_buffer;
   std::cout << "Vulkan index Buffer created successfully" << std::endl;
 
-  auto r_create_command_buffer = create_command_buffer();
+  auto r_create_command_buffer = create_command_buffers();
   if (!r_create_command_buffer) return r_create_command_buffer;
   std::cout << "Vulkan Command Buffer created successfully" << std::endl;
 
@@ -560,53 +566,54 @@ Result<void> VulkanRenderer::create_index_buffer() {
   return create_buffer(vk::BufferUsageFlagBits::eIndexBuffer, indices, index_buffer);;
 }
 
-Result<void> VulkanRenderer::create_command_buffer() {
+Result<void> VulkanRenderer::create_command_buffers() {
   vk::CommandBufferAllocateInfo alloc_info{
     .commandPool = command_pool,
     .level = vk::CommandBufferLevel::ePrimary,
-    .commandBufferCount = 1
+    .commandBufferCount = MAX_FRAMES_IN_FLIGHT
   };
 
   auto vkr_alloc_command_buffers = logical_device.allocateCommandBuffers(alloc_info);
   if (vkr_alloc_command_buffers.result != vk::Result::eSuccess) {
     return bird::fail("Failed to allocate command buffers");
   }
-  command_buffer = std::move(vkr_alloc_command_buffers.value.front());
+  command_buffers = std::move(vkr_alloc_command_buffers.value);
 
   return bird::ok();
 }
 
 Result<void> VulkanRenderer::create_sync_objects() {
-  auto vkr_create_present_complete_semaphore = logical_device.createSemaphore(vk::SemaphoreCreateInfo());
-  if (vkr_create_present_complete_semaphore.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create present complete semaphore");
-  }
-  present_complete_semaphore = std::move(vkr_create_present_complete_semaphore.value);
+  for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    auto vkr_create_present_complete_semaphore = logical_device.createSemaphore(vk::SemaphoreCreateInfo());
+    if (vkr_create_present_complete_semaphore.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to create present complete semaphore");
+    }
+    present_complete_semaphores.push_back(std::move(vkr_create_present_complete_semaphore.value));
 
-  auto vkr_create_render_finished_semaphore = logical_device.createSemaphore(vk::SemaphoreCreateInfo());
-  if (vkr_create_render_finished_semaphore.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create render finished semaphore");
-  }
-  render_finished_semaphore = std::move(vkr_create_render_finished_semaphore.value);
+    auto vkr_create_render_finished_semaphore = logical_device.createSemaphore(vk::SemaphoreCreateInfo());
+    if (vkr_create_render_finished_semaphore.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to create render finished semaphore");
+    }
+    render_finished_semaphores.push_back(std::move(vkr_create_render_finished_semaphore.value));
 
-  auto vkr_create_draw_fence = logical_device.createFence(vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
-  if (vkr_create_draw_fence.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create draw fence");
+    auto vkr_create_draw_fence = logical_device.createFence(vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
+    if (vkr_create_draw_fence.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to create draw fence");
+    }
+    draw_fences.push_back(std::move(vkr_create_draw_fence.value));
   }
-  draw_fence = std::move(vkr_create_draw_fence.value);
 
   return bird::ok();
 }
 
-Result<void> VulkanRenderer::record_command_buffer(const uint32_t image_index) {
-  auto vkr_command_buffer_begin = command_buffer.begin({});
+Result<void> VulkanRenderer::record_command_buffer() {
+  auto vkr_command_buffer_begin = command_buffers[current_frame_].begin({});
   if (vkr_command_buffer_begin != vk::Result::eSuccess) {
     return bird::fail("Failed to begin command buffer recording");
   }
 
   // Transition the image layout for rendering
   transition_image_layout(
-      image_index,
       vk::ImageLayout::eUndefined,
       vk::ImageLayout::eColorAttachmentOptimal,
       {},
@@ -615,10 +622,11 @@ Result<void> VulkanRenderer::record_command_buffer(const uint32_t image_index) {
       vk::PipelineStageFlagBits2::eColorAttachmentOutput
   );
 
+
   // Set up the color attachment
-  vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
+  vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 1.0f, 0.0f, 1.0f);
   vk::RenderingAttachmentInfo attachmentInfo = {
-      .imageView   = swap_chain_image_views[image_index],
+      .imageView   = swap_chain_image_views[current_image_index_],
       .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
       .loadOp      = vk::AttachmentLoadOp::eClear,
       .storeOp     = vk::AttachmentStoreOp::eStore,
@@ -632,21 +640,20 @@ Result<void> VulkanRenderer::record_command_buffer(const uint32_t image_index) {
       .pColorAttachments    = &attachmentInfo};
 
   // Begin rendering
-  command_buffer.beginRendering(renderingInfo);
+  command_buffers[current_frame_].beginRendering(renderingInfo);
 
-  command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *graphics_pipeline);
-  command_buffer.bindVertexBuffers(0, *vertex_buffer, {0});
-  command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint16);
-  command_buffer.setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swap_chain_extent.width), static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f));
-  command_buffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swap_chain_extent));
-  command_buffer.drawIndexed(indices.size(), 1, 0, 0, 0);
+  command_buffers[current_frame_].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphics_pipeline);
+  command_buffers[current_frame_].bindVertexBuffers(0, *vertex_buffer, {0});
+  command_buffers[current_frame_].bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint16);
+  command_buffers[current_frame_].setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swap_chain_extent.width), static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f));
+  command_buffers[current_frame_].setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swap_chain_extent));
+  command_buffers[current_frame_].drawIndexed(indices.size(), 1, 0, 0, 0);
 
   // End rendering
-  command_buffer.endRendering();
+  command_buffers[current_frame_].endRendering();
 
   // Transition the image layout for presentation
   transition_image_layout(
-      image_index,
       vk::ImageLayout::eColorAttachmentOptimal,
       vk::ImageLayout::ePresentSrcKHR,
       vk::AccessFlagBits2::eColorAttachmentWrite,
@@ -655,7 +662,7 @@ Result<void> VulkanRenderer::record_command_buffer(const uint32_t image_index) {
       vk::PipelineStageFlagBits2::eBottomOfPipe
   );
 
-  auto vkr_command_buffer_end = command_buffer.end();
+  auto vkr_command_buffer_end = command_buffers[current_frame_].end();
   if (vkr_command_buffer_end != vk::Result::eSuccess) {
     return bird::fail("Failed to end command buffer recording");
   }
@@ -664,7 +671,6 @@ Result<void> VulkanRenderer::record_command_buffer(const uint32_t image_index) {
 }
 
 void VulkanRenderer::transition_image_layout(
-    uint32_t                imageIndex,
     vk::ImageLayout         old_layout,
     vk::ImageLayout         new_layout,
     vk::AccessFlags2        src_access_mask,
@@ -682,7 +688,7 @@ void VulkanRenderer::transition_image_layout(
       .newLayout           = new_layout,
       .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
       .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      .image               = swap_chain_images[imageIndex],
+      .image               = swap_chain_images[current_image_index_],
       .subresourceRange    = {
           .aspectMask     = vk::ImageAspectFlagBits::eColor,
           .baseMipLevel   = 0,
@@ -697,7 +703,7 @@ void VulkanRenderer::transition_image_layout(
       .pImageMemoryBarriers    = &barrier
   };
 
-  command_buffer.pipelineBarrier2(dependency_info);
+  command_buffers[current_frame_].pipelineBarrier2(dependency_info);
 }
 
 void VulkanRenderer::begin_frame() {
@@ -705,7 +711,7 @@ void VulkanRenderer::begin_frame() {
     return;
   }
 
-  auto vkr_fence = logical_device.waitForFences(*draw_fence, vk::True, UINT64_MAX);
+  auto vkr_fence = logical_device.waitForFences(*draw_fences[current_frame_], vk::True, UINT64_MAX);
   if (vkr_fence == vk::Result::eErrorDeviceLost) {
     is_context_lost_ = true;
     return;
@@ -714,7 +720,7 @@ void VulkanRenderer::begin_frame() {
     return;
   }
 
-  logical_device.resetFences(*draw_fence);
+  logical_device.resetFences(*draw_fences[current_frame_]);
 }
 
 void VulkanRenderer::begin_pass(const ViewData& view_data) {
@@ -726,7 +732,7 @@ void VulkanRenderer::begin_pass(const ViewData& view_data) {
       *logical_device,
       *swap_chain,
       UINT64_MAX,
-      *present_complete_semaphore,
+      *present_complete_semaphores[current_frame_],
       VK_NULL_HANDLE,
       &current_image_index_
   );
@@ -748,7 +754,7 @@ void VulkanRenderer::end_pass() {
     return;
   }
 
-  auto _r = record_command_buffer(current_image_index_);
+  (void) record_command_buffer();
 }
 
 void VulkanRenderer::end_frame() {
@@ -759,19 +765,19 @@ void VulkanRenderer::end_frame() {
   vk::PipelineStageFlags waitDestinationStageMask( vk::PipelineStageFlagBits::eColorAttachmentOutput );
   const vk::SubmitInfo   submitInfo{
       .waitSemaphoreCount   = 1,
-      .pWaitSemaphores      = &*present_complete_semaphore,
+      .pWaitSemaphores      = &*present_complete_semaphores[current_frame_],
       .pWaitDstStageMask    = &waitDestinationStageMask,
       .commandBufferCount   = 1,
-      .pCommandBuffers      = &*command_buffer,
+      .pCommandBuffers      = &*command_buffers[current_frame_],
       .signalSemaphoreCount = 1,
-      .pSignalSemaphores    = &*render_finished_semaphore
+      .pSignalSemaphores    = &*render_finished_semaphores[current_frame_]
   };
 
-  graphics_queue.submit(submitInfo, *draw_fence);
+  graphics_queue.submit(submitInfo, *draw_fences[current_frame_]);
 
   const vk::PresentInfoKHR presentInfoKHR{
       .waitSemaphoreCount = 1,
-      .pWaitSemaphores    = &*render_finished_semaphore,
+      .pWaitSemaphores    = &*render_finished_semaphores[current_frame_],
       .swapchainCount     = 1,
       .pSwapchains        = &*swap_chain,
       .pImageIndices      = &current_image_index_,
@@ -788,6 +794,15 @@ void VulkanRenderer::end_frame() {
     is_context_lost_ = true;
   } else if (vkr_present != VK_SUCCESS) {
     std::cerr << "Fatal: Failed to present image. Result: " << vkr_present << "\n";
+  }
+
+  move_to_next_frame();
+}
+
+inline void VulkanRenderer::move_to_next_frame() {
+  current_frame_++;
+  if (current_frame_ >= MAX_FRAMES_IN_FLIGHT) {
+    current_frame_ = 0;
   }
 }
 
