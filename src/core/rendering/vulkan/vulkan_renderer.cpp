@@ -103,10 +103,15 @@ Result<void> VulkanRenderer::create_instance() {
   extensions.push_back("VK_KHR_xcb_surface");
 #endif
 
+  std::vector<const char*> layers;
+#ifndef NDEBUG
+  layers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+
   vk::InstanceCreateInfo create_info{
       .pApplicationInfo = &app_info,
-      .enabledLayerCount = 0,
-      .ppEnabledLayerNames = nullptr,
+      .enabledLayerCount = static_cast<uint32_t>(layers.size()),
+      .ppEnabledLayerNames = layers.data(),
       .enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
       .ppEnabledExtensionNames = extensions.data()
   };
@@ -502,7 +507,10 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
   };
 
   // pipeline layout create info
-  vk::PipelineLayoutCreateInfo pipeline_layout_info({}, *descriptor_set_layout);
+  vk::PipelineLayoutCreateInfo pipeline_layout_info{
+      .setLayoutCount = 1,
+      .pSetLayouts    = &*descriptor_set_layout
+  };
 
   // creating the pipeline layout
   auto vkr_create_pipeline_layout = logical_device.createPipelineLayout(pipeline_layout_info);
@@ -624,7 +632,7 @@ Result<void> VulkanRenderer::record_command_buffer() {
 
 
   // Set up the color attachment
-  vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 1.0f, 0.0f, 1.0f);
+  vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 1.0f, 0.5f, 1.0f);
   vk::RenderingAttachmentInfo attachmentInfo = {
       .imageView   = swap_chain_image_views[current_image_index_],
       .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
