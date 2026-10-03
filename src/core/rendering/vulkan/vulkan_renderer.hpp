@@ -31,8 +31,11 @@
 namespace bird {
 
 class VulkanRenderer : public IRenderer {
+
+  friend class IRenderer;
+
  public:
-  static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+  static constexpr inline int MAX_FRAMES_IN_FLIGHT = 2;
 
   Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) override;
   Result<void> init(RenderingContext& context) override;
@@ -47,7 +50,10 @@ class VulkanRenderer : public IRenderer {
   Result<void> resize_framebuffer(uint32_t width, uint32_t height) override;
   bool needs_framebuffer_resize() const noexcept override;
   bool is_context_lost() const noexcept override;
+
  private:
+  explicit VulkanRenderer();
+
   // initialization methods
   Result<void> create_instance();
   Result<void> create_surface();
@@ -62,7 +68,7 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_vertex_buffer();
   Result<void> create_index_buffer();
   Result<void> create_uniform_buffers();
-  Result<void> create_command_buffer();
+  Result<void> create_command_buffers();
   Result<void> create_sync_objects();
 
   //initialization helper methods
@@ -133,13 +139,13 @@ class VulkanRenderer : public IRenderer {
   Result<void> recreate_swap_chain();
 
   // rendering helper methods
-  Result<void> record_command_buffer(const uint32_t image_index);
+  Result<void> record_command_buffer();
+  inline void move_to_next_frame();
 
   // other helper methods
   Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string& filepath) const;
 
   void transition_image_layout(
-      uint32_t                imageIndex,
       vk::ImageLayout         old_layout,
       vk::ImageLayout         new_layout,
       vk::AccessFlags2        src_access_mask,
@@ -177,18 +183,19 @@ class VulkanRenderer : public IRenderer {
   vma::raii::Buffer index_buffer = nullptr;
 
   vk::raii::CommandPool command_pool = nullptr;
-  vk::raii::CommandBuffer command_buffer = nullptr;
+  std::vector<vk::raii::CommandBuffer> command_buffers;
 
   std::vector<vk::raii::ImageView> swap_chain_image_views;
 
-  vk::raii::Semaphore present_complete_semaphore = nullptr;
-  vk::raii::Semaphore render_finished_semaphore  = nullptr;
-  vk::raii::Fence     draw_fence                 = nullptr;
+  std::vector<vk::raii::Semaphore> present_complete_semaphores;
+  std::vector<vk::raii::Semaphore> render_finished_semaphores;
+  std::vector<vk::raii::Fence> draw_fences;
 
   // rendering states
   bool is_context_lost_ = false;
   bool needs_framebuffer_resize_ = false;
   uint32_t current_image_index_ = 0;
+  uint32_t current_frame_ = 0;
 
   // bird systems
   AssetManager* asset_manager;

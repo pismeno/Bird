@@ -5,6 +5,15 @@
 
 namespace bird {
 
+TransformManager::TransformManager() {
+  global_matrices.resize(MAX_ACTIVE_NODES, glm::mat3x3(1.0f));
+  node_to_transform.resize(MAX_ACTIVE_NODES, invalid_transform_index);
+  transforms.reserve(MAX_ACTIVE_NODES);
+
+  logical_node_parents.resize(MAX_ACTIVE_NODES, INVALID_NODE_ID.index());
+  logical_children.resize(MAX_ACTIVE_NODES);
+}
+
 Result<void> TransformManager::set_node_position(NodeID node_id, glm::vec2 pos) {
   TransformInfo* transform = get_transform(node_id.index());
 
