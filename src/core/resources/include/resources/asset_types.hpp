@@ -7,12 +7,33 @@
 
 namespace bird {
 
+namespace {
+/**
+ * @brief Base class for all assets.
+ */
+struct Asset {
+  virtual ~Asset() = default;
+};
+}
+
+struct ImageAsset : Asset {
+  static constexpr const char* TYPE_ID = "image_asset";
+
+  uint32_t width = 0;
+  uint32_t height = 0;
+  uint32_t channels = 0;
+
+  std::vector<uint8_t> pixel_data;
+
+  [[nodiscard]] const inline size_t get_size_bytes() const noexcept { return pixel_data.size(); };
+};
+
 /**
  * @brief Base class for all binary assets.
  *
  * All asset structs have to contain TYPE_ID
  */
-struct BinaryAsset {
+struct BinaryAsset : Asset {
   static constexpr const char* TYPE_ID = "generic_binary_asset";
 
   alignas(8) std::vector<uint8_t> data;
@@ -27,14 +48,6 @@ struct TextAsset : public BinaryAsset {
   [[nodiscard]] std::string_view as_string_view() const noexcept;
   [[nodiscard]] std::string as_string() const;
 };
-
-/*
-// Optional: You can create strongly-typed text assets just like you did with shaders
-struct JsonAsset : public TextAsset {
-  static constexpr const char* TYPE_ID = "json_asset";
-  static constexpr const char* EXTENSION = "json";
-};
-*/
 
 /**
  * @brief Base class for all shader assets. This is not a struct to be used for actual shader assets.

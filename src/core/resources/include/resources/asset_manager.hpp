@@ -44,12 +44,12 @@ class AssetManager {
   }
 
   /**
-   * @brief Acquires a standard (non-shader) asset.
+   * @brief Acquires a standard binary (non-shader) asset.
    * @param args Additional arguments to pass to the asset constructor.
    * @return Result containing a handle to the loaded asset, or an error message.
    */
   template <typename T, typename... Args>
-  requires (!std::derived_from<T, ShaderAsset>)
+  requires (!std::derived_from<T, ShaderAsset> && std::derived_from<T, Asset>)
   Result<AssetHandle<T>> acquire(const std::string_view filepath, Args&&... args) {
     return get_pool<T>()->load(filepath, std::forward<Args>(args)...);
   }

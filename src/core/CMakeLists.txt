@@ -57,8 +57,10 @@ add_library(BirdResources STATIC)
 target_sources(BirdResources
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_pool.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_pool.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_types.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/stbi_image.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/render_command.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/asset_handle.hpp
@@ -68,7 +70,10 @@ target_sources(BirdResources
 )
 
 target_include_directories(BirdResources PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/resources/include)
-target_include_directories(BirdResources PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(BirdResources PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        "${CMAKE_SOURCE_DIR}/external/stb"
+)
 
 target_link_libraries(BirdResources PUBLIC
         BirdOSAL
@@ -115,7 +120,6 @@ add_library(BirdRendering STATIC)
 target_sources(BirdRendering
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/irenderer.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/stbi_image.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/texture.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.hpp

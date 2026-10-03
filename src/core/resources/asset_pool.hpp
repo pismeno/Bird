@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 
+#include <resources/asset_types.hpp>
 #include <osal/ifile_system.hpp>
 #include <osal/os_context.hpp>
 #include <utils/result.hpp>
@@ -34,6 +35,11 @@ class AssetPool : public IAssetPool { // Implemented using Gemini AI
       return bird::fail(r_read_bytes.error());
     }
 
+    auto r_asset = parse_asset(filepath, std::move(r_read_bytes).value());
+    if (!r_asset) {
+      return bird::fail(r_asset.error());
+    }
+
     // I/O succeeded: now acquire/allocate an index safely
     uint32_t index;
     if (!free_indices.empty()) {
@@ -47,8 +53,8 @@ class AssetPool : public IAssetPool { // Implemented using Gemini AI
       filepaths.emplace_back();
     }
 
-    data[index].data = std::move(r_read_bytes).value();
-    filepaths[index] = filepath;
+    data[index] = std::move(r_asset).value();
+    filepaths[index] = std::string(filepath);
     cache.try_emplace(filepaths[index], index);
     ref_counts[index] = 1;
 
@@ -80,6 +86,13 @@ class AssetPool : public IAssetPool { // Implemented using Gemini AI
     }
   }
 
+ protected:
+  Result<T> parse_asset(std::string_view filepath, std::vector<uint8_t> raw_bytes) {
+    T asset;
+    asset.data = std::move(raw_bytes);
+    return asset;
+  }
+
  private:
   std::vector<T> data;
   std::vector<uint32_t> generations;
@@ -90,6 +103,10 @@ class AssetPool : public IAssetPool { // Implemented using Gemini AI
 
   IFileSystem* file_system;
 };
+
+// Declare the specialization so the compiler knows ImageAsset is handled differently
+template <>
+Result<ImageAsset> AssetPool<ImageAsset>::parse_asset(std::string_view filepath, std::vector<uint8_t> raw_bytes);
 
 // Asset Handle Implementation
 template<typename T>

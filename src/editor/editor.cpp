@@ -115,6 +115,14 @@ Result<void> Editor::init() {
   auto r_s_c5 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/vertices.vert.glsl",
                                                             "core://shaders/vertices.vert.spv");
 
+  auto r_load_img = asset_manager->acquire<ImageAsset>("editor://test_img.png");
+  if (!r_load_img) return bird::fail(r_load_img.error());
+  AssetHandle<ImageAsset> img = std::move(r_load_img).value();
+  for (int i = 0; i < img->get_size_bytes(); i++) {
+    std::cout << static_cast<int>(img->pixel_data[i]) << " ";
+  }
+  std::cout << std::endl;
+
   auto renderer_result = IRenderer::create(renderer_options, rendering_context);
   if (!renderer_result) {
     return bird::fail(renderer_result.error());
