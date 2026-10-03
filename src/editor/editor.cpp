@@ -5,9 +5,10 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include <rendering/irenderer.hpp>
 #include <glslang/Public/ShaderLang.h>
+#include <glm/gtc/matrix_transform.hpp>
 
+#include <rendering/irenderer.hpp>
 #include <osal/iwindow.hpp>
 #include <osal/ifile_system.hpp>
 #include <resources/asset_manager.hpp>
@@ -125,10 +126,41 @@ Result<void> Editor::init() {
 }
 
 Result<void> Editor::run() {
+  bool second = false;
+
   while (!window->should_close()) {
+    bird::ViewData view_data{};
+
+    view_data.view = glm::lookAt(
+        glm::vec3(0.0f, -0.5f, 2.0f), // Eye
+        glm::vec3(0.0f, -0.5f, 0.0f), // Target
+        glm::vec3(0.0f, 1.0f, 0.0f)  // Up
+    );
+    if (second) {
+      view_data.view = glm::lookAt(
+          glm::vec3(0.0f, 0.5f, 2.0f), // Eye
+          glm::vec3(0.0f, 0.5f, 0.0f), // Target
+          glm::vec3(0.0f, 1.0f, 0.0f)  // Up
+      );
+      second = false;
+    } else {
+      second = true;
+    }
+
+    float aspect_ratio = static_cast<float>(window->get_framebuffer_width()) / static_cast<float>(window->get_framebuffer_height());
+
+    view_data.projection = glm::perspective(
+        glm::radians(45.0f),
+        aspect_ratio,
+        0.1f,
+        10.0f
+    );
+
+    view_data.viewProjection = view_data.projection * view_data.view;
+
     window->update();
     renderer->begin_frame();
-    renderer->begin_pass({});
+    renderer->begin_pass(view_data);
     renderer->end_pass();
     renderer->end_frame();
 

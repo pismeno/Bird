@@ -16,6 +16,8 @@ namespace bird {
 VulkanRenderer::VulkanRenderer() {
   draw_fences.reserve(MAX_FRAMES_IN_FLIGHT);
   present_complete_semaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+  uniform_buffers.reserve(MAX_FRAMES_IN_FLIGHT);
+  uniform_buffers_mapped.resize(MAX_FRAMES_IN_FLIGHT);
 }
 
 Result<void> VulkanRenderer::attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) {
@@ -71,6 +73,14 @@ Result<void> VulkanRenderer::init(RenderingContext& context) {
   auto r_create_index_buffer = create_index_buffer();
   if (!r_create_index_buffer) return r_create_index_buffer;
   std::cout << "Vulkan index Buffer created successfully" << std::endl;
+
+  auto r_create_uniform_buffers = create_uniform_buffers();
+  if (!r_create_uniform_buffers) return r_create_uniform_buffers;
+  std::cout << "Vulkan Uniform Buffers created successfully" << std::endl;
+
+  auto r_create_descriptor_pool = create_descriptor_pool();
+  if (!r_create_descriptor_pool) return r_create_descriptor_pool;
+  std::cout << "Vulkan Descriptor Pool created successfully" << std::endl;
 
   auto r_create_command_buffer = create_command_buffers();
   if (!r_create_command_buffer) return r_create_command_buffer;
@@ -464,7 +474,7 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
   vk::PipelineInputAssemblyStateCreateInfo input_assembly{.topology = vk::PrimitiveTopology::eTriangleList};
 
   // viewport and scissor
-  vk::Viewport viewport{0.0f, 0.0f, static_cast<float>(swap_chain_extent.width), static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f};
+  vk::Viewport viewport{0.0f, static_cast<float>(swap_chain_extent.height), static_cast<float>(swap_chain_extent.width), -static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f};
   vk::Rect2D scissor{vk::Offset2D{ 0, 0 }, swap_chain_extent};
 
   // viewport create info
@@ -481,7 +491,7 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
       .rasterizerDiscardEnable = vk::False,
       .polygonMode             = vk::PolygonMode::eFill,
       .cullMode                = vk::CullModeFlagBits::eBack,
-      .frontFace               = vk::FrontFace::eClockwise,
+      .frontFace               = vk::FrontFace::eCounterClockwise,
       .depthBiasEnable         = vk::False,
       .lineWidth               = 1.0f
   };
@@ -573,6 +583,93 @@ Result<void> VulkanRenderer::create_index_buffer() {
   return create_buffer(vk::BufferUsageFlagBits::eIndexBuffer, indices, index_buffer);;
 }
 
+Result<void> VulkanRenderer::create_uniform_buffers() {
+  vk::DeviceSize buffer_size = sizeof(ViewData);
+
+  vk::BufferCreateInfo buffer_info{
+      .size        = buffer_size,
+      .usage       = vk::BufferUsageFlagBits::eUniformBuffer,
+      .sharingMode = vk::SharingMode::eExclusive
+  };
+
+  vma::AllocationCreateInfo alloc_info{
+      // eMapped maps the memory immediately upon creation
+      // eHostAccessSequentialWrite is optimal for uniform buffers updated frame-by-frame
+      .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite |
+               vma::AllocationCreateFlagBits::eMapped,
+      .usage = vma::MemoryUsage::eAuto
+  };
+
+  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    auto vkr_create_buffer = vma_allocator.createBuffer(buffer_info, alloc_info);
+
+    if (vkr_create_buffer.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to create uniform buffer via VMA-Hpp");
+    }
+
+    uniform_buffers.push_back(std::move(vkr_create_buffer.value));
+
+    // Retrieve the persistently mapped pointer directly from the VMA allocation info
+    uniform_buffers_mapped[i] = uniform_buffers[i].getAllocation().getInfo().pMappedData;
+  }
+
+  return bird::ok();
+}
+
+Result<void> VulkanRenderer::create_descriptor_pool() {
+  vk::DescriptorPoolSize pool_size{
+      .type = vk::DescriptorType::eUniformBuffer,
+      .descriptorCount = MAX_FRAMES_IN_FLIGHT
+  };
+
+  vk::DescriptorPoolCreateInfo pool_info{
+      .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+      .maxSets = MAX_FRAMES_IN_FLIGHT,
+      .poolSizeCount = 1,
+      .pPoolSizes = &pool_size
+  };
+
+  auto vkr_create = logical_device.createDescriptorPool(pool_info);
+  if (vkr_create.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create descriptor pool");
+  }
+  descriptor_pool = std::move(vkr_create.value);
+
+  std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, *descriptor_set_layout);
+  vk::DescriptorSetAllocateInfo alloc_info{
+      .descriptorPool = *descriptor_pool,
+      .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
+      .pSetLayouts = layouts.data()
+  };
+
+  auto vkr_alloc_sets = logical_device.allocateDescriptorSets(alloc_info);
+  if (vkr_alloc_sets.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to allocate descriptor sets");
+  }
+  descriptor_sets = std::move(vkr_alloc_sets.value);
+
+  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    vk::DescriptorBufferInfo buffer_info{
+        .buffer = *uniform_buffers[i],
+        .offset = 0,
+        .range = sizeof(ViewData)
+    };
+
+    vk::WriteDescriptorSet descriptor_write{
+        .dstSet = *descriptor_sets[i],
+        .dstBinding = 0,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType = vk::DescriptorType::eUniformBuffer,
+        .pBufferInfo = &buffer_info
+    };
+
+    logical_device.updateDescriptorSets(descriptor_write, nullptr);
+  }
+
+  return bird::ok();
+}
+
 Result<void> VulkanRenderer::create_command_buffers() {
   vk::CommandBufferAllocateInfo alloc_info{
     .commandPool = command_pool,
@@ -637,7 +734,6 @@ Result<void> VulkanRenderer::record_command_buffer() {
       vk::PipelineStageFlagBits2::eColorAttachmentOutput
   );
 
-
   // Set up the color attachment
   vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 1.0f, 0.5f, 1.0f);
   vk::RenderingAttachmentInfo attachmentInfo = {
@@ -658,9 +754,10 @@ Result<void> VulkanRenderer::record_command_buffer() {
   command_buffers[current_frame_].beginRendering(renderingInfo);
 
   command_buffers[current_frame_].bindPipeline(vk::PipelineBindPoint::eGraphics, *graphics_pipeline);
+  command_buffers[current_frame_].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0, {*descriptor_sets[current_frame_]},nullptr);
   command_buffers[current_frame_].bindVertexBuffers(0, *vertex_buffer, {0});
   command_buffers[current_frame_].bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint16);
-  command_buffers[current_frame_].setViewport(0, vk::Viewport(0.0f, 0.0f, static_cast<float>(swap_chain_extent.width), static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f));
+  command_buffers[current_frame_].setViewport(0, vk::Viewport(0.0f, static_cast<float>(swap_chain_extent.height), static_cast<float>(swap_chain_extent.width), -static_cast<float>(swap_chain_extent.height), 0.0f, 1.0f));
   command_buffers[current_frame_].setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swap_chain_extent));
   command_buffers[current_frame_].drawIndexed(indices.size(), 1, 0, 0, 0);
 
@@ -743,6 +840,8 @@ void VulkanRenderer::begin_pass(const ViewData& view_data) {
     return;
   }
 
+  update_ubo(view_data);
+
   VkResult vkr_acquire_next_image = vkAcquireNextImageKHR(
       *logical_device,
       *swap_chain,
@@ -821,6 +920,10 @@ inline void VulkanRenderer::move_to_next_frame() {
   }
 }
 
+void VulkanRenderer::update_ubo(const ViewData& view_data) {
+  memcpy(uniform_buffers_mapped[current_frame_], &view_data, sizeof(view_data));
+}
+
 Result<void> VulkanRenderer::recreate_swap_chain() {
   logical_device.waitIdle();
 
@@ -868,4 +971,4 @@ Result<void> VulkanRenderer::resize_framebuffer(uint32_t width, uint32_t height)
 //
 void VulkanRenderer::submit(const RenderCommand render_command) {}
 //
-} // namespace bird
+} // bird

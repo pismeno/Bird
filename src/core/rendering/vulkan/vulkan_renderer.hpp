@@ -35,7 +35,7 @@ class VulkanRenderer : public IRenderer {
   friend class IRenderer;
 
  public:
-  static constexpr inline int MAX_FRAMES_IN_FLIGHT = 2;
+  static constexpr inline uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
   Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) override;
   Result<void> init(RenderingContext& context) override;
@@ -68,6 +68,7 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_vertex_buffer();
   Result<void> create_index_buffer();
   Result<void> create_uniform_buffers();
+  Result<void> create_descriptor_pool();
   Result<void> create_command_buffers();
   Result<void> create_sync_objects();
 
@@ -140,6 +141,7 @@ class VulkanRenderer : public IRenderer {
 
   // rendering helper methods
   Result<void> record_command_buffer();
+  void update_ubo(const ViewData& view_data);
   inline void move_to_next_frame();
 
   // other helper methods
@@ -182,6 +184,11 @@ class VulkanRenderer : public IRenderer {
   vma::raii::Buffer vertex_buffer = nullptr;
   vma::raii::Buffer index_buffer = nullptr;
 
+  std::vector<vma::raii::Buffer> uniform_buffers;
+  std::vector<void*> uniform_buffers_mapped;
+
+  vk::raii::DescriptorPool descriptor_pool = nullptr;
+  std::vector<vk::raii::DescriptorSet> descriptor_sets;
   vk::raii::CommandPool command_pool = nullptr;
   std::vector<vk::raii::CommandBuffer> command_buffers;
 
