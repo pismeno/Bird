@@ -182,6 +182,9 @@ class VulkanRenderer : public IRenderer {
   vma::raii::Buffer vertex_buffer = nullptr;
   vma::raii::Buffer index_buffer = nullptr;
 
+  std::vector<vma::raii::Buffer> uniform_buffers;
+  std::vector<void*> uniform_buffers_mapped;
+
   vk::raii::CommandPool command_pool = nullptr;
   std::vector<vk::raii::CommandBuffer> command_buffers;
 

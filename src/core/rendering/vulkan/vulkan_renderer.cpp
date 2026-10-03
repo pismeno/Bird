@@ -16,6 +16,8 @@ namespace bird {
 VulkanRenderer::VulkanRenderer() {
   draw_fences.reserve(MAX_FRAMES_IN_FLIGHT);
   present_complete_semaphores.reserve(MAX_FRAMES_IN_FLIGHT);
+  uniform_buffers.reserve(MAX_FRAMES_IN_FLIGHT);
+  uniform_buffers_mapped.resize(MAX_FRAMES_IN_FLIGHT);
 }
 
 Result<void> VulkanRenderer::attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) {
@@ -71,6 +73,10 @@ Result<void> VulkanRenderer::init(RenderingContext& context) {
   auto r_create_index_buffer = create_index_buffer();
   if (!r_create_index_buffer) return r_create_index_buffer;
   std::cout << "Vulkan index Buffer created successfully" << std::endl;
+
+  auto r_create_uniform_buffers = create_uniform_buffers();
+  if (!r_create_uniform_buffers) return r_create_uniform_buffers;
+  std::cout << "Vulkan Uniform Buffers created successfully" << std::endl;
 
   auto r_create_command_buffer = create_command_buffers();
   if (!r_create_command_buffer) return r_create_command_buffer;
@@ -571,6 +577,39 @@ Result<void> VulkanRenderer::create_vertex_buffer() {
 
 Result<void> VulkanRenderer::create_index_buffer() {
   return create_buffer(vk::BufferUsageFlagBits::eIndexBuffer, indices, index_buffer);;
+}
+
+Result<void> VulkanRenderer::create_uniform_buffers() {
+  vk::DeviceSize buffer_size = sizeof(ViewData);
+
+  vk::BufferCreateInfo buffer_info{
+      .size        = buffer_size,
+      .usage       = vk::BufferUsageFlagBits::eUniformBuffer,
+      .sharingMode = vk::SharingMode::eExclusive
+  };
+
+  vma::AllocationCreateInfo alloc_info{
+      // eMapped maps the memory immediately upon creation
+      // eHostAccessSequentialWrite is optimal for uniform buffers updated frame-by-frame
+      .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite |
+               vma::AllocationCreateFlagBits::eMapped,
+      .usage = vma::MemoryUsage::eAuto
+  };
+
+  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    auto vkr_create_buffer = vma_allocator.createBuffer(buffer_info, alloc_info);
+
+    if (vkr_create_buffer.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to create uniform buffer via VMA-Hpp");
+    }
+
+    uniform_buffers.push_back(std::move(vkr_create_buffer.value));
+
+    // Retrieve the persistently mapped pointer directly from the VMA allocation info
+    uniform_buffers_mapped[i] = uniform_buffers[i].getAllocation().getInfo().pMappedData;
+  }
+
+  return bird::ok();
 }
 
 Result<void> VulkanRenderer::create_command_buffers() {
