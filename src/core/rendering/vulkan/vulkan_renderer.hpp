@@ -35,7 +35,7 @@ class VulkanRenderer : public IRenderer {
   friend class IRenderer;
 
  public:
-  static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+  static constexpr inline int MAX_FRAMES_IN_FLIGHT = 2;
 
   Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) override;
   Result<void> init(RenderingContext& context) override;
