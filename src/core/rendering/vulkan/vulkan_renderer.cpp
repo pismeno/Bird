@@ -15,7 +15,6 @@ namespace bird {
 
 VulkanRenderer::VulkanRenderer() {
   draw_fences.reserve(MAX_FRAMES_IN_FLIGHT);
-  render_finished_semaphores.reserve(MAX_FRAMES_IN_FLIGHT);
   present_complete_semaphores.reserve(MAX_FRAMES_IN_FLIGHT);
 }
 
@@ -591,24 +590,32 @@ Result<void> VulkanRenderer::create_command_buffers() {
 }
 
 Result<void> VulkanRenderer::create_sync_objects() {
-  for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    auto vkr_create_present_complete_semaphore = logical_device.createSemaphore(vk::SemaphoreCreateInfo());
-    if (vkr_create_present_complete_semaphore.result != vk::Result::eSuccess) {
+  present_complete_semaphores.clear();
+  draw_fences.clear();
+  render_finished_semaphores.clear();
+
+  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    auto vkr_present_complete = logical_device.createSemaphore(vk::SemaphoreCreateInfo());
+    if (vkr_present_complete.result != vk::Result::eSuccess) {
       return bird::fail("Failed to create present complete semaphore");
     }
-    present_complete_semaphores.push_back(std::move(vkr_create_present_complete_semaphore.value));
+    present_complete_semaphores.push_back(std::move(vkr_present_complete.value));
 
-    auto vkr_create_render_finished_semaphore = logical_device.createSemaphore(vk::SemaphoreCreateInfo());
-    if (vkr_create_render_finished_semaphore.result != vk::Result::eSuccess) {
-      return bird::fail("Failed to create render finished semaphore");
-    }
-    render_finished_semaphores.push_back(std::move(vkr_create_render_finished_semaphore.value));
-
-    auto vkr_create_draw_fence = logical_device.createFence(vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
-    if (vkr_create_draw_fence.result != vk::Result::eSuccess) {
+    auto vkr_draw_fence = logical_device.createFence(
+        vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
+    if (vkr_draw_fence.result != vk::Result::eSuccess) {
       return bird::fail("Failed to create draw fence");
     }
-    draw_fences.push_back(std::move(vkr_create_draw_fence.value));
+    draw_fences.push_back(std::move(vkr_draw_fence.value));
+  }
+
+  // One render finished semaphore per swapchain image
+  for (size_t i = 0; i < swap_chain_images.size(); i++) {
+    auto vkr_render_finished = logical_device.createSemaphore(vk::SemaphoreCreateInfo());
+    if (vkr_render_finished.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to create render finished semaphore");
+    }
+    render_finished_semaphores.push_back(std::move(vkr_render_finished.value));
   }
 
   return bird::ok();
@@ -778,14 +785,14 @@ void VulkanRenderer::end_frame() {
       .commandBufferCount   = 1,
       .pCommandBuffers      = &*command_buffers[current_frame_],
       .signalSemaphoreCount = 1,
-      .pSignalSemaphores    = &*render_finished_semaphores[current_frame_]
+      .pSignalSemaphores    = &*render_finished_semaphores[current_image_index_]
   };
 
   graphics_queue.submit(submitInfo, *draw_fences[current_frame_]);
 
   const vk::PresentInfoKHR presentInfoKHR{
       .waitSemaphoreCount = 1,
-      .pWaitSemaphores    = &*render_finished_semaphores[current_frame_],
+      .pWaitSemaphores    = &*render_finished_semaphores[current_image_index_],
       .swapchainCount     = 1,
       .pSwapchains        = &*swap_chain,
       .pImageIndices      = &current_image_index_,
