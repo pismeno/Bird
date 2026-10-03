@@ -39,7 +39,6 @@ class VulkanRenderer : public IRenderer {
 
   Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) override;
   Result<void> init(RenderingContext& context) override;
-  Result<void> shutdown() override;
 
   void begin_frame() override;
   void begin_pass(const ViewData& view_data) override;
@@ -53,6 +52,7 @@ class VulkanRenderer : public IRenderer {
 
  private:
   explicit VulkanRenderer();
+  ~VulkanRenderer();
 
   // initialization methods
   Result<void> create_instance();

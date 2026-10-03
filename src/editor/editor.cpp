@@ -184,16 +184,6 @@ Result<void> Editor::run() {
 }
 
 Result<void> Editor::shutdown() {
-  // During shutdown, log errors but continue the teardown process
-  // to prevent memory/resource leaks.
-  if (renderer) {
-    auto r_shutdown_result = renderer->shutdown();
-    if (!r_shutdown_result) {
-      std::cerr << "Error shutting down renderer: " << r_shutdown_result.error() << std::endl;
-    }
-    renderer.reset();
-  }
-
   if (window) {
     auto window_close_result = window->close();
     if (!window_close_result) {

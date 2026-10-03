@@ -28,8 +28,6 @@ public:
   explicit IRenderer() = default;
   virtual ~IRenderer() = default;
 
-  virtual Result<void> shutdown() = 0;
-
   virtual void begin_frame() = 0;
   virtual void begin_pass(const ViewData& view_data) = 0;
   virtual void submit(const RenderCommand render_command) = 0;

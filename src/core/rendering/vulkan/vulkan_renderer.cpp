@@ -20,6 +20,12 @@ VulkanRenderer::VulkanRenderer() {
   uniform_buffers_mapped.resize(MAX_FRAMES_IN_FLIGHT);
 }
 
+VulkanRenderer::~VulkanRenderer() {
+  if (!is_context_lost_) {
+    logical_device.waitIdle();
+  }
+}
+
 Result<void> VulkanRenderer::attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) {
   this->native_window_handle = native_window_handle;
   this->window_width = window_width;
@@ -935,14 +941,6 @@ Result<void> VulkanRenderer::recreate_swap_chain() {
 
   auto r_create_image_views = create_image_views();
   if (!r_create_image_views) return r_create_image_views;
-
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::shutdown() {
-  if (!is_context_lost()) {
-    logical_device.waitIdle();
-  }
 
   return bird::ok();
 }
