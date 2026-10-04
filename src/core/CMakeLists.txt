@@ -124,11 +124,32 @@ target_sources(BirdRendering
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vk_mem_alloc.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_context.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_context.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_memory_allocator.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_memory_allocator.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_swapchain.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_swapchain.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_pipeline.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_pipeline.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vertex.hpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/irenderer.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/texture.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/vertex.hpp
 )
+
+target_compile_definitions(BirdRendering PRIVATE
+        VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+        VULKAN_HPP_NO_EXCEPTIONS
+)
+
+if(WIN32)
+    target_compile_definitions(BirdRendering PRIVATE
+            NOMINMAX
+            VK_USE_PLATFORM_WIN32_KHR
+    )
+endif()
 
 target_include_directories(BirdRendering PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include)
 target_include_directories(BirdRendering PRIVATE

@@ -1,0 +1,35 @@
+#pragma once
+
+#include <memory>
+
+#include <vulkan/vulkan_raii.hpp>
+#include <vk_mem_alloc_raii.hpp>
+
+#include "utils/result.hpp"
+#include "rendering/vulkan/vulkan_context.hpp"
+
+namespace bird {
+
+class VulkanMemoryAllocator {
+ public:
+  ~VulkanMemoryAllocator() = default;
+
+  Result<vma::raii::Buffer> create_buffer(vk::BufferUsageFlags usage, vk::DeviceSize size, const void* data = nullptr);
+
+  template <typename T>
+  Result<vma::raii::Buffer> create_buffer(vk::BufferUsageFlags usage, std::span<T> data) {
+    return create_buffer(usage, data.size_bytes(), data.data());
+  }
+
+  inline const vma::raii::Allocator& get_allocator() const { return vma_allocator; }
+
+  static Result<std::unique_ptr<VulkanMemoryAllocator>> create(VulkanContext& vk_context);
+ private:
+  explicit VulkanMemoryAllocator() = default;
+
+  Result<void> create_vma(VulkanContext& vk_context);
+
+  vma::raii::Allocator vma_allocator = nullptr;
+};
+
+} // bird
