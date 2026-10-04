@@ -72,6 +72,18 @@ Result<void> VulkanRenderer::init(RenderingContext& context) {
   if (!r_create_command_pool) return r_create_command_pool;
   std::cout << "Vulkan Command Pool created successfully" << std::endl;
 
+  auto r_create_texture_image = create_texture_image();
+  if (!r_create_texture_image) return r_create_texture_image;
+  std::cout << "Vulkan Texture Image created successfully" << std::endl;
+
+  auto r_create_texture_image_view = create_texture_image_view();
+  if (!r_create_texture_image_view) return r_create_texture_image_view;
+  std::cout << "Vulkan Texture Image View created successfully" << std::endl;
+
+  auto r_create_texture_sampler = create_texture_sampler();
+  if (!r_create_texture_sampler) return r_create_texture_sampler;
+  std::cout << "Vulkan Texture Sampler created successfully" << std::endl;
+
   auto r_create_vertex_buffer = create_vertex_buffer();
   if (!r_create_vertex_buffer) return r_create_vertex_buffer;
   std::cout << "Vulkan Vertex Buffer created successfully" << std::endl;
@@ -408,6 +420,141 @@ Result<void> VulkanRenderer::create_image_views() {
   return bird::ok();
 }
 
+Result<void> VulkanRenderer::create_texture_image() {
+  auto r_load_img = asset_manager->acquire<ImageAsset>("editor://test_img.png");
+  if (!r_load_img) return bird::fail(r_load_img.error());
+  AssetHandle<ImageAsset> img_asset = std::move(r_load_img).value();
+
+  // 1. Create Staging Buffer using your existing vma::raii::Buffer helper!
+  vma::raii::Buffer staging_buffer = nullptr;
+  auto r_staging_buffer = create_buffer(
+      vk::BufferUsageFlagBits::eTransferSrc,
+      img_asset->get_size_bytes(),
+      img_asset->pixel_data,
+      staging_buffer
+  );
+  if (!r_staging_buffer) return r_staging_buffer;
+
+  // 2. Create the Optimal vk::Image via VMA RAII
+  vk::ImageCreateInfo image_info{
+      .imageType     = vk::ImageType::e2D,
+      .format        = vk::Format::eR8G8B8A8Srgb,
+      .extent        = { static_cast<uint32_t>(img_asset->width), static_cast<uint32_t>(img_asset->height), 1 },
+      .mipLevels     = 1,
+      .arrayLayers   = 1,
+      .samples       = vk::SampleCountFlagBits::e1,
+      .tiling        = vk::ImageTiling::eOptimal,
+      .usage         = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+      .sharingMode   = vk::SharingMode::eExclusive,
+      .initialLayout = vk::ImageLayout::eUndefined
+  };
+
+  vma::AllocationCreateInfo image_alloc_info{
+      .flags = vma::AllocationCreateFlagBits::eDedicatedMemory,
+      .usage = vma::MemoryUsage::eAuto
+  };
+
+  auto vkr_create_image = vma_allocator.createImage(image_info, image_alloc_info);
+  if (vkr_create_image.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create texture image");
+  }
+  texture_image = std::move(vkr_create_image.value);
+
+  // 3. Command recording for layout transitions and copying
+  auto r_cmd_buffer = begin_single_time_commands();
+  if (!r_cmd_buffer) return bird::fail(r_cmd_buffer.error());
+
+  vk::raii::CommandBuffer cmd_buffer = std::move(r_cmd_buffer).value();
+
+  // Note the dereference operator (*) extracts the underlying raw vk::Buffer / vk::Image
+  transition_image_layout(cmd_buffer, texture_image,
+                          vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
+                          {}, vk::AccessFlagBits2::eTransferWrite,
+                          vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eTransfer);
+
+  vk::BufferImageCopy region{
+      .bufferOffset      = 0,
+      .bufferRowLength   = 0,
+      .bufferImageHeight = 0,
+      .imageSubresource  = {
+          .aspectMask     = vk::ImageAspectFlagBits::eColor,
+          .mipLevel       = 0,
+          .baseArrayLayer = 0,
+          .layerCount     = 1
+      },
+      .imageOffset       = {0, 0, 0},
+      .imageExtent       = {img_asset->width, img_asset->height, 1}
+  };
+
+  cmd_buffer.copyBufferToImage(staging_buffer, texture_image, vk::ImageLayout::eTransferDstOptimal, region);
+
+  transition_image_layout(cmd_buffer, texture_image,
+                          vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+                          vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead,
+                          vk::PipelineStageFlagBits2::eTransfer, vk::PipelineStageFlagBits2::eFragmentShader);
+
+  end_single_time_commands(cmd_buffer);
+
+  return bird::ok();
+}
+
+Result<void> VulkanRenderer::create_texture_image_view() {
+  vk::ImageViewCreateInfo view_info{
+      .image            = *texture_image, // Dereference to get the raw vk::Image
+      .viewType         = vk::ImageViewType::e2D,
+      .format           = vk::Format::eR8G8B8A8Srgb,
+      .components       = {
+          vk::ComponentSwizzle::eIdentity,
+          vk::ComponentSwizzle::eIdentity,
+          vk::ComponentSwizzle::eIdentity,
+          vk::ComponentSwizzle::eIdentity
+      },
+      .subresourceRange = {
+          .aspectMask     = vk::ImageAspectFlagBits::eColor,
+          .baseMipLevel   = 0,
+          .levelCount     = 1,
+          .baseArrayLayer = 0,
+          .layerCount     = 1
+      }
+  };
+
+  auto vkr_create_view = logical_device.createImageView(view_info);
+  if (vkr_create_view.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create texture image view");
+  }
+
+  texture_image_view = std::move(vkr_create_view.value);
+  return bird::ok();
+}
+
+Result<void> VulkanRenderer::create_texture_sampler() {
+  vk::SamplerCreateInfo sampler_info{
+      .magFilter               = vk::Filter::eLinear, // Bilinear filtering when zoomed in
+      .minFilter               = vk::Filter::eLinear, // Bilinear filtering when zoomed out
+      .mipmapMode              = vk::SamplerMipmapMode::eLinear,
+      .addressModeU            = vk::SamplerAddressMode::eRepeat,
+      .addressModeV            = vk::SamplerAddressMode::eRepeat,
+      .addressModeW            = vk::SamplerAddressMode::eRepeat,
+      .mipLodBias              = 0.0f,
+      .anisotropyEnable        = vk::False, // Disabled for now to avoid needing physical device feature checks
+      .maxAnisotropy           = 1.0f,
+      .compareEnable           = vk::False,
+      .compareOp               = vk::CompareOp::eAlways,
+      .minLod                  = 0.0f,
+      .maxLod                  = 0.0f,
+      .borderColor             = vk::BorderColor::eIntOpaqueBlack,
+      .unnormalizedCoordinates = vk::False
+  };
+
+  auto vkr_create_sampler = logical_device.createSampler(sampler_info);
+  if (vkr_create_sampler.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create texture sampler");
+  }
+
+  texture_sampler = std::move(vkr_create_sampler.value);
+  return bird::ok();
+}
+
 Result<void> VulkanRenderer::create_descriptor_set_layout() {
   vk::DescriptorSetLayoutBinding binding{
     .binding = 0,
@@ -732,6 +879,8 @@ Result<void> VulkanRenderer::record_command_buffer() {
 
   // Transition the image layout for rendering
   transition_image_layout(
+      command_buffers[current_frame_],
+      swap_chain_images[current_image_index_],
       vk::ImageLayout::eUndefined,
       vk::ImageLayout::eColorAttachmentOptimal,
       {},
@@ -772,6 +921,8 @@ Result<void> VulkanRenderer::record_command_buffer() {
 
   // Transition the image layout for presentation
   transition_image_layout(
+      command_buffers[current_frame_],
+      swap_chain_images[current_image_index_],
       vk::ImageLayout::eColorAttachmentOptimal,
       vk::ImageLayout::ePresentSrcKHR,
       vk::AccessFlagBits2::eColorAttachmentWrite,
@@ -788,7 +939,47 @@ Result<void> VulkanRenderer::record_command_buffer() {
   return bird::ok();
 }
 
+Result<vk::raii::CommandBuffer> VulkanRenderer::begin_single_time_commands() {
+  vk::CommandBufferAllocateInfo alloc_info{
+      .commandPool        = *command_pool,
+      .level              = vk::CommandBufferLevel::ePrimary,
+      .commandBufferCount = 1
+  };
+
+  auto vkr_alloc = logical_device.allocateCommandBuffers(alloc_info);
+  if (vkr_alloc.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to allocate single time command buffer");
+  }
+
+  vk::raii::CommandBuffer command_buffer = std::move(vkr_alloc.value[0]);
+
+  vk::CommandBufferBeginInfo begin_info{
+      .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+  };
+
+  if (command_buffer.begin(begin_info) != vk::Result::eSuccess) {
+    return bird::fail("Failed to begin single time command buffer");
+  }
+
+  return std::move(command_buffer);
+}
+
+void VulkanRenderer::end_single_time_commands(vk::raii::CommandBuffer& command_buffer) {
+  auto vkr_end = command_buffer.end();
+  // (Ignoring result check for brevity, could optionally return Result<void>)
+
+  vk::SubmitInfo submit_info{
+      .commandBufferCount = 1,
+      .pCommandBuffers    = &*command_buffer
+  };
+
+  graphics_queue.submit(submit_info, nullptr);
+  graphics_queue.waitIdle();
+}
+
 void VulkanRenderer::transition_image_layout(
+    vk::raii::CommandBuffer& cmd_buffer,
+    vk::Image                image,
     vk::ImageLayout         old_layout,
     vk::ImageLayout         new_layout,
     vk::AccessFlags2        src_access_mask,
@@ -806,7 +997,7 @@ void VulkanRenderer::transition_image_layout(
       .newLayout           = new_layout,
       .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
       .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-      .image               = swap_chain_images[current_image_index_],
+      .image               = image,
       .subresourceRange    = {
           .aspectMask     = vk::ImageAspectFlagBits::eColor,
           .baseMipLevel   = 0,
@@ -821,7 +1012,7 @@ void VulkanRenderer::transition_image_layout(
       .pImageMemoryBarriers    = &barrier
   };
 
-  command_buffers[current_frame_].pipelineBarrier2(dependency_info);
+  cmd_buffer.pipelineBarrier2(dependency_info);
 }
 
 void VulkanRenderer::begin_frame() {

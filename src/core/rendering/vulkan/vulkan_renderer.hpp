@@ -62,6 +62,9 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_vma();
   Result<void> create_swap_chain();
   Result<void> create_image_views();
+  Result<void> create_texture_image();
+  Result<void> create_texture_image_view();
+  Result<void> create_texture_sampler();
   Result<void> create_descriptor_set_layout();
   Result<void> create_graphics_pipeline();
   Result<void> create_command_pool();
@@ -72,13 +75,16 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_command_buffers();
   Result<void> create_sync_objects();
 
-  //initialization helper methods
+  // initialization helper methods
   vk::SurfaceFormatKHR choose_swap_surface_format(std::vector<vk::SurfaceFormatKHR> const &availableFormats);
   vk::PresentModeKHR choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes);
   vk::Extent2D choose_swap_extent(vk::SurfaceCapabilitiesKHR const &capabilities);
   uint32_t choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities);
-
   [[nodiscard]] bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
+
+  // single-time command buffer helpers:
+  Result<vk::raii::CommandBuffer> begin_single_time_commands();
+  void end_single_time_commands(vk::raii::CommandBuffer& command_buffer);
 
   template <std::derived_from<ShaderAsset> T>
   Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string& filepath) const {
@@ -148,12 +154,21 @@ class VulkanRenderer : public IRenderer {
   Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string& filepath) const;
 
   void transition_image_layout(
+      vk::raii::CommandBuffer& cmd_buffer,
+      vk::Image                image,
       vk::ImageLayout         old_layout,
       vk::ImageLayout         new_layout,
       vk::AccessFlags2        src_access_mask,
       vk::AccessFlags2        dst_access_mask,
       vk::PipelineStageFlags2 src_stage_mask,
       vk::PipelineStageFlags2 dst_stage_mask);
+
+  void copy_buffer_to_image(
+      vk::raii::CommandBuffer& cmd_buffer,
+      vk::Buffer               buffer,
+      vk::Image                image,
+      uint32_t                 width,
+      uint32_t                 height);
 
   // window members that hold values for surface initialization
   void* native_window_handle = nullptr;
@@ -192,6 +207,10 @@ class VulkanRenderer : public IRenderer {
   vk::raii::CommandPool command_pool = nullptr;
   std::vector<vk::raii::CommandBuffer> command_buffers;
 
+  vma::raii::Image texture_image = nullptr;
+  vk::raii::ImageView texture_image_view = nullptr;
+  vk::raii::Sampler texture_sampler = nullptr;
+
   std::vector<vk::raii::ImageView> swap_chain_image_views;
 
   std::vector<vk::raii::Semaphore> present_complete_semaphores;
@@ -210,6 +229,7 @@ class VulkanRenderer : public IRenderer {
   struct Vertex {
     glm::vec2 pos;
     glm::vec3 color;
+    glm::vec2 uv;
 
     static vk::VertexInputBindingDescription getBindingDescription() {
       return {.binding = 0, .stride = sizeof(Vertex), .inputRate = vk::VertexInputRate::eVertex};
@@ -222,10 +242,10 @@ class VulkanRenderer : public IRenderer {
   };
 
   const std::vector<Vertex> vertices = {
-      {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}},
-      {{0.5f, 0.5f}, {0.0f, 1.0f, 1.0f}},
-      {{-0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}},
-      {{0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}}};
+      {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+      {{ 0.5f,  0.5f}, {0.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+      {{-0.5f,  0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+      {{ 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}};
 
   const std::vector<uint16_t> indices = {
       0, 3, 1,   // Top-Left -> Top-Right -> Bottom-Right (CW)
