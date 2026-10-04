@@ -128,6 +128,9 @@ target_sources(BirdRendering
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_context.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_swapchain.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_swapchain.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_pipeline.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_pipeline.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vertex.hpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/irenderer.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/texture.hpp

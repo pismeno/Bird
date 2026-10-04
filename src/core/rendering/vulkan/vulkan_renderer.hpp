@@ -51,8 +51,9 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_texture_image();
   Result<void> create_texture_image_view();
   Result<void> create_texture_sampler();
-  Result<void> create_descriptor_set_layout();
-  Result<void> create_graphics_pipeline();
+
+  //Result<void> create_graphics_pipeline();
+
   Result<void> create_command_pool();
   Result<void> create_vertex_buffer();
   Result<void> create_index_buffer();
@@ -64,28 +65,6 @@ class VulkanRenderer : public IRenderer {
   // single-time command buffer helpers:
   Result<vk::raii::CommandBuffer> begin_single_time_commands();
   void end_single_time_commands(vk::raii::CommandBuffer& command_buffer);
-
-  template <std::derived_from<ShaderAsset> T>
-  Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string& filepath) const {
-    auto r_shader_asset = asset_manager->acquire<T>(filepath);
-    if (!r_shader_asset) {
-      return bird::fail(r_shader_asset.error());
-    }
-
-    AssetHandle<T> shader_handle = std::move(r_shader_asset).value();
-
-    vk::ShaderModuleCreateInfo create_info{
-        .codeSize = shader_handle->data.size(),      // Size in bytes
-        .pCode    = shader_handle->as_32bit_words()  // Pointer to aligned uint32_t data
-    };
-
-    auto vkr_create_shader_module = logical_device.createShaderModule(create_info);
-    if (vkr_create_shader_module.result != vk::Result::eSuccess) {
-      return bird::fail("Failed to create shader module for: " + filepath);
-    }
-
-    return std::make_unique<vk::raii::ShaderModule>(std::move(vkr_create_shader_module.value));
-  }
 
   template <typename T>
   Result<void> create_buffer(vk::BufferUsageFlagBits usage, const std::vector<T>& src_data, vma::raii::Buffer& dest_buffer) {
@@ -121,16 +100,10 @@ class VulkanRenderer : public IRenderer {
     return bird::ok();
   }
 
-  // other vulkan methods
-  Result<void> recreate_swap_chain();
-
   // rendering helper methods
   Result<void> record_command_buffer();
   void update_ubo(const ViewData& view_data);
   inline void move_to_next_frame();
-
-  // other helper methods
-  Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::string& filepath) const;
 
   void transition_image_layout(
       vk::raii::CommandBuffer& cmd_buffer,
@@ -146,11 +119,6 @@ class VulkanRenderer : public IRenderer {
   void* native_window_handle = nullptr;
   uint32_t window_width = 0;
   uint32_t window_height = 0;
-
-  // vulkan members
-  vk::raii::DescriptorSetLayout descriptor_set_layout = nullptr;
-  vk::raii::PipelineLayout pipeline_layout = nullptr;
-  vk::raii::Pipeline graphics_pipeline = nullptr;
 
   vma::raii::Buffer vertex_buffer = nullptr;
   vma::raii::Buffer index_buffer = nullptr;
@@ -179,24 +147,6 @@ class VulkanRenderer : public IRenderer {
 
   // bird systems
   AssetManager* asset_manager;
-
-  struct Vertex {
-    glm::vec2 pos;
-    glm::vec3 color;
-    glm::vec2 uv;
-
-    static vk::VertexInputBindingDescription get_binding_descriptions() {
-      return {.binding = 0, .stride = sizeof(Vertex), .inputRate = vk::VertexInputRate::eVertex};
-    }
-
-    static std::array<vk::VertexInputAttributeDescription, 3> get_attr_descriptions() {
-      return {{
-                  {.location = 0, .binding = 0, .format = vk::Format::eR32G32Sfloat, .offset = offsetof(Vertex, pos)},
-                  {.location = 1, .binding = 0, .format = vk::Format::eR32G32B32Sfloat, .offset = offsetof(Vertex, color)},
-                  {.location = 2, .binding = 0, .format = vk::Format::eR32G32Sfloat, .offset = offsetof(Vertex, uv)} // ADD THIS
-              }};
-    }
-  };
 
   const std::vector<Vertex> vertices = {
       {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
