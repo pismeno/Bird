@@ -556,25 +556,35 @@ Result<void> VulkanRenderer::create_texture_sampler() {
 }
 
 Result<void> VulkanRenderer::create_descriptor_set_layout() {
-  vk::DescriptorSetLayoutBinding binding{
-    .binding = 0,
-    .descriptorType = vk::DescriptorType::eUniformBuffer,
-    .descriptorCount = 1,
-    .stageFlags = vk::ShaderStageFlagBits::eVertex,
-    .pImmutableSamplers = nullptr // optional
+  vk::DescriptorSetLayoutBinding ubo_binding{
+      .binding            = 0,
+      .descriptorType     = vk::DescriptorType::eUniformBuffer,
+      .descriptorCount    = 1,
+      .stageFlags         = vk::ShaderStageFlagBits::eVertex,
+      .pImmutableSamplers = nullptr
   };
 
+  vk::DescriptorSetLayoutBinding sampler_binding{
+      .binding            = 1,
+      .descriptorType     = vk::DescriptorType::eCombinedImageSampler,
+      .descriptorCount    = 1,
+      .stageFlags         = vk::ShaderStageFlagBits::eFragment,
+      .pImmutableSamplers = nullptr
+  };
+
+  std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {ubo_binding, sampler_binding};
+
   vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_info{
-    .bindingCount = 1,
-    .pBindings = &binding
+      .bindingCount = static_cast<uint32_t>(bindings.size()),
+      .pBindings    = bindings.data()
   };
 
   auto vkr_create_desc_set_layout = logical_device.createDescriptorSetLayout(descriptor_set_layout_info);
   if (vkr_create_desc_set_layout.result != vk::Result::eSuccess) {
     return bird::fail("Failed to create descriptor set layout");
   }
-  descriptor_set_layout = std::move(vkr_create_desc_set_layout.value);
 
+  descriptor_set_layout = std::move(vkr_create_desc_set_layout.value);
   return bird::ok();
 }
 
@@ -583,7 +593,7 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
   auto r_load_vert_shader_module = load_shader_module<VertexShaderAsset>("core://shaders/vertices.vert.spv");
   if (!r_load_vert_shader_module) return bird::fail(r_load_vert_shader_module.error());
 
-  auto r_load_frag_shader_module = load_shader_module<FragmentShaderAsset>("core://shaders/triangle.frag.spv");
+  auto r_load_frag_shader_module = load_shader_module<FragmentShaderAsset>("core://shaders/textures.frag.spv");
   if (!r_load_frag_shader_module) return bird::fail(r_load_frag_shader_module.error());
 
   std::unique_ptr<vk::raii::ShaderModule> vert_shader_module = std::move(r_load_vert_shader_module).value();
@@ -614,8 +624,8 @@ Result<void> VulkanRenderer::create_graphics_pipeline() {
   };
 
   // vertex input create info
-  auto binding_description    = Vertex::getBindingDescription();
-  auto attribute_descriptions = Vertex::getAttributeDescriptions();
+  auto binding_description    = Vertex::get_binding_descriptions();
+  auto attribute_descriptions = Vertex::get_attr_descriptions();
   vk::PipelineVertexInputStateCreateInfo   vertex_input_info{
     .vertexBindingDescriptionCount   = 1,
       .pVertexBindingDescriptions      = &binding_description,
@@ -770,16 +780,22 @@ Result<void> VulkanRenderer::create_uniform_buffers() {
 }
 
 Result<void> VulkanRenderer::create_descriptor_pool() {
-  vk::DescriptorPoolSize pool_size{
-      .type = vk::DescriptorType::eUniformBuffer,
+  std::array<vk::DescriptorPoolSize, 2> pool_sizes = {{
+    {
+      .type            = vk::DescriptorType::eUniformBuffer,
       .descriptorCount = MAX_FRAMES_IN_FLIGHT
-  };
+          },
+          {
+      .type            = vk::DescriptorType::eCombinedImageSampler,
+      .descriptorCount = MAX_FRAMES_IN_FLIGHT
+          }
+  }};
 
   vk::DescriptorPoolCreateInfo pool_info{
-      .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-      .maxSets = MAX_FRAMES_IN_FLIGHT,
-      .poolSizeCount = 1,
-      .pPoolSizes = &pool_size
+      .flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+      .maxSets       = MAX_FRAMES_IN_FLIGHT,
+      .poolSizeCount = static_cast<uint32_t>(pool_sizes.size()),
+      .pPoolSizes    = pool_sizes.data()
   };
 
   auto vkr_create = logical_device.createDescriptorPool(pool_info);
@@ -790,9 +806,9 @@ Result<void> VulkanRenderer::create_descriptor_pool() {
 
   std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, *descriptor_set_layout);
   vk::DescriptorSetAllocateInfo alloc_info{
-      .descriptorPool = *descriptor_pool,
+      .descriptorPool     = *descriptor_pool,
       .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
-      .pSetLayouts = layouts.data()
+      .pSetLayouts        = layouts.data()
   };
 
   auto vkr_alloc_sets = logical_device.allocateDescriptorSets(alloc_info);
@@ -801,23 +817,41 @@ Result<void> VulkanRenderer::create_descriptor_pool() {
   }
   descriptor_sets = std::move(vkr_alloc_sets.value);
 
+  // Write the buffers and images to the descriptors
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
     vk::DescriptorBufferInfo buffer_info{
         .buffer = *uniform_buffers[i],
         .offset = 0,
-        .range = sizeof(ViewData)
+        .range  = sizeof(ViewData)
     };
 
-    vk::WriteDescriptorSet descriptor_write{
-        .dstSet = *descriptor_sets[i],
-        .dstBinding = 0,
+    vk::DescriptorImageInfo image_info{
+        .sampler     = *texture_sampler,
+        .imageView   = *texture_image_view,
+        .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal // Must match layout transitioned to in Step 2!
+    };
+
+    std::array<vk::WriteDescriptorSet, 2> descriptor_writes = {{
+      {
+        .dstSet          = *descriptor_sets[i],
+        .dstBinding      = 0,
         .dstArrayElement = 0,
         .descriptorCount = 1,
-        .descriptorType = vk::DescriptorType::eUniformBuffer,
-        .pBufferInfo = &buffer_info
-    };
+        .descriptorType  = vk::DescriptorType::eUniformBuffer,
+        .pBufferInfo     = &buffer_info
+            },
+            {
+        .dstSet          = *descriptor_sets[i],
+        .dstBinding      = 1,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType  = vk::DescriptorType::eCombinedImageSampler,
+        .pImageInfo      = &image_info
+            }
+    }};
 
-    logical_device.updateDescriptorSets(descriptor_write, nullptr);
+    // Because vulkan.hpp accepts ArrayProxy, we can pass the std::array directly
+    logical_device.updateDescriptorSets(descriptor_writes, nullptr);
   }
 
   return bird::ok();
