@@ -3,15 +3,8 @@
 #include <rendering/irenderer.hpp>
 
 #ifdef BIRD_PLATFORM_WINDOWS
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#define VK_USE_PLATFORM_WIN32_KHR
 #include <windows.h>
 #endif
-
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
-#define VULKAN_HPP_NO_EXCEPTIONS
 
 #include <vulkan/vulkan_raii.hpp>
 #include <vk_mem_alloc_raii.hpp>
@@ -55,11 +48,6 @@ class VulkanRenderer : public IRenderer {
   ~VulkanRenderer();
 
   // initialization methods
-  Result<void> create_instance();
-  Result<void> create_surface();
-  Result<void> pick_physical_device();
-  Result<void> create_logical_device();
-  Result<void> create_vma();
   Result<void> create_swap_chain();
   Result<void> create_image_views();
   Result<void> create_texture_image();
@@ -80,7 +68,6 @@ class VulkanRenderer : public IRenderer {
   vk::PresentModeKHR choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes);
   vk::Extent2D choose_swap_extent(vk::SurfaceCapabilitiesKHR const &capabilities);
   uint32_t choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities);
-  [[nodiscard]] bool is_physical_device_suitable(const vk::PhysicalDevice& physical_device) const;
 
   // single-time command buffer helpers:
   Result<vk::raii::CommandBuffer> begin_single_time_commands();
@@ -176,17 +163,7 @@ class VulkanRenderer : public IRenderer {
   uint32_t window_height = 0;
 
   // vulkan members
-  vk::raii::Context context;
-
-  vk::raii::Instance vk_instance = nullptr;
-  vk::raii::PhysicalDevice physical_device = nullptr;
-  vk::raii::Device logical_device = nullptr;
-  uint32_t queue_index = ~0;
-  vk::raii::Queue graphics_queue = nullptr;
-  vk::raii::SurfaceKHR surface = nullptr;
   vk::raii::SwapchainKHR swap_chain = nullptr;
-
-  vma::raii::Allocator vma_allocator = nullptr;
 
   std::vector<vk::Image> swap_chain_images;
   vk::SurfaceFormatKHR   swap_chain_surface_format;
