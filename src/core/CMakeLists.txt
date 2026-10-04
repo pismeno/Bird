@@ -126,6 +126,8 @@ target_sources(BirdRendering
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vk_mem_alloc.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_context.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_context.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_memory_allocator.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_memory_allocator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_swapchain.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_swapchain.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_pipeline.hpp

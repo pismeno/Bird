@@ -216,4 +216,8 @@ Result<void> VulkanPipeline::create_graphics_pipeline(VulkanSwapchain& swapchain
   return bird::ok();
 }
 
+void VulkanPipeline::bind(const vk::raii::CommandBuffer& command_buffer) const {
+  command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *graphics_pipeline);
+}
+
 } // bird

@@ -14,6 +14,11 @@
 #include <string>
 #include <memory>
 
+#include <rendering/vulkan/vertex.hpp>
+#include <rendering/vulkan/vulkan_context.hpp>
+#include <rendering/vulkan/vulkan_memory_allocator.hpp>
+#include <rendering/vulkan/vulkan_swapchain.hpp>
+#include <rendering/vulkan/vulkan_pipeline.hpp>
 #include <rendering/rendering_context.hpp>
 #include <resources/render_command.hpp>
 #include <resources/asset_handle.hpp>
@@ -24,14 +29,10 @@
 namespace bird {
 
 class VulkanRenderer : public IRenderer {
-
-  friend class IRenderer;
-
  public:
-  static constexpr inline uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+  ~VulkanRenderer();
 
-  Result<void> attach_window(void* native_window_handle, uint32_t window_width, uint32_t window_height) override;
-  Result<void> init(RenderingContext& context) override;
+  static constexpr inline uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
   void begin_frame() override;
   void begin_pass(const ViewData& view_data) override;
@@ -43,66 +44,37 @@ class VulkanRenderer : public IRenderer {
   bool needs_framebuffer_resize() const noexcept override;
   bool is_context_lost() const noexcept override;
 
+  static Result<std::unique_ptr<VulkanRenderer>> create(RenderingContext& context, void* native_window_handle, uint32_t window_width, uint32_t window_height);
  private:
-  explicit VulkanRenderer();
-  ~VulkanRenderer();
+  explicit VulkanRenderer() = default;
 
-  // initialization methods
+  struct FrameData {
+    vk::raii::Semaphore image_available_semaphore = nullptr;
+    vk::raii::Fence     in_flight_fence           = nullptr;
+    vk::raii::CommandBuffer command_buffer        = nullptr;
+
+    vma::raii::Buffer   uniform_buffer            = nullptr;
+    void*               uniform_buffer_mapped     = nullptr;
+
+    vk::raii::DescriptorSet descriptor_set        = nullptr;
+  };
+
   Result<void> create_texture_image();
   Result<void> create_texture_image_view();
   Result<void> create_texture_sampler();
 
-  //Result<void> create_graphics_pipeline();
-
   Result<void> create_command_pool();
   Result<void> create_vertex_buffer();
   Result<void> create_index_buffer();
-  Result<void> create_uniform_buffers();
   Result<void> create_descriptor_pool();
-  Result<void> create_command_buffers();
-  Result<void> create_sync_objects();
 
-  // single-time command buffer helpers:
+  Result<void> create_frame_data();
+
   Result<vk::raii::CommandBuffer> begin_single_time_commands();
   void end_single_time_commands(vk::raii::CommandBuffer& command_buffer);
 
-  template <typename T>
-  Result<void> create_buffer(vk::BufferUsageFlagBits usage, const std::vector<T>& src_data, vma::raii::Buffer& dest_buffer) {
-    return create_buffer(usage, sizeof(src_data[0]) * src_data.size(), src_data, dest_buffer);
-  }
-
-  template <typename T>
-  Result<void> create_buffer(vk::BufferUsageFlagBits usage, vk::DeviceSize size, const std::vector<T>& src_data, vma::raii::Buffer& dest_buffer) {
-    vk::BufferCreateInfo buffer_info{
-        .size        = size,
-        .usage       = usage,
-        .sharingMode = vk::SharingMode::eExclusive
-    };
-
-    vma::AllocationCreateInfo alloc_info{
-        .flags = vma::AllocationCreateFlagBits::eHostAccessSequentialWrite |
-                 vma::AllocationCreateFlagBits::eMapped,
-        .usage = vma::MemoryUsage::eAuto
-    };
-
-    auto vkr_create_buffer = vma_allocator.createBuffer(buffer_info, alloc_info);
-    if (vkr_create_buffer.result != vk::Result::eSuccess) {
-      return bird::fail("Failed to create and allocate Buffer via VMA-Hpp");
-    }
-
-    dest_buffer = std::move(vkr_create_buffer.value);
-
-    const vma::raii::Allocation& allocation = dest_buffer.getAllocation();
-    void* data = allocation.getInfo().pMappedData;
-
-    memcpy(data, src_data.data(), buffer_info.size);
-
-    return bird::ok();
-  }
-
-  // rendering helper methods
-  Result<void> record_command_buffer();
-  void update_ubo(const ViewData& view_data);
+  Result<void> record_command_buffer(FrameData& frame);
+  void update_ubo(const ViewData& view_data, FrameData& frame);
   inline void move_to_next_frame();
 
   void transition_image_layout(
@@ -115,29 +87,23 @@ class VulkanRenderer : public IRenderer {
       vk::PipelineStageFlags2 src_stage_mask,
       vk::PipelineStageFlags2 dst_stage_mask);
 
-  // window members that hold values for surface initialization
-  void* native_window_handle = nullptr;
-  uint32_t window_width = 0;
-  uint32_t window_height = 0;
+  std::unique_ptr<VulkanContext> vk_context;
+  std::unique_ptr<VulkanMemoryAllocator> memory_allocator;
+  std::unique_ptr<VulkanSwapchain> swapchain;
+  std::unique_ptr<VulkanPipeline> pipeline;
 
   vma::raii::Buffer vertex_buffer = nullptr;
   vma::raii::Buffer index_buffer = nullptr;
 
-  std::vector<vma::raii::Buffer> uniform_buffers;
-  std::vector<void*> uniform_buffers_mapped;
-
   vk::raii::DescriptorPool descriptor_pool = nullptr;
-  std::vector<vk::raii::DescriptorSet> descriptor_sets;
   vk::raii::CommandPool command_pool = nullptr;
-  std::vector<vk::raii::CommandBuffer> command_buffers;
 
   vma::raii::Image texture_image = nullptr;
   vk::raii::ImageView texture_image_view = nullptr;
   vk::raii::Sampler texture_sampler = nullptr;
 
-  std::vector<vk::raii::Semaphore> present_complete_semaphores;
+  std::vector<FrameData> frames;
   std::vector<vk::raii::Semaphore> render_finished_semaphores;
-  std::vector<vk::raii::Fence> draw_fences;
 
   // rendering states
   bool is_context_lost_ = false;

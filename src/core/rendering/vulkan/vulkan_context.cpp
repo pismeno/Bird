@@ -26,9 +26,6 @@ Result<std::unique_ptr<VulkanContext>> VulkanContext::create(void* native_window
   auto r_create_logical_device = context->create_logical_device();
   if (!r_create_logical_device) return bird::fail(r_create_logical_device.error());
 
-  auto r_create_vma = context->create_vma();
-  if (!r_create_vma) return bird::fail(r_create_vma.error());
-
   return std::move(context);
 }
 
@@ -201,24 +198,6 @@ Result<void> VulkanContext::create_logical_device() {
   logical_device = std::move(vkr_create_logical_device.value);
 
   graphics_queue = logical_device.getQueue(queue_index, 0);
-
-  return bird::ok();
-}
-
-Result<void> VulkanContext::create_vma() {
-  vma::AllocatorCreateInfo create_info{
-      .physicalDevice = *physical_device,
-      .preferredLargeHeapBlockSize = 0,
-
-      .vulkanApiVersion = VK_API_VERSION_1_3
-  };
-
-  auto vkr_create_allocator = vma::raii::createAllocator(vk_instance, logical_device, create_info);
-  if (vkr_create_allocator.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create AMD VMA allocator");
-  }
-
-  vma_allocator = std::move(vkr_create_allocator.value);
 
   return bird::ok();
 }

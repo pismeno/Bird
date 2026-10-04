@@ -16,6 +16,12 @@ class VulkanPipeline {
  public:
   ~VulkanPipeline() = default;
 
+  inline const vk::raii::PipelineLayout& get_layout() const { return pipeline_layout; }
+  inline const vk::raii::Pipeline& get_pipeline() const { return graphics_pipeline; }
+  inline const vk::raii::DescriptorSetLayout& get_descriptor_set_layout() const { return descriptor_set_layout; }
+
+  void bind(const vk::raii::CommandBuffer& command_buffer) const;
+
   static Result<std::unique_ptr<VulkanPipeline>> create(VulkanSwapchain& swapchain, VulkanContext& vk_context, AssetManager* asset_manager);
  private:
   explicit VulkanPipeline() = default;

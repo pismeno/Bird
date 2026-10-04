@@ -151,4 +151,44 @@ Result<void> VulkanSwapchain::recreate(VulkanContext& vk_context, uint32_t windo
   return bird::ok();
 }
 
+Result<uint32_t> VulkanSwapchain::acquire_next_image(const vk::raii::Semaphore& present_complete_semaphore) {
+  // Use UINT64_MAX to disable the timeout
+  auto acquire_res = swap_chain.acquireNextImage(UINT64_MAX, *present_complete_semaphore, nullptr);
+
+  // Check for window resize conditions
+  if (acquire_res.result == vk::Result::eErrorOutOfDateKHR || acquire_res.result == vk::Result::eSuboptimalKHR) {
+    return bird::fail("Swapchain out of date or suboptimal");
+  } else if (acquire_res.result == vk::Result::eErrorDeviceLost) {
+    return bird::fail("Device lost");
+  } else if (acquire_res.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to acquire next swapchain image");
+  }
+
+  return acquire_res.value;
+}
+
+Result<void> VulkanSwapchain::present(const vk::raii::Queue& present_queue, const vk::raii::Semaphore& render_finished_semaphore, uint32_t image_index) {
+  vk::PresentInfoKHR present_info{
+      .waitSemaphoreCount = 1,
+      .pWaitSemaphores    = &*render_finished_semaphore,
+      .swapchainCount     = 1,
+      .pSwapchains        = &*swap_chain,
+      .pImageIndices      = &image_index
+  };
+
+  // presentKHR returns a vk::Result directly, not a ResultValue
+  vk::Result present_res = present_queue.presentKHR(present_info);
+
+  // Check for window resize conditions
+  if (present_res == vk::Result::eErrorOutOfDateKHR || present_res == vk::Result::eSuboptimalKHR) {
+    return bird::fail("Swapchain out of date or suboptimal");
+  } else if (present_res == vk::Result::eErrorDeviceLost) {
+    return bird::fail("Device lost");
+  } else if (present_res != vk::Result::eSuccess) {
+    return bird::fail("Failed to present swapchain image");
+  }
+
+  return bird::ok();
+}
+
 } // bird
