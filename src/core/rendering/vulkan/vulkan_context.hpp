@@ -13,6 +13,11 @@ class VulkanContext {
  public:
   ~VulkanContext() = default;
 
+  const inline vk::raii::PhysicalDevice& get_physical_device() const { return physical_device; }
+  const inline vk::raii::Device& get_logical_device() const { return logical_device; }
+  const inline vk::raii::Queue& get_graphics_queue() const { return graphics_queue; }
+  const inline vk::raii::SurfaceKHR& get_surface() const { return surface; }
+
   static Result<std::unique_ptr<VulkanContext>> create(void* native_window_handle);
  private:
   explicit VulkanContext() = default;

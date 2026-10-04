@@ -48,8 +48,6 @@ class VulkanRenderer : public IRenderer {
   ~VulkanRenderer();
 
   // initialization methods
-  Result<void> create_swap_chain();
-  Result<void> create_image_views();
   Result<void> create_texture_image();
   Result<void> create_texture_image_view();
   Result<void> create_texture_sampler();
@@ -62,12 +60,6 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_descriptor_pool();
   Result<void> create_command_buffers();
   Result<void> create_sync_objects();
-
-  // initialization helper methods
-  vk::SurfaceFormatKHR choose_swap_surface_format(std::vector<vk::SurfaceFormatKHR> const &availableFormats);
-  vk::PresentModeKHR choose_swap_present_mode(std::vector<vk::PresentModeKHR> const &availablePresentModes);
-  vk::Extent2D choose_swap_extent(vk::SurfaceCapabilitiesKHR const &capabilities);
-  uint32_t choose_swap_min_image_count(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities);
 
   // single-time command buffer helpers:
   Result<vk::raii::CommandBuffer> begin_single_time_commands();
@@ -150,25 +142,12 @@ class VulkanRenderer : public IRenderer {
       vk::PipelineStageFlags2 src_stage_mask,
       vk::PipelineStageFlags2 dst_stage_mask);
 
-  void copy_buffer_to_image(
-      vk::raii::CommandBuffer& cmd_buffer,
-      vk::Buffer               buffer,
-      vk::Image                image,
-      uint32_t                 width,
-      uint32_t                 height);
-
   // window members that hold values for surface initialization
   void* native_window_handle = nullptr;
   uint32_t window_width = 0;
   uint32_t window_height = 0;
 
   // vulkan members
-  vk::raii::SwapchainKHR swap_chain = nullptr;
-
-  std::vector<vk::Image> swap_chain_images;
-  vk::SurfaceFormatKHR   swap_chain_surface_format;
-  vk::Extent2D           swap_chain_extent;
-
   vk::raii::DescriptorSetLayout descriptor_set_layout = nullptr;
   vk::raii::PipelineLayout pipeline_layout = nullptr;
   vk::raii::Pipeline graphics_pipeline = nullptr;
@@ -187,8 +166,6 @@ class VulkanRenderer : public IRenderer {
   vma::raii::Image texture_image = nullptr;
   vk::raii::ImageView texture_image_view = nullptr;
   vk::raii::Sampler texture_sampler = nullptr;
-
-  std::vector<vk::raii::ImageView> swap_chain_image_views;
 
   std::vector<vk::raii::Semaphore> present_complete_semaphores;
   std::vector<vk::raii::Semaphore> render_finished_semaphores;
