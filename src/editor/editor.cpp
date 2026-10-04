@@ -103,17 +103,26 @@ Result<void> Editor::init() {
   auto r_s_c1 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/forward_2d.vert.glsl",
                                                             "core://shaders/forward_2d.vert.spv");
   if (!r_s_c1) return bird::fail(r_s_c1.error());
+
   auto r_s_c2 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/forward_2d.frag.glsl",
                                                             "core://shaders/forward_2d.frag.spv");
   if (!r_s_c2) return bird::fail(r_s_c2.error());
+
   auto r_s_c3 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/triangle.vert.glsl",
                                                             "core://shaders/triangle.vert.spv");
   if (!r_s_c3) return bird::fail(r_s_c3.error());
+
   auto r_s_c4 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/triangle.frag.glsl",
                                                             "core://shaders/triangle.frag.spv");
   if (!r_s_c4) return bird::fail(r_s_c4.error());
+
   auto r_s_c5 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/vertices.vert.glsl",
                                                             "core://shaders/vertices.vert.spv");
+  if (!r_s_c5) return bird::fail(r_s_c5.error());
+
+  auto r_s_c6 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/textures.frag.glsl",
+                                                            "core://shaders/textures.frag.spv");
+  if (!r_s_c6) return bird::fail(r_s_c6.error());
 
   auto r_load_img = asset_manager->acquire<ImageAsset>("editor://test_img.png");
   if (!r_load_img) return bird::fail(r_load_img.error());
