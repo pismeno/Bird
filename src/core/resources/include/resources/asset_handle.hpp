@@ -36,12 +36,12 @@ class AssetHandle {
   /**
    * @return Pointer to the underlying asset, or nullptr if invalid.
    */
-  [[nodiscard]] T* get() const noexcept;
+  [[nodiscard]] const T* get() const noexcept;
 
   /**
    * @return Pointer to the underlying asset, or nullptr if invalid.
    */
-  T* operator->() const noexcept { return get(); }
+  const T* operator->() const noexcept { return get(); }
 
   /**
    * @return True if both handles point to the exact same asset generation in the same pool.
