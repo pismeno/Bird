@@ -142,6 +142,7 @@ target_sources(BirdRendering
 target_compile_definitions(BirdRendering PRIVATE
         VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
         VULKAN_HPP_NO_EXCEPTIONS
+        VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
 )
 
 if(WIN32)
