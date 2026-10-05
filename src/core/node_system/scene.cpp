@@ -33,7 +33,26 @@ namespace bird {
   return NodeID::from(new_id, 0);
 }
 
-[[nodiscard]] NodeID Scene::create_node(NodeID parent_id, std::string_view node_type) {
+[[nodiscard]] bool Scene::is_node_valid(NodeID node_id) const noexcept {
+  if (node_id == NodeID::INVALID || node_id.index() >= MAX_ACTIVE_NODES) {
+    return false;
+  }
+  return generations[node_id.index()] == node_id.generation();
+}
+
+[[nodiscard]] const NodeID Scene::get_nodes_parent(NodeID node_id) const noexcept {
+  if (!is_node_valid(node_id)) return NodeID::INVALID;
+
+  return nodes[node_id.index()].parent_id;
+}
+
+[[nodiscard]] const std::vector<NodeID>& Scene::get_nodes_children(NodeID node_id) const noexcept {
+  if (!is_node_valid(node_id)) return {};
+
+  return nodes[node_id.index()].children_ids;
+}
+
+[[nodiscard]] const NodeID Scene::create_node(NodeID parent_id, std::string_view node_type) {
   NodeID new_id = generate_id();
 
   nodes[new_id.index()].id = new_id;
@@ -60,6 +79,8 @@ namespace bird {
 }
 
 void Scene::destroy_node(NodeID node_id) {
+  if (!is_node_valid(node_id)) return;
+
   Node* node = &nodes[node_id.index()];
   if (!node) {
     std::cerr << "Node with provided ID not found";
@@ -94,10 +115,6 @@ void Scene::destroy_node(NodeID node_id) {
   node->children_ids.clear();
 }
 
-[[nodiscard]] NodeHandle Scene::get_node(NodeID node_id) {
-  return {this, node_id};
-}
-
 void Scene::clear_nodes() {
   for (auto& manager : managers_flat_array) {
     manager->on_scene_clear();
@@ -115,6 +132,21 @@ void Scene::clear_nodes() {
 }
 
 void Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
+  if (node_id == new_parent_id) {
+    std::cerr << "Cannot parent a node to itself.\n";
+    return;
+  }
+
+  if (!is_node_valid(node_id)) {
+    std::cerr << "Cannot reparent: Child node is invalid or already destroyed.\n";
+    return;
+  }
+
+  if (!is_node_valid(new_parent_id)) {
+    std::cerr << "Cannot reparent: Target parent node is invalid or already destroyed.\n";
+    return;
+  }
+
   if (node_id == new_parent_id) {
     std::cerr << "Cannot parent a node to itself.";
     return;

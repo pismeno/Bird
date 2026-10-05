@@ -61,7 +61,6 @@ target_sources(BirdResources
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_types.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/stbi_image.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/resources/material.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/render_command.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/asset_handle.hpp
@@ -86,7 +85,6 @@ add_library(BirdNodeSystem STATIC)
 
 target_sources(BirdNodeSystem
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/node_system/node_handle.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/render_gatherer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene_factory.cpp
@@ -96,7 +94,6 @@ target_sources(BirdNodeSystem
 
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/include/node_system/inode_manager.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/include/node_system/node.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/node_system/include/node_system/node_handle.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/include/node_system/render_gatherer.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/include/node_system/node_types.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/include/node_system/scene.hpp

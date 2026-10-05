@@ -164,7 +164,7 @@ template<typename T>
 }
 
 template<typename T>
-[[nodiscard]] inline T* AssetHandle<T>::get() const noexcept {
+[[nodiscard]] inline const T* AssetHandle<T>::get() const noexcept {
   if (!pool) return nullptr;
   return pool->resolve(index, generation);
 }
