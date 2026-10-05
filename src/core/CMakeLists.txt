@@ -61,12 +61,14 @@ target_sources(BirdResources
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_types.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/stbi_image.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/material.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/render_command.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/asset_handle.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/asset_types.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/asset_manager.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/resources_context.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/material.hpp
 )
 
 target_include_directories(BirdResources PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/resources/include)
