@@ -24,7 +24,7 @@ namespace bird {
   }
 
   if (next_unused_id >= MAX_ACTIVE_NODES) {
-    return INVALID_NODE_ID;
+    return NodeID::INVALID;
   }
 
   uint32_t new_id = next_unused_id++;
@@ -37,7 +37,7 @@ namespace bird {
   NodeID new_id = generate_id();
 
   nodes[new_id.index()].id = new_id;
-  nodes[new_id.index()].parent_id = INVALID_NODE_ID;
+  nodes[new_id.index()].parent_id = NodeID::INVALID;
 
   for (auto& manager : managers_flat_array) {
     manager->on_node_created(new_id);
@@ -50,7 +50,7 @@ namespace bird {
     }
   }
 
-  if (parent_id != INVALID_NODE_ID && parent_id != new_id) {
+  if (parent_id != NodeID::INVALID && parent_id != new_id) {
     reparent_node(new_id, parent_id);
   }
 
@@ -66,7 +66,7 @@ void Scene::destroy_node(NodeID node_id) {
     return;
   }
 
-  if (node->parent_id != INVALID_NODE_ID) {
+  if (node->parent_id != NodeID::INVALID) {
     Node* parent = &nodes[node->parent_id.index()];
     if (parent) {
       auto& siblings = parent->children_ids;
@@ -89,8 +89,8 @@ void Scene::destroy_node(NodeID node_id) {
 
   recycled_ids.push_back(idx);
 
-  node->id = INVALID_NODE_ID;
-  node->parent_id = INVALID_NODE_ID;
+  node->id = NodeID::INVALID;
+  node->parent_id = NodeID::INVALID;
   node->children_ids.clear();
 }
 
@@ -105,8 +105,8 @@ void Scene::clear_nodes() {
 
   for (uint32_t i = 0; i < get_highest_allocated_node_index(); ++i) {
     generations[i]++; // Invalidates all existing handles globally
-    nodes[i].id = INVALID_NODE_ID;
-    nodes[i].parent_id = INVALID_NODE_ID;
+    nodes[i].id = NodeID::INVALID;
+    nodes[i].parent_id = NodeID::INVALID;
     nodes[i].children_ids.clear();
   }
 
@@ -133,7 +133,7 @@ void Scene::reparent_node(NodeID node_id, NodeID new_parent_id) {
   }
 
   NodeID old_parent_id = child->parent_id;
-  if (child->parent_id != INVALID_NODE_ID) {
+  if (child->parent_id != NodeID::INVALID) {
     Node *old_parent = &nodes[child->parent_id.index()];
     if (old_parent) {
       auto& siblings = old_parent->children_ids;

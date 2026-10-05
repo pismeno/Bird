@@ -10,7 +10,7 @@ TransformManager::TransformManager() {
   node_to_transform.resize(MAX_ACTIVE_NODES, invalid_transform_index);
   transforms.reserve(MAX_ACTIVE_NODES);
 
-  logical_node_parents.resize(MAX_ACTIVE_NODES, INVALID_NODE_ID.index());
+  logical_node_parents.resize(MAX_ACTIVE_NODES, NodeID::INVALID.index());
   logical_children.resize(MAX_ACTIVE_NODES);
 }
 
@@ -74,7 +74,7 @@ void TransformManager::mark_spatial_children_dirty(NodeID parent_id) {
   parent->is_dirty = true;
   uint32_t current_child_idx = parent->first_child_idx;
 
-  while (current_child_idx != INVALID_NODE_ID.index()) {
+  while (current_child_idx != NodeID::INVALID.index()) {
     TransformInfo* child = get_transform(current_child_idx);
     if (child) {
       // Recursive call for grandchildren
@@ -109,7 +109,7 @@ TransformManager::TransformInfo* TransformManager::get_transform(uint32_t node_i
 
 void TransformManager::on_update() noexcept {
   for (size_t i = 0; i < transforms.size(); i++) {
-    if (transforms[i].parent_idx == INVALID_NODE_ID.index() && transforms[i].node_idx != INVALID_NODE_ID.index()) {
+    if (transforms[i].parent_idx == NodeID::INVALID.index() && transforms[i].node_idx != NodeID::INVALID.index()) {
       update_node_hierarchy(NodeID::from(transforms[i].node_idx, 0), glm::mat3(1.0f));
     }
   }
@@ -156,10 +156,10 @@ void TransformManager::update_node_hierarchy(NodeID node_id, const glm::mat3& pa
 
   // Recurse to children
   uint32_t child_idx = transform->first_child_idx;
-  while (child_idx != INVALID_NODE_ID.index()) {
+  while (child_idx != NodeID::INVALID.index()) {
     update_node_hierarchy(NodeID::from(child_idx, 0), my_global_mat);
     TransformInfo* child_transform = get_transform(child_idx);
-    child_idx = child_transform ? child_transform->next_sibling_idx : INVALID_NODE_ID.index();
+    child_idx = child_transform ? child_transform->next_sibling_idx : NodeID::INVALID.index();
   }
 }
 
@@ -169,11 +169,11 @@ void TransformManager::on_node_destroyed(NodeID node_id) noexcept {
   // Detach from the logical parent using the helper
   if (idx < logical_node_parents.size()) {
     uint32_t old_parent_idx = logical_node_parents[idx];
-    if (old_parent_idx != INVALID_NODE_ID.index()) {
+    if (old_parent_idx != NodeID::INVALID.index()) {
       detach_from_old_logical_parent(node_id, NodeID::from(old_parent_idx, 0));
     }
     // Clear the parent tracker for this recycled ID
-    logical_node_parents[idx] = INVALID_NODE_ID.index();
+    logical_node_parents[idx] = NodeID::INVALID.index();
   }
 
   // Clear its own logical children
@@ -187,14 +187,14 @@ void TransformManager::on_node_destroyed(NodeID node_id) noexcept {
   // Existing spatial cleanup
   remove_from_spatial_parent(node_id);
   TransformIndex index = node_to_transform[idx];
-  transforms[index].node_idx = INVALID_NODE_ID.index();
+  transforms[index].node_idx = NodeID::INVALID.index();
   node_to_transform[idx] = invalid_transform_index;
 }
 
 void TransformManager::on_frame_end() noexcept {
   size_t write_idx = 0;
   for (size_t read_idx = 0; read_idx < transforms.size(); ++read_idx) {
-    if (transforms[read_idx].node_idx != INVALID_NODE_ID.index()) {
+    if (transforms[read_idx].node_idx != NodeID::INVALID.index()) {
       if (write_idx != read_idx) {
         transforms[write_idx] = transforms[read_idx];
       }
@@ -212,7 +212,7 @@ void TransformManager::on_frame_end() noexcept {
 
 void TransformManager::remove_from_spatial_parent(NodeID child_id) noexcept {
   TransformInfo* child = get_transform(child_id.index());
-  if (!child || child->parent_idx == INVALID_NODE_ID.index()) return;
+  if (!child || child->parent_idx == NodeID::INVALID.index()) return;
 
   TransformInfo* parent = get_transform(child->parent_idx);
   if (!parent) return;
@@ -223,7 +223,7 @@ void TransformManager::remove_from_spatial_parent(NodeID child_id) noexcept {
   } else {
     // Otherwise, find the sibling immediately BEFORE this child, and patch the link
     uint32_t current_sibling_idx = parent->first_child_idx;
-    while (current_sibling_idx != INVALID_NODE_ID.index()) {
+    while (current_sibling_idx != NodeID::INVALID.index()) {
       TransformInfo* sibling = get_transform(current_sibling_idx);
       if (!sibling) break;
 
@@ -236,8 +236,8 @@ void TransformManager::remove_from_spatial_parent(NodeID child_id) noexcept {
   }
 
   // Clear the child's links
-  child->parent_idx = INVALID_NODE_ID.index();
-  child->next_sibling_idx = INVALID_NODE_ID.index();
+  child->parent_idx = NodeID::INVALID.index();
+  child->next_sibling_idx = NodeID::INVALID.index();
 
   mark_spatial_children_dirty(child_id);
 }
@@ -247,12 +247,12 @@ void TransformManager::set_spatial_parent(NodeID child_id, NodeID parent_id) noe
   if (!child) return;
 
   // Unlink from current parent to avoid corrupting the list
-  if (child->parent_idx != INVALID_NODE_ID.index()) {
+  if (child->parent_idx != NodeID::INVALID.index()) {
     remove_from_spatial_parent(child_id);
   }
 
   // Link to new parent
-  if (parent_id != INVALID_NODE_ID) {
+  if (parent_id != NodeID::INVALID) {
     TransformInfo* parent = get_transform(parent_id.index());
     if (parent) {
       child->parent_idx = parent_id.index();
@@ -266,7 +266,7 @@ void TransformManager::set_spatial_parent(NodeID child_id, NodeID parent_id) noe
 
 void TransformManager::detach_from_old_logical_parent(NodeID node_id, NodeID old_parent_id) noexcept {
   // The node had no previous parent, so there is nothing to detach
-  if (old_parent_id == INVALID_NODE_ID) return;
+  if (old_parent_id == NodeID::INVALID) return;
 
   // The parent index is out of bounds, so we safely bail out
   if (old_parent_id.index() >= logical_children.size()) return;
@@ -277,7 +277,7 @@ void TransformManager::detach_from_old_logical_parent(NodeID node_id, NodeID old
 
 void TransformManager::attach_to_new_logical_parent(NodeID node_id, NodeID new_parent_id) noexcept {
   // The node is becoming a root, so there is no new parent array to update
-  if (new_parent_id == INVALID_NODE_ID) return;
+  if (new_parent_id == NodeID::INVALID) return;
 
   // The parent index is out of bounds, so we safely bail out
   if (new_parent_id.index() >= logical_children.size()) return;
@@ -288,7 +288,7 @@ void TransformManager::attach_to_new_logical_parent(NodeID node_id, NodeID new_p
 NodeID TransformManager::find_nearest_spatial_parent(NodeID node_id) const noexcept {
   uint32_t current_logical = logical_node_parents[node_id.index()];
 
-  while (current_logical != INVALID_NODE_ID.index()) {
+  while (current_logical != NodeID::INVALID.index()) {
     NodeID current_id = NodeID::from(current_logical, 0);
 
     // We found a node with a transform going up the chain, so this is our target
@@ -299,7 +299,7 @@ NodeID TransformManager::find_nearest_spatial_parent(NodeID node_id) const noexc
     current_logical = logical_node_parents[current_logical];
   }
 
-  return INVALID_NODE_ID;
+  return NodeID::INVALID;
 }
 
 void TransformManager::relink_spatial_children_to_new_parent(NodeID logical_root, NodeID new_spatial_parent) noexcept {
@@ -333,9 +333,9 @@ void TransformManager::on_node_reparented(NodeID node_id, NodeID new_parent_id, 
   detach_from_old_logical_parent(node_id, old_parent_id);
   attach_to_new_logical_parent(node_id, new_parent_id);
 
-  logical_node_parents[node_id.index()] = (new_parent_id != INVALID_NODE_ID)
+  logical_node_parents[node_id.index()] = (new_parent_id != NodeID::INVALID)
                                           ? new_parent_id.index()
-                                          : INVALID_NODE_ID.index();
+                                          : NodeID::INVALID.index();
 
   // Next, we walk UP the logical tree to figure out what spatial transform we actually belong to
   NodeID nearest_spatial_parent = find_nearest_spatial_parent(node_id);
@@ -355,7 +355,7 @@ void TransformManager::on_scene_clear() noexcept {
   std::fill(node_to_transform.begin(), node_to_transform.end(), invalid_transform_index);
 
   // Wipe logical tracking
-  std::fill(logical_node_parents.begin(), logical_node_parents.end(), INVALID_NODE_ID.index());
+  std::fill(logical_node_parents.begin(), logical_node_parents.end(), NodeID::INVALID.index());
   for (auto& children : logical_children) {
     children.clear();
   }
@@ -366,7 +366,7 @@ Result<void> TransformManager::on_serialize_scene(nlohmann::json& json) const {
 
   for (const auto& transform : transforms) {
     // Fixed: Should be == to skip INVALID nodes. If it was != it would skip valid nodes!
-    if (transform.node_idx == INVALID_NODE_ID.index()) {
+    if (transform.node_idx == NodeID::INVALID.index()) {
       continue;
     }
 
@@ -446,9 +446,9 @@ Result<void> TransformManager::on_deserialize_scene(const nlohmann::json& json) 
     transform->local_rotation = node_json.value("local_rotation", 0.0f);
 
     // Extract Hierarchy Links (safely falling back to INVALID if missing)
-    transform->parent_idx       = node_json.value("parent_id", INVALID_NODE_ID.index());
-    transform->first_child_idx  = node_json.value("first_child_id", INVALID_NODE_ID.index());
-    transform->next_sibling_idx = node_json.value("next_sibling_id", INVALID_NODE_ID.index());
+    transform->parent_idx       = node_json.value("parent_id", NodeID::INVALID.index());
+    transform->first_child_idx  = node_json.value("first_child_id", NodeID::INVALID.index());
+    transform->next_sibling_idx = node_json.value("next_sibling_id", NodeID::INVALID.index());
 
     // CRITICAL: Force the engine to rebuild this node's global matrix on the next update
     transform->is_dirty = true;

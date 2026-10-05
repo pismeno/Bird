@@ -66,10 +66,10 @@ class TransformManager : public NodeManagerBase<TransformManager> {
     glm::vec2 local_shear = {0.0f, 0.0f};
     float local_rotation = 0.0f;
 
-    uint32_t node_idx = INVALID_NODE_ID.index();
-    uint32_t parent_idx = INVALID_NODE_ID.index();
-    uint32_t first_child_idx = INVALID_NODE_ID.index();
-    uint32_t next_sibling_idx = INVALID_NODE_ID.index();
+    uint32_t node_idx = NodeID::INVALID.index();
+    uint32_t parent_idx = NodeID::INVALID.index();
+    uint32_t first_child_idx = NodeID::INVALID.index();
+    uint32_t next_sibling_idx = NodeID::INVALID.index();
 
     bool is_dirty = true;
   };

@@ -50,6 +50,4 @@ class Material {
   std::unordered_map<std::string, MaterialProperty, StringHash, std::equal_to<>> properties;
 };
 
-} // namespace bird
-
 } // bird

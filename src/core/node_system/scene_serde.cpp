@@ -12,7 +12,7 @@ Result<void> Scene::serialize(nlohmann::json &json) const {
   json["nodes"] = nlohmann::json::array(); // creates a blank JSON list on key "nodes"
 
   for (const auto& node : nodes) {
-    if (node.get_id() != INVALID_NODE_ID) {
+    if (node.get_id() != NodeID::INVALID) {
       nlohmann::json node_json;
       node_json["type"] = node_types[node.get_id().index()];
       node_json["id"] = node.get_id().index();
@@ -59,7 +59,7 @@ Result<void> Scene::deserialize(const nlohmann::json &json) {
 
     Node& out_node = nodes[id.index()];
     out_node.id = id;
-    out_node.parent_id = INVALID_NODE_ID;
+    out_node.parent_id = NodeID::INVALID;
 
     node_types[id.index()] = node_type;
 
@@ -84,9 +84,9 @@ Result<void> Scene::deserialize(const nlohmann::json &json) {
     }
 
     uint32_t raw_parent = node_json["parent_id"].get<uint32_t>();
-    NodeID parent_id = (raw_parent == INVALID_NODE_ID.index()) ? INVALID_NODE_ID : NodeID::from(raw_parent, 0);
+    NodeID parent_id = (raw_parent == NodeID::INVALID.index()) ? NodeID::INVALID : NodeID::from(raw_parent, 0);
 
-    if (parent_id != INVALID_NODE_ID && parent_id != id) {
+    if (parent_id != NodeID::INVALID && parent_id != id) {
       reparent_node(id, parent_id);
     }
   }

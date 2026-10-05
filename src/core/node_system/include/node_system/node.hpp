@@ -22,8 +22,8 @@ class Node {
   inline const std::vector<NodeID>& get_children_ids() const noexcept { return children_ids; }
 
  private:
-  NodeID id = INVALID_NODE_ID;
-  NodeID parent_id = INVALID_NODE_ID;
+  NodeID id = NodeID::INVALID;
+  NodeID parent_id = NodeID::INVALID;
   std::vector<NodeID> children_ids;
 };
 

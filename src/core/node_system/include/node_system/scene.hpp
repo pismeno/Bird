@@ -25,6 +25,7 @@ class Scene {
   friend class NodeHandle;
 
  public:
+
   explicit Scene(std::string scene_type_name) : scene_type_name(std::move(scene_type_name)) {
     nodes.resize(MAX_ACTIVE_NODES);
     generations.resize(MAX_ACTIVE_NODES);
