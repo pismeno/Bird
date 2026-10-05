@@ -219,7 +219,7 @@ Result<void> VulkanRenderer::create_texture_image_view() {
 
 Result<void> VulkanRenderer::create_texture_sampler() {
   vk::SamplerCreateInfo sampler_info{
-      .magFilter               = vk::Filter::eLinear,
+      .magFilter               = vk::Filter::eNearest,
       .minFilter               = vk::Filter::eLinear,
       .mipmapMode              = vk::SamplerMipmapMode::eLinear,
       .addressModeU            = vk::SamplerAddressMode::eRepeat,
@@ -412,10 +412,11 @@ void VulkanRenderer::update_ubo(const ViewData& view_data, FrameData& frame) {
 }
 
 Result<void> VulkanRenderer::resize_framebuffer(uint32_t width, uint32_t height) {
+  vk_context->get_logical_device().waitIdle();
+
   auto r_recreate = swapchain->recreate(*vk_context, width, height);
   if (!r_recreate) return r_recreate;
 
-  // Recreate the render_finished_semaphores just in case the image count changed
   render_finished_semaphores.clear();
   for (size_t i = 0; i < swapchain->get_image_count(); i++) {
     auto vkr_render_fin = vk_context->get_logical_device().createSemaphore(vk::SemaphoreCreateInfo());

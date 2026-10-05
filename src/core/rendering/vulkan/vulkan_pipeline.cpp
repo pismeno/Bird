@@ -159,7 +159,13 @@ Result<void> VulkanPipeline::create_graphics_pipeline(VulkanSwapchain& swapchain
 
   // disabling color blending for our only framebuffer
   vk::PipelineColorBlendAttachmentState color_blend_attachment{
-      .blendEnable    = vk::False,
+      .blendEnable    = vk::True,
+      .srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
+      .dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+      .colorBlendOp        = vk::BlendOp::eAdd,
+      .srcAlphaBlendFactor = vk::BlendFactor::eOne,
+      .dstAlphaBlendFactor = vk::BlendFactor::eZero,
+      .alphaBlendOp        = vk::BlendOp::eAdd,
       .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
   };
 
