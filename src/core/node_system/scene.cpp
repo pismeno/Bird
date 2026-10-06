@@ -10,7 +10,6 @@
 #include <utils/result.hpp>
 #include <node_system/managers/transform_manager.hpp>
 #include <node_system/managers/drawable_manager.hpp>
-#include <node_system/node_handle.hpp>
 
 namespace bird {
 

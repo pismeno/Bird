@@ -17,6 +17,7 @@
 #include <node_system/managers/transform_manager.hpp>
 #include <editor/shader_compiler.hpp>
 #include <resources/asset_types.hpp>
+#include "resources/material_pool.hpp"
 
 namespace bird {
 
@@ -57,6 +58,9 @@ Result<void> Editor::init() {
   }
   asset_manager = std::move(r_create_am).value();
   resources_context.asset_manager = asset_manager.get();
+
+  material_pool = std::make_unique<MaterialPool>();
+  resources_context.material_pool = material_pool.get();
 
   node_system_context = {
       .resources_context = &resources_context,

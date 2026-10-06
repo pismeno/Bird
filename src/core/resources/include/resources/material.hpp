@@ -23,7 +23,7 @@ using MaterialProperty = std::variant<
     AssetHandle<ImageAsset>
     >;
 
-struct MaterialData {
+struct Material {
   std::unordered_map<std::string, MaterialProperty, StringHash, std::equal_to<>> properties;
 
   AssetHandle<VertexShaderAsset> vertex_shader;

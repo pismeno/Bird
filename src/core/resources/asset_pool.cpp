@@ -1,7 +1,8 @@
-#include "asset_pool.hpp"
-#include "resources/asset_types.hpp"
+#include "resources/asset_pool.hpp"
 
 #include <stb_image.h>
+
+#include "resources/asset_types.hpp"
 
 namespace bird {
 
