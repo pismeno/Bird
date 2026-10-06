@@ -1,0 +1,95 @@
+#include "resources/asset_handle.hpp"
+
+#include "resources/asset_pool.hpp"
+#include "resources/asset_types.hpp"
+
+namespace bird {
+
+template<typename T>
+AssetHandle<T>::AssetHandle(AssetPool<T>* pool, uint32_t index, uint32_t generation) noexcept
+    : pool(pool), index(index), generation(generation) {}
+
+template<typename T>
+AssetHandle<T>::~AssetHandle() {
+  release_ref();
+}
+
+template<typename T>
+AssetHandle<T>::AssetHandle(const AssetHandle& other)
+    : pool(other.pool), index(other.index), generation(other.generation) {
+  add_ref();
+}
+
+template<typename T>
+AssetHandle<T>& AssetHandle<T>::operator=(const AssetHandle& other) {
+  if (this != &other) {
+    release_ref();
+    pool = other.pool;
+    index = other.index;
+    generation = other.generation;
+    add_ref();
+  }
+  return *this;
+}
+
+template<typename T>
+AssetHandle<T>::AssetHandle(AssetHandle&& other) noexcept
+    : pool(other.pool), index(other.index), generation(other.generation) {
+  other.pool = nullptr;
+  other.index = std::numeric_limits<uint32_t>::max();
+}
+
+template<typename T>
+AssetHandle<T>& AssetHandle<T>::operator=(AssetHandle&& other) noexcept {
+  if (this != &other) {
+    release_ref();
+    pool = other.pool;
+    index = other.index;
+    generation = other.generation;
+
+    other.pool = nullptr;
+    other.index = std::numeric_limits<uint32_t>::max();
+  }
+  return *this;
+}
+
+template<typename T>
+bool AssetHandle<T>::is_valid() const noexcept {
+  if (!pool || index == std::numeric_limits<uint32_t>::max()) return false;
+  return pool->resolve(index, generation) != nullptr;
+}
+
+template<typename T>
+const T* AssetHandle<T>::get() const noexcept {
+  if (!pool) return nullptr;
+  return pool->resolve(index, generation);
+}
+
+template<typename T>
+void AssetHandle<T>::add_ref() {
+  if (pool && index != std::numeric_limits<uint32_t>::max()) {
+    pool->add_ref(index, generation);
+  }
+}
+
+template<typename T>
+void AssetHandle<T>::release_ref() {
+  if (pool && index != std::numeric_limits<uint32_t>::max()) {
+    pool->release(index, generation);
+    pool = nullptr;
+    index = std::numeric_limits<uint32_t>::max();
+  }
+}
+
+// ==============================================================================
+// EXPLICIT INSTANTIATIONS
+// ==============================================================================
+// Tell the compiler to compile AssetHandle for these specific types right here.
+// Whenever you add a new asset type to your engine, add one line here.
+
+template class AssetHandle<ImageAsset>;
+template class AssetHandle<VertexShaderAsset>;
+template class AssetHandle<FragmentShaderAsset>;
+// template class AssetHandle<MeshAsset>;
+
+} // namespace bird
