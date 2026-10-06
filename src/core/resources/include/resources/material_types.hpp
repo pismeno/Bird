@@ -35,9 +35,4 @@ struct MaterialID {
 
 inline constexpr MaterialID MaterialID::INVALID{ std::numeric_limits<uint64_t>::max() };
 
-/**
-* @brief Maximum number of active nodes, hard-coded for now.
-*/
-static inline constexpr uint32_t MAX_ACTIVE_NODES = 50000;
-
 } // bird
