@@ -83,12 +83,12 @@ Result<void> Editor::init() {
       .resources_context = &resources_context
   };
 
-  RendererOptions renderer_options{
-      RendererType::Vulkan,
-      window->get_native_handle(),
-      window->get_framebuffer_width(),
-      window->get_framebuffer_height()
-  };
+  bindless_texture_registry = std::make_unique<BindlessTextureRegistry>();
+  rendering_context.bindless_texture_registry = bindless_texture_registry.get();
+  material_shader_layout_reflector = std::make_unique<MaterialShaderLayoutReflector>();
+  rendering_context.material_shader_layout_reflector = material_shader_layout_reflector.get();
+  material_shader_layout_registry = std::make_unique<MaterialShaderLayoutRegistry>(rendering_context);
+  rendering_context.material_shader_layout_registry = material_shader_layout_registry.get();
 
   context = {
       .node_system_context = &node_system_context,
@@ -136,12 +136,20 @@ Result<void> Editor::init() {
   }
   std::cout << std::endl;
 
+  RendererOptions renderer_options{
+      RendererType::Vulkan,
+      window->get_native_handle(),
+      window->get_framebuffer_width(),
+      window->get_framebuffer_height()
+  };
+
   auto renderer_result = IRenderer::create(renderer_options, rendering_context);
   if (!renderer_result) {
     return bird::fail(renderer_result.error());
   }
 
   renderer = std::move(renderer_result).value();
+  rendering_context.renderer = renderer.get();
 
   return bird::ok();
 }

@@ -36,7 +36,9 @@ struct ImageAsset : Asset {
 struct BinaryAsset : Asset {
   static constexpr const char* TYPE_ID = "generic_binary_asset";
 
-  alignas(8) std::vector<uint8_t> data;
+  std::vector<uint8_t> data;
+
+  [[nodiscard]] const inline size_t get_size_bytes() const noexcept { return data.size(); };
 };
 
 /**

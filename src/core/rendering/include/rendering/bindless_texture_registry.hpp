@@ -10,6 +10,9 @@ namespace bird {
 
 class BindlessTextureRegistry {
  public:
+  explicit BindlessTextureRegistry() = default;
+  ~BindlessTextureRegistry() = default;
+
   uint32_t get_index(uint64_t texture_id);
   inline uint32_t get_index(const AssetHandle<ImageAsset>& texture) { return get_index(texture.get_packed_id()); }
  private:
