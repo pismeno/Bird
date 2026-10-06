@@ -116,6 +116,19 @@ void MaterialPool::destroy(std::string_view string_material_id) {
   }
 }
 
+void MaterialPool::clear() {
+  for (uint32_t& gen : generations) {
+    gen++;
+  }
+
+  string_id_lookup.clear();
+
+  recycled_indices.clear();
+  for (uint32_t i = next_unused_index; i > 0; --i) {
+    recycled_indices.push_back(i - 1);
+  }
+}
+
 void MaterialPool::set_property(MaterialID material_id, std::string_view property, MaterialProperty value) {
   if (is_valid(material_id)) {
     uint32_t index = material_id.index();

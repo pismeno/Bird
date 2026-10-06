@@ -13,15 +13,19 @@ namespace bird {
 
 class MaterialPool {
  public:
-  const Material& get(MaterialID material_id) const;
-  MaterialID get_id(std::string_view string_material_id) const;
-  uint32_t get_version(MaterialID material_id) const;
-  uint32_t get_version(std::string_view string_material_id) const;
+  explicit MaterialPool() = default;
+  ~MaterialPool() = default;
+
+  [[nodiscard]] const Material& get(MaterialID material_id) const;
+  [[nodiscard]] MaterialID get_id(std::string_view string_material_id) const;
+  [[nodiscard]] uint32_t get_version(MaterialID material_id) const;
+  [[nodiscard]] uint32_t get_version(std::string_view string_material_id) const;
   [[nodiscard]] bool is_valid(MaterialID material_id) const;
   [[nodiscard]] bool is_valid(std::string_view string_material_id) const;
   MaterialID add(std::string_view string_id, Material material);
   void destroy(std::string_view);
   void destroy(MaterialID);
+  void clear();
 
   void set_property(MaterialID material_id, std::string_view property, MaterialProperty value);
   void set_property(std::string_view string_material_id, std::string_view property, MaterialProperty value);
