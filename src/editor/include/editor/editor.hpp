@@ -10,9 +10,10 @@
 
 #include <osal/os_context.hpp>
 #include <resources/resources_context.hpp>
+#include <resources/asset_manager.hpp>
+#include <resources/material_pool.hpp>
 #include <node_system/node_system_context.hpp>
 #include <rendering/rendering_context.hpp>
-#include <resources/asset_manager.hpp>
 #include <node_system/scene_factory.hpp>
 #include <editor/shader_compiler.hpp>
 
@@ -33,6 +34,7 @@ class Editor {
 
   std::unique_ptr<IFileSystem> file_system;
   std::unique_ptr<AssetManager> asset_manager;
+  std::unique_ptr<MaterialPool> material_pool;
   std::unique_ptr<IWindow> window;
   std::unique_ptr<IRenderer> renderer;
   std::unique_ptr<SceneFactory> scene_factory;
