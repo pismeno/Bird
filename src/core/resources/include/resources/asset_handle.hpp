@@ -50,6 +50,13 @@ class AssetHandle {
     return index == other.index && generation == other.generation && pool == other.pool;
   }
 
+  /**
+   * @brief Returns a packed 64-bit ID (32-bit generation | 32-bit index)
+   */
+  [[nodiscard]] inline uint64_t get_packed_id() const noexcept { return (static_cast<uint64_t>(generation) << 32) | static_cast<uint64_t>(index); }
+  [[nodiscard]] inline uint32_t get_index() const noexcept { return index; }
+  [[nodiscard]] inline uint32_t get_generation() const noexcept {return generation; }
+
  private:
   /**
    * @brief Internal constructor used by AssetPool.
