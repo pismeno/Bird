@@ -7,6 +7,7 @@
 
 #include <resources/material.hpp>
 #include "resources/material_types.hpp"
+#include "resources/asset_pool.hpp"
 #include "utils/string_hash.hpp"
 
 namespace bird {

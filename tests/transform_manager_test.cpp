@@ -1,4 +1,5 @@
 #include <doctest/doctest.h>
+
 #include <glm/glm.hpp>
 
 #include "node_system/managers/transform_manager.hpp"
@@ -77,7 +78,7 @@ TEST_CASE("TransformManager - Logical to Spatial Hierarchy") {
     REQUIRE(tm.set_node_position(child, glm::vec2(5.0f, -5.0f)).is_ok());
 
     // Link them using the logical hook
-    tm.on_node_reparented(child, parent, INVALID_NODE_ID);
+    tm.on_node_reparented(child, parent, NodeID::INVALID);
     tm.on_update();
 
     // Parent should be exactly where we put it
@@ -90,7 +91,7 @@ TEST_CASE("TransformManager - Logical to Spatial Hierarchy") {
     REQUIRE(tm.set_node_scale(parent, glm::vec2(2.0f, 2.0f)).is_ok());
     REQUIRE(tm.set_node_position(child, glm::vec2(10.0f, 0.0f)).is_ok());
 
-    tm.on_node_reparented(child, parent, INVALID_NODE_ID);
+    tm.on_node_reparented(child, parent, NodeID::INVALID);
     tm.on_update();
 
     // The child is 10 units to the right in LOCAL space.
@@ -105,8 +106,8 @@ TEST_CASE("TransformManager - Logical to Spatial Hierarchy") {
     REQUIRE(tm.set_node_position(grandchild, glm::vec2(25.0f, 0.0f)).is_ok());
 
     // Build the logical tree
-    tm.on_node_reparented(child, parent, INVALID_NODE_ID);
-    tm.on_node_reparented(grandchild, child, INVALID_NODE_ID);
+    tm.on_node_reparented(child, parent, NodeID::INVALID);
+    tm.on_node_reparented(grandchild, child, NodeID::INVALID);
     tm.on_update();
 
     CHECK_TRANSLATION(tm.get_global_matrix(grandchild), 175.0f, 0.0f);
@@ -129,19 +130,19 @@ TEST_CASE("TransformManager - Reparenting and Detaching") {
 
   SUBCASE("Detaching a logical parent resets child to local transform") {
     // Attach to old parent initially
-    tm.on_node_reparented(child, old_parent, INVALID_NODE_ID);
+    tm.on_node_reparented(child, old_parent, NodeID::INVALID);
     tm.on_update();
     CHECK_TRANSLATION(tm.get_global_matrix(child), 10.0f, 10.0f);
 
     // Reparent to nothing (detach)
-    tm.on_node_reparented(child, INVALID_NODE_ID, old_parent);
+    tm.on_node_reparented(child, NodeID::INVALID, old_parent);
     tm.on_update();
     CHECK_TRANSLATION(tm.get_global_matrix(child), 0.0f, 0.0f); // Back to local 0,0
   }
 
   SUBCASE("Switching logical parents updates global transform") {
     // Attach to old parent
-    tm.on_node_reparented(child, old_parent, INVALID_NODE_ID);
+    tm.on_node_reparented(child, old_parent, NodeID::INVALID);
     tm.on_update();
 
     // Switch from old_parent to new_parent
@@ -181,9 +182,9 @@ TEST_CASE("TransformManager - Nearest Spatial Parent Resolution") {
 
   SUBCASE("Leaf inherits transform from distant root through transform-less logical nodes") {
     // Build the logical chain: root -> middle1 -> middle2 -> leaf
-    tm.on_node_reparented(logical_middle1, root, INVALID_NODE_ID);
-    tm.on_node_reparented(logical_middle2, logical_middle1, INVALID_NODE_ID);
-    tm.on_node_reparented(leaf, logical_middle2, INVALID_NODE_ID);
+    tm.on_node_reparented(logical_middle1, root, NodeID::INVALID);
+    tm.on_node_reparented(logical_middle2, logical_middle1, NodeID::INVALID);
+    tm.on_node_reparented(leaf, logical_middle2, NodeID::INVALID);
 
     tm.on_update();
 
@@ -194,8 +195,8 @@ TEST_CASE("TransformManager - Nearest Spatial Parent Resolution") {
 
   SUBCASE("Inserting a spatial node into the logical chain intercepts the spatial hierarchy") {
     // Build initial chain: root -> logical_middle1 -> leaf
-    tm.on_node_reparented(logical_middle1, root, INVALID_NODE_ID);
-    tm.on_node_reparented(leaf, logical_middle1, INVALID_NODE_ID);
+    tm.on_node_reparented(logical_middle1, root, NodeID::INVALID);
+    tm.on_node_reparented(leaf, logical_middle1, NodeID::INVALID);
 
     tm.on_update();
     CHECK_TRANSLATION(tm.get_global_matrix(leaf), 110.0f, 60.0f); // Inherits from root
@@ -207,7 +208,7 @@ TEST_CASE("TransformManager - Nearest Spatial Parent Resolution") {
 
     // Insert it between root and logical_middle1
     // 1. Attach the new node to root
-    tm.on_node_reparented(spatial_middle, root, INVALID_NODE_ID);
+    tm.on_node_reparented(spatial_middle, root, NodeID::INVALID);
     // 2. Reparent logical_middle1 from root to spatial_middle
     tm.on_node_reparented(logical_middle1, spatial_middle, root);
 
