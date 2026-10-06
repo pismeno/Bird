@@ -16,6 +16,7 @@
 #include <rendering/bindless_texture_registry.hpp>
 #include <rendering/material_shader_layout_reflector.hpp>
 #include <rendering/material_shader_layout_registry.hpp>
+#include <rendering/material_baker.hpp>
 #include <node_system/scene_factory.hpp>
 #include <editor/shader_compiler.hpp>
 
@@ -42,6 +43,7 @@ class Editor {
   std::unique_ptr<BindlessTextureRegistry> bindless_texture_registry;
   std::unique_ptr<MaterialShaderLayoutReflector> material_shader_layout_reflector;
   std::unique_ptr<MaterialShaderLayoutRegistry> material_shader_layout_registry;
+  std::unique_ptr<MaterialBaker> material_baker;
   std::unique_ptr<IRenderer> renderer;
   std::unique_ptr<SceneFactory> scene_factory;
   std::unique_ptr<ShaderCompiler> shader_compiler;
