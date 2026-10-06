@@ -81,15 +81,9 @@ void AssetHandle<T>::release_ref() {
   }
 }
 
-// ==============================================================================
-// EXPLICIT INSTANTIATIONS
-// ==============================================================================
-// Tell the compiler to compile AssetHandle for these specific types right here.
-// Whenever you add a new asset type to your engine, add one line here.
-
 template class AssetHandle<ImageAsset>;
 template class AssetHandle<VertexShaderAsset>;
 template class AssetHandle<FragmentShaderAsset>;
-// template class AssetHandle<MeshAsset>;
+template class bird::AssetHandle<bird::TextAsset>;
 
-} // namespace bird
+} // bird

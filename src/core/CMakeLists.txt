@@ -123,7 +123,7 @@ add_library(BirdRendering STATIC)
 target_sources(BirdRendering
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/irenderer.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/texture.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/texture.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vk_mem_alloc.cpp
@@ -146,7 +146,7 @@ target_sources(BirdRendering
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/material_shader_layout_reflector.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/material_shader_layout_registry.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/material_baker.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/texture.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/texture.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/vertex.hpp
 )
 
