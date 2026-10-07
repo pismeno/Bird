@@ -16,7 +16,7 @@ namespace bird {
 class IAssetPool { public: virtual ~IAssetPool() = default; };
 
 template<typename T>
-class AssetPool : public IAssetPool { // Implemented using Gemini AI
+class AssetPool : public IAssetPool {
  public:
   AssetPool(IFileSystem* file_system) : file_system(file_system) {};
 
@@ -87,11 +87,8 @@ class AssetPool : public IAssetPool { // Implemented using Gemini AI
   }
 
  protected:
-  Result<T> parse_asset(std::string_view filepath, std::vector<uint8_t> raw_bytes) {
-    T asset;
-    asset.data = std::move(raw_bytes);
-    return asset;
-  }
+  // 1. Declare the template method inside the class without the inline definition
+  Result<T> parse_asset(std::string_view filepath, std::vector<uint8_t> raw_bytes);
 
  private:
   std::vector<T> data;
@@ -104,85 +101,14 @@ class AssetPool : public IAssetPool { // Implemented using Gemini AI
   IFileSystem* file_system;
 };
 
-// Declare the specialization so the compiler knows ImageAsset is handled differently
+template<typename T>
+inline Result<T> AssetPool<T>::parse_asset(std::string_view filepath, std::vector<uint8_t> raw_bytes) {
+  T asset;
+  asset.data = std::move(raw_bytes);
+  return asset;
+}
+
 template <>
 Result<ImageAsset> AssetPool<ImageAsset>::parse_asset(std::string_view filepath, std::vector<uint8_t> raw_bytes);
-
-// Asset Handle Implementation
-template<typename T>
-inline AssetHandle<T>::AssetHandle(AssetPool<T>* pool, uint32_t index, uint32_t generation) noexcept
-    : pool(pool), index(index), generation(generation) {}
-
-template<typename T>
-inline AssetHandle<T>::~AssetHandle() {
-  release_ref();
-}
-
-template<typename T>
-inline AssetHandle<T>::AssetHandle(const AssetHandle& other)
-    : pool(other.pool), index(other.index), generation(other.generation) {
-  add_ref();
-}
-
-template<typename T>
-inline AssetHandle<T>& AssetHandle<T>::operator=(const AssetHandle& other) {
-  if (this != &other) {
-    release_ref();
-    pool = other.pool;
-    index = other.index;
-    generation = other.generation;
-    add_ref();
-  }
-  return *this;
-}
-
-template<typename T>
-inline AssetHandle<T>::AssetHandle(AssetHandle&& other) noexcept
-    : pool(other.pool), index(other.index), generation(other.generation) {
-  other.pool = nullptr;
-  other.index = std::numeric_limits<uint32_t>::max();
-}
-
-template<typename T>
-inline AssetHandle<T>& AssetHandle<T>::operator=(AssetHandle&& other) noexcept {
-  if (this != &other) {
-    release_ref();
-    pool = other.pool;
-    index = other.index;
-    generation = other.generation;
-
-    other.pool = nullptr;
-    other.index = std::numeric_limits<uint32_t>::max();
-  }
-  return *this;
-}
-
-template<typename T>
-[[nodiscard]] inline bool AssetHandle<T>::is_valid() const noexcept {
-  if (!pool || index == std::numeric_limits<uint32_t>::max()) return false;
-  return pool->resolve(index, generation) != nullptr;
-}
-
-template<typename T>
-[[nodiscard]] inline const T* AssetHandle<T>::get() const noexcept {
-  if (!pool) return nullptr;
-  return pool->resolve(index, generation);
-}
-
-template<typename T>
-inline void AssetHandle<T>::add_ref() {
-  if (pool && index != std::numeric_limits<uint32_t>::max()) {
-    pool->add_ref(index, generation);
-  }
-}
-
-template<typename T>
-inline void AssetHandle<T>::release_ref() {
-  if (pool && index != std::numeric_limits<uint32_t>::max()) {
-    pool->release(index, generation);
-    pool = nullptr;
-    index = std::numeric_limits<uint32_t>::max();
-  }
-}
 
 } // bird

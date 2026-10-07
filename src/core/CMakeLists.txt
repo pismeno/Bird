@@ -56,9 +56,11 @@ add_library(BirdResources STATIC)
 
 target_sources(BirdResources
         PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_pool.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_pool.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_types.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_handle.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/stbi_image.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/material_pool.cpp
 
@@ -66,7 +68,6 @@ target_sources(BirdResources
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/asset_handle.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/asset_types.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/asset_manager.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/asset_pool.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/resources_context.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/material.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/material_types.hpp
@@ -122,7 +123,7 @@ add_library(BirdRendering STATIC)
 target_sources(BirdRendering
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/irenderer.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/texture.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/texture.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_renderer.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vk_mem_alloc.cpp
@@ -135,9 +136,19 @@ target_sources(BirdRendering
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_pipeline.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_pipeline.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vertex.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/bindless_texture_registry.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/material_shader_layout_reflector.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/packed_material_cache.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/material_packer.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/irenderer.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/texture.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/packed_material.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/bindless_texture_registry.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/material_shader_layout_reflector.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/material_shader_layout_registry.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/packed_material_cache.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/material_packer.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/texture.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/vertex.hpp
 )
 

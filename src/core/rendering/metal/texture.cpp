@@ -1,4 +1,4 @@
-#include <rendering/texture.hpp>
+#include "texture.hpp"
 #include <cassert>
 
 #define STB_IMAGE_IMPLEMENTATION
