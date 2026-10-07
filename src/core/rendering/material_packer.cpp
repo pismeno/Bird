@@ -2,7 +2,7 @@
 
 namespace bird {
 
-std::vector<std::byte> MaterialPacker::pack(const Material& material, const MaterialShaderLayout& layout) const {
+PackedMaterial MaterialPacker::pack(const Material& material, const MaterialShaderLayout& layout) const {
   std::vector<std::byte> buffer(layout.total_size, std::byte{0});
 
   for (const auto& [prop_name, prop_value] : material.properties) {
@@ -32,7 +32,7 @@ std::vector<std::byte> MaterialPacker::pack(const Material& material, const Mate
     }, prop_value);
   }
 
-  return buffer;
+  return { buffer };
 }
 
 } // bird

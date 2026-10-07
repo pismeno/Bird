@@ -138,13 +138,15 @@ target_sources(BirdRendering
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vertex.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/bindless_texture_registry.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/material_shader_layout_reflector.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/material_shader_layout_registry.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/packed_material_cache.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/material_packer.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/irenderer.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/packed_material.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/bindless_texture_registry.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/material_shader_layout_reflector.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/material_shader_layout_registry.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/packed_material_cache.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/material_packer.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/texture.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/vertex.hpp

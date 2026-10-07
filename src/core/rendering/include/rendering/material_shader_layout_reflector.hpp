@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <concepts>
 
 #include "rendering/material_shader_layout.hpp"
 #include "resources/asset_types.hpp"
@@ -15,7 +16,10 @@ class MaterialShaderLayoutReflector {
   ~MaterialShaderLayoutReflector() = default;
 
   Result<MaterialShaderLayout> reflect(const uint32_t* spirv_words, size_t size_bytes) const;
-  inline Result<MaterialShaderLayout> reflect(const AssetHandle<ShaderAsset>& shader) const { return reflect(shader->as_32bit_words(), shader->get_size_bytes()); }
+
+  template <typename A>
+  requires (std::derived_from<A, ShaderAsset>)
+  inline Result<MaterialShaderLayout> reflect(const AssetHandle<A>& shader) const { return reflect(shader->as_32bit_words(), shader->get_size_bytes()); }
 };
 
 } // bird
