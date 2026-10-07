@@ -3,6 +3,7 @@
 
 #include "rendering/rendering_context.hpp"
 #include "rendering/material_packer.hpp"
+#include "rendering/packed_material.hpp"
 #include "rendering/material_shader_layout.hpp"
 #include "rendering/bindless_texture_registry.hpp"
 #include "resources/material.hpp"
@@ -37,7 +38,8 @@ TEST_CASE("MaterialPacker serializes properties to correct byte offsets") {
   uint32_t expected_texture_index = registry.get_index(dummy_texture);
 
   // 4. Perform the bake
-  std::vector<std::byte> baked_bytes = baker.pack(material, layout);
+  PackedMaterial packed_material = baker.pack(material, layout);
+  std::vector<std::byte> baked_bytes = packed_material.data;
 
   // 5. Assertions
   REQUIRE(baked_bytes.size() == layout.total_size);
@@ -74,7 +76,8 @@ TEST_CASE("MaterialPacker handles missing properties safely") {
 
   Material material;  // Empty material
 
-  std::vector<std::byte> baked_bytes = baker.pack(material, layout);
+  PackedMaterial packed_material = baker.pack(material, layout);
+  std::vector<std::byte> baked_bytes = packed_material.data;
 
   REQUIRE(baked_bytes.size() == 16);
 

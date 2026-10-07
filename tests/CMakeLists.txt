@@ -7,6 +7,7 @@ add_executable(BirdTests
         transform_manager_test.cpp
         material_pool_test.cpp
         material_packer_test.cpp
+        bindless_texture_registry.cpp
 )
 
 target_link_libraries(BirdTests
