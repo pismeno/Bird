@@ -9,12 +9,12 @@
 
 namespace bird {
 
-class MaterialBaker {
+class MaterialPacker {
  public:
-  explicit MaterialBaker(RenderingContext& rendering_context) : bindless_texture_registry(rendering_context.bindless_texture_registry) {}
-  ~MaterialBaker() = default;
+  explicit MaterialPacker(RenderingContext& rendering_context) : bindless_texture_registry(rendering_context.bindless_texture_registry) {}
+  ~MaterialPacker() = default;
 
-  std::vector<std::byte> bake(const Material& material, const MaterialShaderLayout& layout) const;
+  std::vector<std::byte> pack(const Material& material, const MaterialShaderLayout& layout) const;
  private:
   BindlessTextureRegistry* bindless_texture_registry;
 };

@@ -89,8 +89,8 @@ Result<void> Editor::init() {
   rendering_context.material_shader_layout_reflector = material_shader_layout_reflector.get();
   material_shader_layout_registry = std::make_unique<MaterialShaderLayoutRegistry>(rendering_context);
   rendering_context.material_shader_layout_registry = material_shader_layout_registry.get();
-  material_baker = std::make_unique<MaterialBaker>(rendering_context);
-  rendering_context.material_baker = material_baker.get();
+  material_packer = std::make_unique<MaterialPacker>(rendering_context);
+  rendering_context.material_packer = material_packer.get();
 
   context = {
       .node_system_context = &node_system_context,

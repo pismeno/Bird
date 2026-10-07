@@ -2,14 +2,14 @@
 #include <cstring>
 
 #include "rendering/rendering_context.hpp"
-#include "rendering/material_baker.hpp"
+#include "rendering/material_packer.hpp"
 #include "rendering/material_shader_layout.hpp"
 #include "rendering/bindless_texture_registry.hpp"
 #include "resources/material.hpp"
 
 namespace bird {
 
-TEST_CASE("MaterialBaker serializes properties to correct byte offsets") {
+TEST_CASE("MaterialPacker serializes properties to correct byte offsets") {
   // 1. Setup dependencies
   BindlessTextureRegistry registry;
   RenderingContext context;
@@ -17,7 +17,7 @@ TEST_CASE("MaterialBaker serializes properties to correct byte offsets") {
   // Assuming bindless_texture_registry is a pointer in RenderingContext based on your previous code
   context.bindless_texture_registry = &registry;
 
-  MaterialBaker baker(context);
+  MaterialPacker baker(context);
 
   // 2. Define a strict layout mapping
   MaterialShaderLayout layout;
@@ -37,7 +37,7 @@ TEST_CASE("MaterialBaker serializes properties to correct byte offsets") {
   uint32_t expected_texture_index = registry.get_index(dummy_texture);
 
   // 4. Perform the bake
-  std::vector<std::byte> baked_bytes = baker.bake(material, layout);
+  std::vector<std::byte> baked_bytes = baker.pack(material, layout);
 
   // 5. Assertions
   REQUIRE(baked_bytes.size() == layout.total_size);
@@ -60,13 +60,13 @@ TEST_CASE("MaterialBaker serializes properties to correct byte offsets") {
   CHECK(out_texture_index == expected_texture_index);
 }
 
-TEST_CASE("MaterialBaker handles missing properties safely") {
+TEST_CASE("MaterialPacker handles missing properties safely") {
   // Setup dependencies properly using RenderingContext
   BindlessTextureRegistry registry;
   RenderingContext context;
   context.bindless_texture_registry = &registry; // Link it up
 
-  MaterialBaker baker(context); // Pass the context, not the registry
+  MaterialPacker baker(context); // Pass the context, not the registry
 
   MaterialShaderLayout layout;
   layout.properties["missing_color"] = {0, 16};   // vec4
@@ -74,7 +74,7 @@ TEST_CASE("MaterialBaker handles missing properties safely") {
 
   Material material;  // Empty material
 
-  std::vector<std::byte> baked_bytes = baker.bake(material, layout);
+  std::vector<std::byte> baked_bytes = baker.pack(material, layout);
 
   REQUIRE(baked_bytes.size() == 16);
 

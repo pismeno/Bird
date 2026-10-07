@@ -6,7 +6,7 @@ struct ResourcesContext;
 class MaterialShaderLayoutReflector;
 class MaterialShaderLayoutRegistry;
 class BindlessTextureRegistry;
-class MaterialBaker;
+class MaterialPacker;
 class IRenderer;
 
 struct RenderingContext {
@@ -15,7 +15,7 @@ struct RenderingContext {
   MaterialShaderLayoutReflector* material_shader_layout_reflector;
   MaterialShaderLayoutRegistry* material_shader_layout_registry;
   BindlessTextureRegistry* bindless_texture_registry;
-  MaterialBaker* material_baker;
+  MaterialPacker* material_packer;
   IRenderer* renderer;
 };
 
