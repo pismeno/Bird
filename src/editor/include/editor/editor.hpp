@@ -17,6 +17,7 @@
 #include <rendering/material_shader_layout_reflector.hpp>
 #include <rendering/material_shader_layout_registry.hpp>
 #include <rendering/material_packer.hpp>
+#include <rendering/packed_material_cache.hpp>
 #include <node_system/scene_factory.hpp>
 #include <editor/shader_compiler.hpp>
 
@@ -47,6 +48,7 @@ class Editor {
   std::unique_ptr<MaterialShaderLayoutReflector> material_shader_layout_reflector;
   std::unique_ptr<MaterialShaderLayoutRegistry> material_shader_layout_registry;
   std::unique_ptr<MaterialPacker> material_packer;
+  std::unique_ptr<PackedMaterialCache> packed_material_cache;
   std::unique_ptr<IRenderer> renderer;
   std::unique_ptr<SceneFactory> scene_factory;
   std::unique_ptr<ShaderCompiler> shader_compiler;
