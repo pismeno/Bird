@@ -24,6 +24,9 @@ namespace bird {
 
 class Editor {
  public:
+  explicit Editor() = default;
+  ~Editor() = default;
+
   Result<void> init();
   Result<void> run();
   Result<void> shutdown();
