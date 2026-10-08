@@ -8,7 +8,7 @@
 namespace bird {
 
 /**
- * @brief Unique identifier for a node. It consists of a 32-bit index and a 32-bit generation-counter.
+ * @brief Unique identifier for a material. It consists of a 32-bit index and a 32-bit generation-counter.
  */
 struct MaterialID {
   uint64_t id;
