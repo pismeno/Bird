@@ -19,6 +19,7 @@
 #include <rendering/vulkan/vulkan_memory_allocator.hpp>
 #include <rendering/vulkan/vulkan_swapchain.hpp>
 #include <rendering/vulkan/vulkan_pipeline.hpp>
+#include <rendering/vulkan/vulkan_material_handler.hpp>
 #include <rendering/rendering_context.hpp>
 #include <resources/render_command.hpp>
 #include <resources/asset_handle.hpp>
@@ -66,8 +67,6 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_command_pool();
   Result<void> create_vertex_buffer();
   Result<void> create_index_buffer();
-  Result<void> create_descriptor_pool();
-
   Result<void> create_frame_data();
 
   Result<vk::raii::CommandBuffer> begin_single_time_commands();
@@ -90,12 +89,14 @@ class VulkanRenderer : public IRenderer {
   std::unique_ptr<VulkanContext> vk_context;
   std::unique_ptr<VulkanMemoryAllocator> memory_allocator;
   std::unique_ptr<VulkanSwapchain> swapchain;
+  std::unique_ptr<VulkanMaterialHandler> material_handler;
   std::unique_ptr<VulkanPipeline> pipeline;
+
+  vk::raii::DescriptorPool ubo_descriptor_pool = nullptr;
 
   vma::raii::Buffer vertex_buffer = nullptr;
   vma::raii::Buffer index_buffer = nullptr;
 
-  vk::raii::DescriptorPool descriptor_pool = nullptr;
   vk::raii::CommandPool command_pool = nullptr;
 
   vma::raii::Image texture_image = nullptr;
@@ -115,10 +116,10 @@ class VulkanRenderer : public IRenderer {
   AssetManager* asset_manager;
 
   const std::vector<Vertex> vertices = {
-      {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-      {{ 0.5f,  0.5f}, {0.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-      {{-0.5f,  0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-      {{ 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}};
+      {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, 0},
+      {{ 0.5f,  0.5f}, {0.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, 0},
+      {{-0.5f,  0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}, 0},
+      {{ 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}, 0}};
 
   const std::vector<uint16_t> indices = {
       0, 3, 1,   // Top-Left -> Top-Right -> Bottom-Right (CW)

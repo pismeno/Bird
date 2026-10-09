@@ -104,7 +104,6 @@ Result<void> VulkanContext::pick_physical_device() {
   physical_device = *devIter;
   return bird::ok();
 }
-
 bool VulkanContext::is_physical_device_suitable(const vk::PhysicalDevice &physical_device) const {
   std::vector<const char*> requiredDeviceExtension = {vk::KHRSwapchainExtensionName};
 
@@ -127,15 +126,37 @@ bool VulkanContext::is_physical_device_suitable(const vk::PhysicalDevice &physic
                                                          { return strcmp( availableDeviceExtension.extensionName, requiredDeviceExtension ) == 0; } );
                            } );
 
-  auto features                 = physical_device.template getFeatures2<vk::PhysicalDeviceFeatures2,
+  auto features = physical_device.getFeatures2<
+      vk::PhysicalDeviceFeatures2,
       vk::PhysicalDeviceVulkan11Features,
       vk::PhysicalDeviceVulkan13Features,
+      vk::PhysicalDeviceDescriptorIndexingFeatures,
       vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
-  bool supportsRequiredFeatures = features.template get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters &&
-                                  features.template get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering &&
-                                  features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
 
-  return supportsVulkan1_3 && supportsGraphics && supportsAllRequiredExtensions && supportsRequiredFeatures;
+  const auto & vulkan11Features =
+      features.template get<vk::PhysicalDeviceVulkan11Features>();
+
+  const auto & vulkan13Features =
+      features.template get<vk::PhysicalDeviceVulkan13Features>();
+
+  const auto & descriptorIndexingFeatures =
+      features.template get<vk::PhysicalDeviceDescriptorIndexingFeatures>();
+
+  const auto & extendedDynamicStateFeatures =
+      features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
+
+  bool supportsRequiredFeatures =
+      vulkan11Features.shaderDrawParameters &&
+      vulkan13Features.synchronization2 &&
+      vulkan13Features.dynamicRendering &&
+      descriptorIndexingFeatures.descriptorBindingPartiallyBound &&
+      descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind &&
+      extendedDynamicStateFeatures.extendedDynamicState;
+
+  return supportsVulkan1_3 &&
+         supportsGraphics &&
+         supportsAllRequiredExtensions &&
+         supportsRequiredFeatures;
 }
 
 Result<void> VulkanContext::create_logical_device() {
@@ -160,15 +181,81 @@ Result<void> VulkanContext::create_logical_device() {
   }
 
   // query for Vulkan 1.3 features
-  vk::StructureChain<vk::PhysicalDeviceFeatures2,
+  auto supported_features = physical_device.getFeatures2<
+      vk::PhysicalDeviceFeatures2,
       vk::PhysicalDeviceVulkan11Features,
       vk::PhysicalDeviceVulkan13Features,
-      vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>
-      feature_chain = {
-      {},                                                          // vk::PhysicalDeviceFeatures2
-      {.shaderDrawParameters = true},                              // vk::PhysicalDeviceVulkan11Features
-      {.synchronization2 = true, .dynamicRendering = true},        // vk::PhysicalDeviceVulkan13Features
-      {.extendedDynamicState = true}                               // vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
+      vk::PhysicalDeviceDescriptorIndexingFeatures,
+      vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
+
+  const auto & supported_vulkan11 =
+      supported_features.get<vk::PhysicalDeviceVulkan11Features>();
+
+  const auto & supported_vulkan13 =
+      supported_features.get<vk::PhysicalDeviceVulkan13Features>();
+
+  const auto & supported_descriptor_indexing =
+      supported_features.get<vk::PhysicalDeviceDescriptorIndexingFeatures>();
+
+  const auto & supported_extended_dynamic_state =
+      supported_features.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
+
+  if (!supported_vulkan11.shaderDrawParameters) {
+    return bird::fail("Required Vulkan 1.1 feature shaderDrawParameters is not supported");
+  }
+
+  if (!supported_vulkan13.synchronization2) {
+    return bird::fail("Required Vulkan 1.3 feature synchronization2 is not supported");
+  }
+
+  if (!supported_vulkan13.dynamicRendering) {
+    return bird::fail("Required Vulkan 1.3 feature dynamicRendering is not supported");
+  }
+
+  if (!supported_descriptor_indexing.descriptorBindingPartiallyBound) {
+    return bird::fail("Required descriptor indexing feature descriptorBindingPartiallyBound is not supported");
+  }
+
+  if (!supported_descriptor_indexing.descriptorBindingSampledImageUpdateAfterBind) {
+    return bird::fail("Required descriptor indexing feature descriptorBindingSampledImageUpdateAfterBind is not supported");
+  }
+
+  if (!supported_extended_dynamic_state.extendedDynamicState) {
+    return bird::fail("Required extended dynamic state feature is not supported");
+  }
+
+  vk::PhysicalDeviceVulkan11Features vulkan11_features{
+      .shaderDrawParameters = true
+  };
+
+  vk::PhysicalDeviceVulkan12Features vulkan12_features{
+    .shaderSampledImageArrayNonUniformIndexing = true,
+    .descriptorBindingSampledImageUpdateAfterBind = true,
+    .descriptorBindingPartiallyBound = true,
+    .runtimeDescriptorArray = true,
+  };
+
+  vk::PhysicalDeviceVulkan13Features vulkan13_features{
+      .synchronization2 = true,
+      .dynamicRendering = true
+  };
+
+  vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT extended_dynamic_state_features{
+      .extendedDynamicState = true
+  };
+
+  vk::StructureChain<
+      vk::PhysicalDeviceFeatures2,
+      vk::PhysicalDeviceVulkan11Features,
+      vk::PhysicalDeviceVulkan12Features,
+      vk::PhysicalDeviceVulkan13Features,
+      vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
+  > feature_chain = {
+      {},
+      vulkan11_features,
+      vulkan12_features,
+      vulkan13_features,
+      extended_dynamic_state_features
   };
 
   // create a Device

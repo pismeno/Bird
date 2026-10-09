@@ -12,13 +12,13 @@
 
 namespace bird {
 
-Result<std::unique_ptr<VulkanPipeline>> VulkanPipeline::create(VulkanSwapchain& swapchain, VulkanContext& vk_context, AssetManager* asset_manager) {
+Result<std::unique_ptr<VulkanPipeline>> VulkanPipeline::create(VulkanSwapchain& swapchain, VulkanContext& vk_context, VulkanMaterialHandler& material_handler, AssetManager* asset_manager) {
   std::unique_ptr<VulkanPipeline> pipeline(new VulkanPipeline());
 
   auto r_create_descriptor_set_layout = pipeline->create_descriptor_set_layout(vk_context);
   if (!r_create_descriptor_set_layout) return bird::fail(r_create_descriptor_set_layout.error());
 
-  auto r_create_graphics_pipeline = pipeline->create_graphics_pipeline(swapchain, vk_context, asset_manager);
+  auto r_create_graphics_pipeline = pipeline->create_graphics_pipeline(swapchain, vk_context, material_handler, asset_manager);
   if (!r_create_graphics_pipeline) return bird::fail(r_create_graphics_pipeline.error());
 
   return std::move(pipeline);
@@ -33,19 +33,9 @@ Result<void> VulkanPipeline::create_descriptor_set_layout(VulkanContext& vk_cont
       .pImmutableSamplers = nullptr
   };
 
-  vk::DescriptorSetLayoutBinding sampler_binding{
-      .binding            = 1,
-      .descriptorType     = vk::DescriptorType::eCombinedImageSampler,
-      .descriptorCount    = 1,
-      .stageFlags         = vk::ShaderStageFlagBits::eFragment,
-      .pImmutableSamplers = nullptr
-  };
-
-  std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {ubo_binding, sampler_binding};
-
   vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_info{
-      .bindingCount = static_cast<uint32_t>(bindings.size()),
-      .pBindings    = bindings.data()
+      .bindingCount = 1,
+      .pBindings    = &ubo_binding
   };
 
   auto vkr_create_desc_set_layout = vk_context.get_logical_device().createDescriptorSetLayout(descriptor_set_layout_info);
@@ -79,7 +69,7 @@ Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const std::st
   return std::make_unique<vk::raii::ShaderModule>(std::move(vkr_create_shader_module.value));
 }
 
-Result<void> VulkanPipeline::create_graphics_pipeline(VulkanSwapchain& swapchain, VulkanContext& vk_context, AssetManager* asset_manager) {
+Result<void> VulkanPipeline::create_graphics_pipeline(VulkanSwapchain& swapchain, VulkanContext& vk_context, VulkanMaterialHandler& material_handler, AssetManager* asset_manager) {
   // loading the shaders from files
   auto r_load_vert_shader_module = load_shader_module<VertexShaderAsset>("core://shaders/vertices.vert.spv", vk_context, asset_manager);
   if (!r_load_vert_shader_module) return bird::fail(r_load_vert_shader_module.error());
@@ -176,10 +166,15 @@ Result<void> VulkanPipeline::create_graphics_pipeline(VulkanSwapchain& swapchain
       .pAttachments = &color_blend_attachment
   };
 
+  std::array<vk::DescriptorSetLayout, 2> set_layouts = {
+      descriptor_set_layout,                                        // Set 0: UBO
+      material_handler.get_texture_descriptor_set_layout()          // Set 1: Bindless Textures
+  };
+
   // pipeline layout create info
   vk::PipelineLayoutCreateInfo pipeline_layout_info{
-      .setLayoutCount = 1,
-      .pSetLayouts    = &*descriptor_set_layout
+      .setLayoutCount = static_cast<uint32_t>(set_layouts.size()),
+      .pSetLayouts    = set_layouts.data(),
   };
 
   const vk::raii::Device& logical_device = vk_context.get_logical_device();

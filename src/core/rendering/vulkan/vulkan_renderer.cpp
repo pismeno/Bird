@@ -50,7 +50,12 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
   auto r_create_command_pool = renderer->create_command_pool();
   if (!r_create_command_pool) return bird::fail(r_create_command_pool.error());
 
-  auto r_pipeline = VulkanPipeline::create(*renderer->swapchain, *renderer->vk_context, renderer->asset_manager);
+  auto r_material_handler = VulkanMaterialHandler::create(*renderer->vk_context, context);
+  if (!r_material_handler) return bird::fail(r_material_handler.error());
+  renderer->material_handler = std::move(r_material_handler).value();
+  std::cout << "Material Handler created successfully" << std::endl;
+
+  auto r_pipeline = VulkanPipeline::create(*renderer->swapchain, *renderer->vk_context, *renderer->material_handler, renderer->asset_manager);
   if (!r_pipeline) return bird::fail(r_pipeline.error());
   renderer->pipeline = std::move(r_pipeline).value();
   std::cout << "Pipeline created successfully" << std::endl;
@@ -73,9 +78,6 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
 
   auto r_create_frame_data = renderer->create_frame_data();
   if (!r_create_frame_data) return bird::fail(r_create_frame_data.error());
-
-  auto r_create_descriptor_pool = renderer->create_descriptor_pool();
-  if (!r_create_descriptor_pool) return bird::fail(r_create_descriptor_pool.error());
 
   std::cout << "Vulkan Renderer initialized successfully" << std::endl;
 
@@ -100,6 +102,26 @@ Result<void> VulkanRenderer::create_command_pool() {
 Result<void> VulkanRenderer::create_frame_data() {
   frames.resize(MAX_FRAMES_IN_FLIGHT);
 
+  // 1. Create Descriptor Pool for UBOs (Set 0)
+  vk::DescriptorPoolSize pool_size{
+      .type            = vk::DescriptorType::eUniformBuffer,
+      .descriptorCount = MAX_FRAMES_IN_FLIGHT
+  };
+
+  vk::DescriptorPoolCreateInfo pool_info{
+      .flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+      .maxSets       = MAX_FRAMES_IN_FLIGHT,
+      .poolSizeCount = 1,
+      .pPoolSizes    = &pool_size
+  };
+
+  auto vkr_ubo_pool = vk_context->get_logical_device().createDescriptorPool(pool_info);
+  if (vkr_ubo_pool.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create UBO descriptor pool");
+  }
+  ubo_descriptor_pool = std::move(vkr_ubo_pool.value);
+
+  // 2. Allocate Command Buffers
   vk::CommandBufferAllocateInfo alloc_info{
       .commandPool        = *command_pool,
       .level              = vk::CommandBufferLevel::ePrimary,
@@ -107,12 +129,15 @@ Result<void> VulkanRenderer::create_frame_data() {
   };
 
   auto vkr_cmd_buffers = vk_context->get_logical_device().allocateCommandBuffers(alloc_info);
-  if (vkr_cmd_buffers.result != vk::Result::eSuccess) return bird::fail("Failed to allocate command buffers");
+  if (vkr_cmd_buffers.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to allocate command buffers");
+  }
 
+  // 3. Initialize Per-Frame Data
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
     FrameData& frame = frames[i];
 
-    // 1. Sync Objects (Image Available & Fence)
+    // Sync Objects
     auto vkr_image_avail = vk_context->get_logical_device().createSemaphore(vk::SemaphoreCreateInfo());
     if (vkr_image_avail.result != vk::Result::eSuccess) return bird::fail("Failed to create semaphore");
     frame.image_available_semaphore = std::move(vkr_image_avail.value);
@@ -121,17 +146,49 @@ Result<void> VulkanRenderer::create_frame_data() {
     if (vkr_fence.result != vk::Result::eSuccess) return bird::fail("Failed to create fence");
     frame.in_flight_fence = std::move(vkr_fence.value);
 
-    // 2. Command Buffer
+    // Command Buffer
     frame.command_buffer = std::move(vkr_cmd_buffers.value[i]);
 
-    // 3. Uniform Buffer
+    // Uniform Buffer
     auto ubo_res = memory_allocator->create_buffer(vk::BufferUsageFlagBits::eUniformBuffer, sizeof(ViewData));
     if (!ubo_res) return bird::fail(ubo_res.error());
     frame.uniform_buffer = std::move(ubo_res).value();
     frame.uniform_buffer_mapped = frame.uniform_buffer.getAllocation().getInfo().pMappedData;
+
+    // Allocate Set 0 for this frame
+    vk::DescriptorSetLayout raw_ubo_layout = *pipeline->get_descriptor_set_layout();
+    vk::DescriptorSetAllocateInfo desc_alloc_info{
+        .descriptorPool     = *ubo_descriptor_pool,
+        .descriptorSetCount = 1,
+        .pSetLayouts        = &raw_ubo_layout
+    };
+
+    auto vkr_desc_set = vk_context->get_logical_device().allocateDescriptorSets(desc_alloc_info);
+    if (vkr_desc_set.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to allocate frame UBO descriptor set");
+    }
+    frame.descriptor_set = std::move(vkr_desc_set.value[0]);
+
+    // Point Set 0 to this frame's uniform buffer
+    vk::DescriptorBufferInfo buffer_info{
+        .buffer = *frame.uniform_buffer,
+        .offset = 0,
+        .range  = sizeof(ViewData)
+    };
+
+    vk::WriteDescriptorSet write_desc{
+        .dstSet          = *frame.descriptor_set,
+        .dstBinding      = 0,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType  = vk::DescriptorType::eUniformBuffer,
+        .pBufferInfo     = &buffer_info
+    };
+
+    vk_context->get_logical_device().updateDescriptorSets(write_desc, nullptr);
   }
 
-  // 4. Render Finished Semaphores (Tied to Swapchain Image count, not Frame In-Flight count)
+  // 4. Render Finished Semaphores (Tied to Swapchain image count)
   render_finished_semaphores.clear();
   for (size_t i = 0; i < swapchain->get_image_count(); i++) {
     auto vkr_render_fin = vk_context->get_logical_device().createSemaphore(vk::SemaphoreCreateInfo());
@@ -250,60 +307,6 @@ Result<void> VulkanRenderer::create_index_buffer() {
   return bird::ok();
 }
 
-Result<void> VulkanRenderer::create_descriptor_pool() {
-  std::array<vk::DescriptorPoolSize, 2> pool_sizes = {{
-                                                          { .type = vk::DescriptorType::eUniformBuffer, .descriptorCount = MAX_FRAMES_IN_FLIGHT },
-                                                          { .type = vk::DescriptorType::eCombinedImageSampler, .descriptorCount = MAX_FRAMES_IN_FLIGHT }
-                                                      }};
-
-  vk::DescriptorPoolCreateInfo pool_info{
-      .flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-      .maxSets       = MAX_FRAMES_IN_FLIGHT,
-      .poolSizeCount = static_cast<uint32_t>(pool_sizes.size()),
-      .pPoolSizes    = pool_sizes.data()
-  };
-
-  auto vkr_create = vk_context->get_logical_device().createDescriptorPool(pool_info);
-  if (vkr_create.result != vk::Result::eSuccess) return bird::fail("Failed to create descriptor pool");
-  descriptor_pool = std::move(vkr_create.value);
-
-  std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, *pipeline->get_descriptor_set_layout());
-  vk::DescriptorSetAllocateInfo alloc_info{
-      .descriptorPool     = *descriptor_pool,
-      .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
-      .pSetLayouts        = layouts.data()
-  };
-
-  auto vkr_alloc_sets = vk_context->get_logical_device().allocateDescriptorSets(alloc_info);
-  if (vkr_alloc_sets.result != vk::Result::eSuccess) return bird::fail("Failed to allocate descriptor sets");
-
-  // Assign sets into the FrameData structs
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    frames[i].descriptor_set = std::move(vkr_alloc_sets.value[i]);
-
-    vk::DescriptorBufferInfo buffer_info{
-        .buffer = *frames[i].uniform_buffer,
-        .offset = 0,
-        .range  = sizeof(ViewData)
-    };
-
-    vk::DescriptorImageInfo image_info{
-        .sampler     = *texture_sampler,
-        .imageView   = *texture_image_view,
-        .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal
-    };
-
-    std::array<vk::WriteDescriptorSet, 2> descriptor_writes = {{
-                                                                   { .dstSet = *frames[i].descriptor_set, .dstBinding = 0, .dstArrayElement = 0, .descriptorCount = 1, .descriptorType = vk::DescriptorType::eUniformBuffer, .pBufferInfo = &buffer_info },
-                                                                   { .dstSet = *frames[i].descriptor_set, .dstBinding = 1, .dstArrayElement = 0, .descriptorCount = 1, .descriptorType = vk::DescriptorType::eCombinedImageSampler, .pImageInfo = &image_info }
-                                                               }};
-
-    vk_context->get_logical_device().updateDescriptorSets(descriptor_writes, nullptr);
-  }
-
-  return bird::ok();
-}
-
 Result<void> VulkanRenderer::record_command_buffer(FrameData& frame) {
   if (frame.command_buffer.begin({}) != vk::Result::eSuccess) return bird::fail("Failed to begin command buffer");
 
@@ -330,7 +333,19 @@ Result<void> VulkanRenderer::record_command_buffer(FrameData& frame) {
 
   pipeline->bind(frame.command_buffer);
 
-  frame.command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline->get_layout(), 0, {*frame.descriptor_set}, nullptr);
+  std::array<vk::DescriptorSet, 2> sets = {
+      *frame.descriptor_set,                               // Set 0: UBO
+      material_handler->get_texture_descriptor_set()       // Set 1: Bindless textures
+  };
+
+  frame.command_buffer.bindDescriptorSets(
+      vk::PipelineBindPoint::eGraphics,
+      *pipeline->get_layout(),
+      0, // firstSet = 0
+      sets,
+      nullptr
+  );
+
   frame.command_buffer.bindVertexBuffers(0, *vertex_buffer, {0});
   frame.command_buffer.bindIndexBuffer(*index_buffer, 0, vk::IndexType::eUint16);
   frame.command_buffer.setViewport(0, vk::Viewport(0.0f, static_cast<float>(swapchain->get_extent().height), static_cast<float>(swapchain->get_extent().width), -static_cast<float>(swapchain->get_extent().height), 0.0f, 1.0f));

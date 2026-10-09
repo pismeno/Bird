@@ -8,6 +8,7 @@
 #include "resources/asset_types.hpp"
 #include "rendering/vulkan/vulkan_context.hpp"
 #include "rendering/vulkan/vulkan_swapchain.hpp"
+#include "rendering/vulkan/vulkan_material_handler.hpp"
 #include "resources/asset_manager.hpp"
 
 namespace bird {
@@ -22,12 +23,12 @@ class VulkanPipeline {
 
   void bind(const vk::raii::CommandBuffer& command_buffer) const;
 
-  static Result<std::unique_ptr<VulkanPipeline>> create(VulkanSwapchain& swapchain, VulkanContext& vk_context, AssetManager* asset_manager);
+  static Result<std::unique_ptr<VulkanPipeline>> create(VulkanSwapchain& swapchain, VulkanContext& vk_context, VulkanMaterialHandler& material_handler, AssetManager* asset_manager);
  private:
   explicit VulkanPipeline() = default;
 
   Result<void> create_descriptor_set_layout(VulkanContext& vk_context);
-  Result<void> create_graphics_pipeline(VulkanSwapchain& swapchain, VulkanContext& vk_context, AssetManager* asset_manager);
+  Result<void> create_graphics_pipeline(VulkanSwapchain& swapchain, VulkanContext& vk_context, VulkanMaterialHandler& material_handler, AssetManager* asset_manager);
 
   vk::raii::DescriptorSetLayout descriptor_set_layout = nullptr;
   vk::raii::PipelineLayout pipeline_layout = nullptr;
