@@ -5,7 +5,6 @@
 #include "utils/result.hpp"
 #include "rendering/vulkan/vulkan_context.hpp"
 #include "rendering/vulkan/vulkan_swapchain.hpp"
-#include "rendering/vulkan/vertex.hpp"
 #include "resources/asset_handle.hpp"
 #include "resources/asset_types.hpp"
 #include "resources/asset_manager.hpp"
@@ -33,9 +32,18 @@ Result<void> VulkanPipeline::create_descriptor_set_layout(VulkanContext& vk_cont
       .pImmutableSamplers = nullptr
   };
 
-  vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_info{
-      .bindingCount = 1,
-      .pBindings    = &ubo_binding
+  vk::DescriptorSetLayoutBinding ssbo_binding = {
+      .binding = 1,
+      .descriptorType = vk::DescriptorType::eStorageBuffer, // <--- Storage Buffer!
+      .descriptorCount = 1,
+      .stageFlags = vk::ShaderStageFlagBits::eVertex
+  };
+
+  std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {ubo_binding, ssbo_binding};
+
+  vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_info = {
+      .bindingCount = static_cast<uint32_t>(bindings.size()),
+      .pBindings = bindings.data()
   };
 
   auto vkr_create_desc_set_layout = vk_context.get_logical_device().createDescriptorSetLayout(descriptor_set_layout_info);
@@ -105,13 +113,11 @@ Result<void> VulkanPipeline::create_graphics_pipeline(VulkanSwapchain& swapchain
   };
 
   // vertex input create info
-  auto binding_description    = Vertex::get_binding_descriptions();
-  auto attribute_descriptions = Vertex::get_attr_descriptions();
-  vk::PipelineVertexInputStateCreateInfo   vertex_input_info{
-      .vertexBindingDescriptionCount   = 1,
-      .pVertexBindingDescriptions      = &binding_description,
-      .vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size()),
-      .pVertexAttributeDescriptions    = attribute_descriptions.data()
+  vk::PipelineVertexInputStateCreateInfo vertex_input_info{
+      .vertexBindingDescriptionCount   = 0,
+      .pVertexBindingDescriptions      = nullptr,
+      .vertexAttributeDescriptionCount = 0,
+      .pVertexAttributeDescriptions    = nullptr
   };
 
   // input assembly create info
@@ -135,8 +141,8 @@ Result<void> VulkanPipeline::create_graphics_pipeline(VulkanSwapchain& swapchain
       .depthClampEnable        = vk::False,
       .rasterizerDiscardEnable = vk::False,
       .polygonMode             = vk::PolygonMode::eFill,
-      .cullMode                = vk::CullModeFlagBits::eBack,
-      .frontFace               = vk::FrontFace::eCounterClockwise,
+      .cullMode                = vk::CullModeFlagBits::eNone,
+      .frontFace               = vk::FrontFace::eClockwise,
       .depthBiasEnable         = vk::False,
       .lineWidth               = 1.0f
   };

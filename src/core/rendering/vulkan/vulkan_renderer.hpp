@@ -14,7 +14,7 @@
 #include <string>
 #include <memory>
 
-#include <rendering/vulkan/vertex.hpp>
+#include <rendering/vulkan/quad.hpp>
 #include <rendering/vulkan/vulkan_context.hpp>
 #include <rendering/vulkan/vulkan_memory_allocator.hpp>
 #include <rendering/vulkan/vulkan_swapchain.hpp>
@@ -34,6 +34,7 @@ class VulkanRenderer : public IRenderer {
   ~VulkanRenderer();
 
   static constexpr inline uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+  static constexpr inline size_t MAX_QUADS = 100000;
 
   void begin_frame() override;
   void begin_pass(const ViewData& view_data) override;
@@ -51,25 +52,24 @@ class VulkanRenderer : public IRenderer {
 
   struct FrameData {
     vk::raii::Semaphore image_available_semaphore = nullptr;
-    vk::raii::Fence     in_flight_fence           = nullptr;
-    vk::raii::CommandBuffer command_buffer        = nullptr;
+    vk::raii::Fence in_flight_fence = nullptr;
 
-    vma::raii::Buffer   uniform_buffer            = nullptr;
-    void*               uniform_buffer_mapped     = nullptr;
+    vk::raii::CommandBuffer command_buffer = nullptr;
 
-    vk::raii::DescriptorSet descriptor_set        = nullptr;
+    vma::raii::Buffer uniform_buffer = nullptr;
+    void* uniform_buffer_mapped = nullptr;
+    vma::raii::Buffer quad_buffer = nullptr;
+    Quad* quad_buffer_mapped = nullptr;
+
+    vk::raii::DescriptorSet descriptor_set = nullptr;
   };
 
   Result<void> create_command_pool();
-  Result<void> create_vertex_buffer();
-  Result<void> create_index_buffer();
   Result<void> create_frame_data();
-
-  Result<vk::raii::CommandBuffer> begin_single_time_commands();
-  void end_single_time_commands(vk::raii::CommandBuffer& command_buffer);
 
   Result<void> record_command_buffer(FrameData& frame);
   void update_ubo(const ViewData& view_data, FrameData& frame);
+  void update_quad_ssbo(FrameData& frame);
   inline void move_to_next_frame();
 
   void transition_image_layout(
@@ -90,9 +90,6 @@ class VulkanRenderer : public IRenderer {
 
   vk::raii::DescriptorPool ubo_descriptor_pool = nullptr;
 
-  vma::raii::Buffer vertex_buffer = nullptr;
-  vma::raii::Buffer index_buffer = nullptr;
-
   vk::raii::CommandPool command_pool = nullptr;
 
   std::vector<FrameData> frames;
@@ -107,16 +104,54 @@ class VulkanRenderer : public IRenderer {
   // bird systems
   AssetManager* asset_manager;
 
-  const std::vector<Vertex> vertices = {
-      {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, 0},
-      {{ 0.5f,  0.5f}, {0.0f, 1.0f, 1.0f}, {1.0f, 1.0f}, 0},
-      {{-0.5f,  0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}, 0},
-      {{ 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}, 0}};
+  const std::vector<bird::Quad> quads = {
+      // 1. Standard Square: 100x100 at Position (100, 100)
+      {
+          glm::mat3x2(
+              glm::vec2(100.0f, 0.0f),  // Column 0: Scale X = 100, Shear Y = 0
+              glm::vec2(0.0f, 100.0f),  // Column 1: Shear X = 0,   Scale Y = 100
+              glm::vec2(100.0f, 100.0f) // Column 2: Position X = 100, Position Y = 100
+          ),
+          0, // material_index
+          0  // _padding
+      },
 
-  const std::vector<uint16_t> indices = {
-      0, 3, 1,   // Top-Left -> Top-Right -> Bottom-Right (CW)
-      0, 1, 2    // Top-Left -> Bottom-Right -> Bottom-Left (CW)
+      // 2. Wide Rectangle with HORIZONTAL SHEAR (Skew X)
+      // The top of the rectangle will be pushed 100 pixels to the right
+      {
+          glm::mat3x2(
+              glm::vec2(250.0f, 0.0f),  // Column 0: Scale X = 250, Shear Y = 0
+              glm::vec2(100.0f, 50.0f), // Column 1: SHEAR X = 100, Scale Y = 50
+              glm::vec2(300.0f, 100.0f)
+          ),
+          0,
+          0
+      },
+
+      // 3. Tall Rectangle with VERTICAL SHEAR (Skew Y)
+      // The right side of the rectangle will be pulled 100 pixels down
+      {
+          glm::mat3x2(
+              glm::vec2(50.0f, 100.0f), // Column 0: Scale X = 50, SHEAR Y = 100
+              glm::vec2(50.0f, 200.0f),  // Column 1: Shear X = 0,  Scale Y = 200
+              glm::vec2(100.0f, 300.0f)
+          ),
+          0,
+          0
+      },
+
+      // 4. Rotated Square: 100x100 rotated 45 degrees at Position (300, 300)
+      // Formula: [Scale * cos, Scale * sin], [Scale * -sin, Scale * cos]
+      {
+          glm::mat3x2(
+              glm::vec2(100.0f * std::cos(0.785398f),  100.0f * std::sin(0.785398f)),
+              glm::vec2(100.0f * -std::sin(0.785398f), 100.0f * std::cos(0.785398f)),
+              glm::vec2(300.0f, 300.0f)
+          ),
+          0,
+          0
+      }
   };
 };
 
-} // namespace bird
+} // bird

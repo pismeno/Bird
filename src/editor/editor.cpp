@@ -164,35 +164,16 @@ Result<void> Editor::init() {
 }
 
 Result<void> Editor::run() {
-  bool second = false;
 
   while (!window->should_close()) {
     bird::ViewData view_data{};
 
-    view_data.view = glm::lookAt(
-        glm::vec3(0.0f, -0.5f, 2.0f), // Eye
-        glm::vec3(0.0f, -0.5f, 0.0f), // Target
-        glm::vec3(0.0f, 1.0f, 0.0f)  // Up
-    );
-    if (second) {
-      view_data.view = glm::lookAt(
-          glm::vec3(0.0f, 0.5f, 2.0f), // Eye
-          glm::vec3(0.0f, 0.5f, 0.0f), // Target
-          glm::vec3(0.0f, 1.0f, 0.0f)  // Up
-      );
-      second = false;
-    } else {
-      second = true;
-    }
+    float width = static_cast<float>(window->get_framebuffer_width());
+    float height = static_cast<float>(window->get_framebuffer_height());
 
-    float aspect_ratio = static_cast<float>(window->get_framebuffer_width()) / static_cast<float>(window->get_framebuffer_height());
+    view_data.projection = glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
 
-    view_data.projection = glm::perspective(
-        glm::radians(45.0f),
-        aspect_ratio,
-        0.1f,
-        10.0f
-    );
+    view_data.view = glm::mat4(1.0f);
 
     view_data.viewProjection = view_data.projection * view_data.view;
 

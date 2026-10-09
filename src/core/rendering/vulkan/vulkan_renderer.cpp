@@ -8,13 +8,10 @@
 #include <memory>
 #include <iostream>
 
-#include <rendering/vulkan/vertex.hpp>
 #include <rendering/vulkan/vulkan_context.hpp>
 #include <rendering/vulkan/vulkan_memory_allocator.hpp>
 #include <rendering/vulkan/vulkan_swapchain.hpp>
 #include <rendering/vulkan/vulkan_pipeline.hpp>
-#include <resources/asset_handle.hpp>
-#include <resources/asset_types.hpp>
 #include <utils/result.hpp>
 
 namespace bird {
@@ -60,12 +57,6 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
   renderer->pipeline = std::move(r_pipeline).value();
   std::cout << "Pipeline created successfully" << std::endl;
 
-  auto r_create_vertex_buffer = renderer->create_vertex_buffer();
-  if (!r_create_vertex_buffer) return bird::fail(r_create_vertex_buffer.error());
-
-  auto r_create_index_buffer = renderer->create_index_buffer();
-  if (!r_create_index_buffer) return bird::fail(r_create_index_buffer.error());
-
   auto r_create_frame_data = renderer->create_frame_data();
   if (!r_create_frame_data) return bird::fail(r_create_frame_data.error());
 
@@ -93,16 +84,22 @@ Result<void> VulkanRenderer::create_frame_data() {
   frames.resize(MAX_FRAMES_IN_FLIGHT);
 
   // 1. Create Descriptor Pool for UBOs (Set 0)
-  vk::DescriptorPoolSize pool_size{
-      .type            = vk::DescriptorType::eUniformBuffer,
-      .descriptorCount = MAX_FRAMES_IN_FLIGHT
+  std::array<vk::DescriptorPoolSize, 2> pool_sizes = {
+      vk::DescriptorPoolSize{
+          .type            = vk::DescriptorType::eUniformBuffer,
+          .descriptorCount = MAX_FRAMES_IN_FLIGHT
+      },
+      vk::DescriptorPoolSize{
+          .type            = vk::DescriptorType::eStorageBuffer, // <--- Add this!
+          .descriptorCount = MAX_FRAMES_IN_FLIGHT
+      }
   };
 
   vk::DescriptorPoolCreateInfo pool_info{
       .flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
       .maxSets       = MAX_FRAMES_IN_FLIGHT,
-      .poolSizeCount = 1,
-      .pPoolSizes    = &pool_size
+      .poolSizeCount = static_cast<uint32_t>(pool_sizes.size()),
+      .pPoolSizes    = pool_sizes.data()
   };
 
   auto vkr_ubo_pool = vk_context->get_logical_device().createDescriptorPool(pool_info);
@@ -145,6 +142,11 @@ Result<void> VulkanRenderer::create_frame_data() {
     frame.uniform_buffer = std::move(ubo_res).value();
     frame.uniform_buffer_mapped = frame.uniform_buffer.getAllocation().getInfo().pMappedData;
 
+    auto r_create_quad_buf = memory_allocator->create_buffer(vk::BufferUsageFlagBits::eStorageBuffer, sizeof(Quad) * MAX_QUADS);
+    if (!r_create_quad_buf) return bird::fail(r_create_quad_buf.error());
+    frame.quad_buffer = std::move(r_create_quad_buf).value();
+    frame.quad_buffer_mapped = static_cast<Quad*>(frame.quad_buffer.getAllocation().getInfo().pMappedData);
+
     // Allocate Set 0 for this frame
     vk::DescriptorSetLayout raw_ubo_layout = *pipeline->get_descriptor_set_layout();
     vk::DescriptorSetAllocateInfo desc_alloc_info{
@@ -160,22 +162,38 @@ Result<void> VulkanRenderer::create_frame_data() {
     frame.descriptor_set = std::move(vkr_desc_set.value[0]);
 
     // Point Set 0 to this frame's uniform buffer
-    vk::DescriptorBufferInfo buffer_info{
+    vk::DescriptorBufferInfo ubo_info{
         .buffer = *frame.uniform_buffer,
         .offset = 0,
         .range  = sizeof(ViewData)
     };
 
-    vk::WriteDescriptorSet write_desc{
-        .dstSet          = *frame.descriptor_set,
-        .dstBinding      = 0,
-        .dstArrayElement = 0,
-        .descriptorCount = 1,
-        .descriptorType  = vk::DescriptorType::eUniformBuffer,
-        .pBufferInfo     = &buffer_info
+    vk::DescriptorBufferInfo ssbo_info{
+        .buffer = *frame.quad_buffer,
+        .offset = 0,
+        .range  = sizeof(Quad) * MAX_QUADS
     };
 
-    vk_context->get_logical_device().updateDescriptorSets(write_desc, nullptr);
+    std::array<vk::WriteDescriptorSet, 2> descriptor_writes = {
+        vk::WriteDescriptorSet{
+            .dstSet          = *frame.descriptor_set,
+            .dstBinding      = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType  = vk::DescriptorType::eUniformBuffer,
+            .pBufferInfo     = &ubo_info
+        },
+        vk::WriteDescriptorSet{
+            .dstSet          = *frame.descriptor_set,
+            .dstBinding      = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType  = vk::DescriptorType::eStorageBuffer,
+            .pBufferInfo     = &ssbo_info
+        }
+    };
+
+    vk_context->get_logical_device().updateDescriptorSets(descriptor_writes, nullptr);
   }
 
   // 4. Render Finished Semaphores (Tied to Swapchain image count)
@@ -186,20 +204,6 @@ Result<void> VulkanRenderer::create_frame_data() {
     render_finished_semaphores.push_back(std::move(vkr_render_fin.value));
   }
 
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::create_vertex_buffer() {
-  auto r_buf = memory_allocator->create_buffer(vk::BufferUsageFlagBits::eVertexBuffer, std::span(vertices));
-  if (!r_buf) return bird::fail(r_buf.error());
-  vertex_buffer = std::move(r_buf).value();
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::create_index_buffer() {
-  auto r_buf = memory_allocator->create_buffer(vk::BufferUsageFlagBits::eIndexBuffer, std::span(indices));
-  if (!r_buf) return bird::fail(r_buf.error());
-  index_buffer = std::move(r_buf).value();
   return bird::ok();
 }
 
@@ -242,12 +246,10 @@ Result<void> VulkanRenderer::record_command_buffer(FrameData& frame) {
       nullptr
   );
 
-  frame.command_buffer.bindVertexBuffers(0, *vertex_buffer, {0});
-  frame.command_buffer.bindIndexBuffer(*index_buffer, 0, vk::IndexType::eUint16);
   frame.command_buffer.setViewport(0, vk::Viewport(0.0f, static_cast<float>(swapchain->get_extent().height), static_cast<float>(swapchain->get_extent().width), -static_cast<float>(swapchain->get_extent().height), 0.0f, 1.0f));
   frame.command_buffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain->get_extent()));
 
-  frame.command_buffer.drawIndexed(indices.size(), 1, 0, 0, 0);
+  frame.command_buffer.draw(quads.size() * 6, 1, 0, 0);
 
   frame.command_buffer.endRendering();
 
@@ -283,6 +285,7 @@ void VulkanRenderer::begin_pass(const ViewData& view_data) {
   if (needs_framebuffer_resize_ || is_context_lost_) return;
 
   update_ubo(view_data, frames[current_frame_]);
+  update_quad_ssbo(frames[current_frame_]);
 
   auto r_acquire = swapchain->acquire_next_image(frames[current_frame_].image_available_semaphore);
   if (!r_acquire) {
@@ -327,6 +330,10 @@ void VulkanRenderer::update_ubo(const ViewData& view_data, FrameData& frame) {
   memcpy(frame.uniform_buffer_mapped, &view_data, sizeof(view_data));
 }
 
+void VulkanRenderer::update_quad_ssbo(FrameData& frame) {
+  std::memcpy(frame.quad_buffer_mapped, quads.data(), sizeof(bird::Quad) * quads.size());
+}
+
 Result<void> VulkanRenderer::resize_framebuffer(uint32_t width, uint32_t height) {
   vk_context->get_logical_device().waitIdle();
 
@@ -342,36 +349,6 @@ Result<void> VulkanRenderer::resize_framebuffer(uint32_t width, uint32_t height)
 
   needs_framebuffer_resize_ = false;
   return bird::ok();
-}
-
-Result<vk::raii::CommandBuffer> VulkanRenderer::begin_single_time_commands() {
-  vk::CommandBufferAllocateInfo alloc_info{
-      .commandPool        = *command_pool,
-      .level              = vk::CommandBufferLevel::ePrimary,
-      .commandBufferCount = 1
-  };
-
-  auto vkr_alloc = vk_context->get_logical_device().allocateCommandBuffers(alloc_info);
-  if (vkr_alloc.result != vk::Result::eSuccess) return bird::fail("Failed to allocate command buffer");
-
-  vk::raii::CommandBuffer command_buffer = std::move(vkr_alloc.value[0]);
-
-  vk::CommandBufferBeginInfo begin_info{.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
-  if (command_buffer.begin(begin_info) != vk::Result::eSuccess) return bird::fail("Failed to begin");
-
-  return std::move(command_buffer);
-}
-
-void VulkanRenderer::end_single_time_commands(vk::raii::CommandBuffer& command_buffer) {
-  (void)command_buffer.end();
-
-  vk::SubmitInfo submit_info{
-      .commandBufferCount = 1,
-      .pCommandBuffers    = &*command_buffer
-  };
-
-  vk_context->get_graphics_queue().submit(submit_info, nullptr);
-  vk_context->get_graphics_queue().waitIdle();
 }
 
 void VulkanRenderer::transition_image_layout(
