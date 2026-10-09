@@ -28,7 +28,6 @@ PackedMaterial MaterialPacker::pack(const Material& material, const MaterialShad
         // Use the internal registry pointer to map the texture to an integer
         uint32_t bindless_index = bindless_texture_registry->get_index(arg);
         std::memcpy(dst_ptr, &bindless_index, sizeof(uint32_t));
-        referenced_textures.push_back(arg);
       }
       else {
         // Copy float, int, glm::vec2, glm::vec3, or glm::vec4
@@ -37,7 +36,7 @@ PackedMaterial MaterialPacker::pack(const Material& material, const MaterialShad
     }, prop_value);
   }
 
-  return { buffer, referenced_textures };
+  return { buffer };
 }
 
 } // bird

@@ -235,7 +235,7 @@ Result<void> VulkanRenderer::record_command_buffer(FrameData& frame) {
 
   std::array<vk::DescriptorSet, 2> sets = {
       *frame.descriptor_set,                               // Set 0: UBO
-      material_handler->get_texture_descriptor_set()       // Set 1: Bindless textures
+      material_handler->get_descriptor_set()               // Set 1: Bindless textures
   };
 
   frame.command_buffer.bindDescriptorSets(
@@ -265,6 +265,11 @@ Result<void> VulkanRenderer::record_command_buffer(FrameData& frame) {
 
 void VulkanRenderer::begin_frame() {
   if (needs_framebuffer_resize_ || is_context_lost_) return;
+
+  auto r_prepare_materials = material_handler->prepare_materials({MaterialID::from(0, 0)});
+  if (!r_prepare_materials) {
+    std::cerr << "Failed to prepare materials: " << r_prepare_materials.error() << std::endl;
+  } // TODO
 
   auto r_update_tex_buffer = material_handler->update_texture_buffer();
   if (!r_update_tex_buffer) {

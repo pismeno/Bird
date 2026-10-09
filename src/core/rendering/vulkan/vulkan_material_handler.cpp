@@ -1,5 +1,8 @@
 #include "rendering/vulkan/vulkan_material_handler.hpp"
+
 #include <cstring>
+#include <vector>
+#include <unordered_set>
 
 namespace bird {
 
@@ -10,13 +13,13 @@ Result<std::unique_ptr<VulkanMaterialHandler>> VulkanMaterialHandler::create(
 {
   std::unique_ptr<VulkanMaterialHandler> handler(new VulkanMaterialHandler(vk_context, memory_allocator, context));
 
-  auto r_layout = handler->create_descriptor_set_layout();
+  auto r_layout = handler->create_descriptor_set_layouts();
   if (!r_layout) return bird::fail(r_layout.error());
 
   auto r_pool = handler->create_descriptor_pool();
   if (!r_pool) return bird::fail(r_pool.error());
 
-  auto r_set = handler->create_texture_descriptor_set();
+  auto r_set = handler->create_descriptor_set();
   if (!r_set) return bird::fail(r_set.error());
 
   auto r_sampler = handler->create_default_sampler();
@@ -25,50 +28,74 @@ Result<std::unique_ptr<VulkanMaterialHandler>> VulkanMaterialHandler::create(
   auto r_cmd_pool = handler->create_command_pool();
   if (!r_cmd_pool) return bird::fail(r_cmd_pool.error());
 
+  auto r_mat_buffer = handler->create_material_buffer();
+  if (!r_mat_buffer) return bird::fail(r_mat_buffer.error());
+
   return std::move(handler);
 }
 
-Result<void> VulkanMaterialHandler::create_descriptor_set_layout() {
-  vk::DescriptorBindingFlags binding_flags =
-      vk::DescriptorBindingFlagBits::eUpdateAfterBind |
-      vk::DescriptorBindingFlagBits::ePartiallyBound;
-
-  vk::DescriptorSetLayoutBindingFlagsCreateInfo binding_flags_info{
-      .bindingCount  = 1,
-      .pBindingFlags = &binding_flags
-  };
-
-  vk::DescriptorSetLayoutBinding binding{
+Result<void> VulkanMaterialHandler::create_descriptor_set_layouts() {
+  // Binding 0: Bindless Textures
+  vk::DescriptorSetLayoutBinding tex_binding{
       .binding         = 0,
       .descriptorType  = vk::DescriptorType::eCombinedImageSampler,
       .descriptorCount = vk_context.get_texture_capacity(),
       .stageFlags      = vk::ShaderStageFlagBits::eFragment
   };
 
+  // Binding 1: Material SSBO
+  vk::DescriptorSetLayoutBinding mat_binding{
+      .binding         = 1,
+      .descriptorType  = vk::DescriptorType::eStorageBuffer,
+      .descriptorCount = 1,
+      .stageFlags      = vk::ShaderStageFlagBits::eFragment
+  };
+
+  std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {tex_binding, mat_binding};
+
+  // Bindless flags for the textures, standard flags (0) for the SSBO
+  std::array<vk::DescriptorBindingFlags, 2> binding_flags = {
+      vk::DescriptorBindingFlagBits::eUpdateAfterBind | vk::DescriptorBindingFlagBits::ePartiallyBound,
+      vk::DescriptorBindingFlags{}
+  };
+
+  vk::DescriptorSetLayoutBindingFlagsCreateInfo binding_flags_info{
+      .bindingCount  = static_cast<uint32_t>(binding_flags.size()),
+      .pBindingFlags = binding_flags.data()
+  };
+
   vk::DescriptorSetLayoutCreateInfo create_info{
       .pNext        = &binding_flags_info,
       .flags        = vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool,
-      .bindingCount = 1,
-      .pBindings    = &binding
+      .bindingCount = static_cast<uint32_t>(bindings.size()),
+      .pBindings    = bindings.data()
   };
 
   auto vkr_create = vk_context.get_logical_device().createDescriptorSetLayout(create_info);
-  if (vkr_create.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create descriptor set layout");
-  }
-  texture_descriptor_set_layout = std::move(vkr_create.value);
+  if (vkr_create.result != vk::Result::eSuccess) return bird::fail("Failed to create descriptor set layout");
+
+  descriptor_set_layout = std::move(vkr_create.value);
   return bird::ok();
 }
 
 Result<void> VulkanMaterialHandler::create_descriptor_pool() {
-  vk::DescriptorPoolSize pool_size{vk::DescriptorType::eCombinedImageSampler, vk_context.get_texture_capacity()};
+  std::array<vk::DescriptorPoolSize, 2> pool_sizes = {
+      vk::DescriptorPoolSize{
+          .type            = vk::DescriptorType::eCombinedImageSampler,
+          .descriptorCount = vk_context.get_texture_capacity()
+      },
+      vk::DescriptorPoolSize{
+          .type            = vk::DescriptorType::eStorageBuffer, // <--- Add this!
+          .descriptorCount = 1
+      }
+  };
 
   vk::DescriptorPoolCreateInfo create_info{
       .flags         = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind |
                        vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-      .maxSets       = 1,
-      .poolSizeCount = 1,
-      .pPoolSizes    = &pool_size
+      .maxSets       = pool_sizes.size(),
+      .poolSizeCount = static_cast<uint32_t>(pool_sizes.size()),
+      .pPoolSizes    = pool_sizes.data()
   };
 
   auto vkr_create = vk_context.get_logical_device().createDescriptorPool(create_info);
@@ -79,8 +106,8 @@ Result<void> VulkanMaterialHandler::create_descriptor_pool() {
   return bird::ok();
 }
 
-Result<void> VulkanMaterialHandler::create_texture_descriptor_set() {
-  vk::DescriptorSetLayout raw_layout = *texture_descriptor_set_layout;
+Result<void> VulkanMaterialHandler::create_descriptor_set() {
+  vk::DescriptorSetLayout raw_layout = *descriptor_set_layout;
 
   vk::DescriptorSetAllocateInfo alloc_info{
       .descriptorPool     = *descriptor_pool,
@@ -89,10 +116,9 @@ Result<void> VulkanMaterialHandler::create_texture_descriptor_set() {
   };
 
   auto vkr_create = vk_context.get_logical_device().allocateDescriptorSets(alloc_info);
-  if (vkr_create.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create texture descriptor set");
-  }
-  bindless_texture_set = std::move(vkr_create.value[0]);
+  if (vkr_create.result != vk::Result::eSuccess) return bird::fail("Failed to allocate descriptor set");
+
+  descriptor_set = std::move(vkr_create.value[0]);
   return bird::ok();
 }
 
@@ -127,6 +153,36 @@ Result<void> VulkanMaterialHandler::create_command_pool() {
     return bird::fail("Failed to create transient command pool for texture uploads");
   }
   command_pool = std::move(vkr_pool.value);
+  return bird::ok();
+}
+
+Result<void> VulkanMaterialHandler::create_material_buffer() {
+  size_t total_buffer_size = MAX_MATERIALS * MATERIAL_STRIDE;
+
+  auto r_buf = memory_allocator.create_buffer(vk::BufferUsageFlagBits::eStorageBuffer, total_buffer_size);
+  if (!r_buf) return bird::fail(r_buf.error());
+
+  material_buffer = std::move(r_buf).value();
+  material_buffer_mapped = material_buffer.getAllocation().getInfo().pMappedData;
+
+  // 2. Link this buffer to Binding 1 in our Descriptor Set
+  vk::DescriptorBufferInfo buffer_info{
+      .buffer = *material_buffer,
+      .offset = 0,
+      .range  = total_buffer_size
+  };
+
+  vk::WriteDescriptorSet write_desc{
+      .dstSet          = *descriptor_set,
+      .dstBinding      = 1, // <--- Matches the shader!
+      .dstArrayElement = 0,
+      .descriptorCount = 1,
+      .descriptorType  = vk::DescriptorType::eStorageBuffer,
+      .pBufferInfo     = &buffer_info
+  };
+
+  vk_context.get_logical_device().updateDescriptorSets(write_desc, nullptr);
+
   return bird::ok();
 }
 
@@ -233,7 +289,7 @@ Result<void> VulkanMaterialHandler::update_texture_buffer() {
                                      });
 
     descriptor_writes.push_back({
-                                    .dstSet          = *bindless_texture_set,
+                                    .dstSet          = *descriptor_set,
                                     .dstBinding      = 0,
                                     .dstArrayElement = slot,
                                     .descriptorCount = 1,
@@ -334,6 +390,54 @@ Result<vk::raii::ImageView> VulkanMaterialHandler::create_texture_image_view(vk:
   auto vkr = vk_context.get_logical_device().createImageView(view_info);
   if (vkr.result != vk::Result::eSuccess) return bird::fail("Failed to create texture image view");
   return std::move(vkr.value);
+}
+
+Result<void> VulkanMaterialHandler::prepare_materials(std::vector<MaterialID> material_ids) {
+  if (material_ids.empty()) return bird::ok(); // No materials to prepare
+
+  std::unordered_set<MaterialID> allocated_set(allocated_materials.begin(), allocated_materials.end());
+
+  std::vector<MaterialID> to_prepare;
+  for (MaterialID material_id : material_ids) {
+    if (!allocated_set.contains(material_id)) {
+      to_prepare.push_back(material_id);
+    }
+  }
+
+  auto* gpu_dest = static_cast<std::byte*>(material_buffer_mapped);
+
+  for (MaterialID mat_id : to_prepare) {
+    auto r_packed = packed_material_cache->get(mat_id);
+    if (!r_packed) return bird::fail(r_packed.error());
+    const PackedMaterial& packed_material = r_packed.value();
+
+    allocated_materials.push_back(mat_id);
+    uint32_t slot_index = next_unused_material_index++;
+    material_indices[mat_id] = slot_index;
+
+    // Find the exact MATERIAL_STRIDE-byte aligned slot for this material
+    std::byte* target_address = gpu_dest + (slot_index * MATERIAL_STRIDE);
+
+    std::memset(target_address, 0, MATERIAL_STRIDE);
+
+    // Get the size of the copy, capping it at stride
+    size_t copy_size = std::min(packed_material.data.size(), MATERIAL_STRIDE);
+
+    if (copy_size > 0) {
+      std::memcpy(target_address, packed_material.data.data(), copy_size);
+    }
+  }
+
+  return bird::ok();
+}
+
+Result<uint32_t> VulkanMaterialHandler::get_material_index(MaterialID material_id) const {
+  auto it = material_indices.find(material_id);
+  if (it == material_indices.end()) {
+    return bird::fail("Material ID not found in allocated materials");
+  }
+
+  return it->second;
 }
 
 } // bird

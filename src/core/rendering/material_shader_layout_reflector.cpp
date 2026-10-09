@@ -29,22 +29,23 @@ Result<MaterialShaderLayout> MaterialShaderLayoutReflector::reflect(const uint32
     if (block_type.member_types.empty()) continue; // It doesnt contain MaterialData array, we continue
 
     const spirv_cross::SPIRType& array_type = compiler.get_type(block_type.member_types[0]);
-    size_t member_count = array_type.member_types.size();
+    const spirv_cross::SPIRType& struct_type = compiler.get_type(array_type.parent_type);
+    size_t member_count = struct_type.member_types.size();
 
     for (uint32_t i = 0; i < member_count; i++) {
-      std::string member_name = compiler.get_member_name(array_type.self, i);
+      std::string member_name = compiler.get_member_name(struct_type.self, i);
 
       // Get the exact memory offset defined by std430 rules
-      uint32_t offset = compiler.type_struct_member_offset(array_type, i);
+      uint32_t offset = compiler.type_struct_member_offset(struct_type, i);
 
       // Get the size of the variable in bytes
-      uint32_t size = compiler.get_declared_struct_member_size(array_type, i);
+      uint32_t size = compiler.get_declared_struct_member_size(struct_type, i);
 
       layout_info.properties[member_name] = {offset, size};
     }
 
     // Get the total size of the struct, including any std430 padding at the end
-    layout_info.total_size = compiler.get_declared_struct_size(array_type);
+    layout_info.total_size = compiler.get_declared_struct_size(struct_type);
 
     found_buffer = true;
     break; // Found our buffer, stop searching

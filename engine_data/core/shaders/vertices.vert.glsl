@@ -10,7 +10,7 @@ struct Quad {
     vec2 col0;       // Scale X, Shear Y
     vec2 col1;       // Shear X, Scale Y
     vec2 col2;       // Translation (Pos X, Pos Y)
-    uint materialId;
+    uint materialIndex;
     uint _pad;
 };
 
@@ -18,8 +18,8 @@ layout(std430, set = 0, binding = 1) readonly buffer QuadBuffer {
     Quad quads[];
 };
 
-layout(location = 1) out vec2 fragUV;
-layout(location = 2) flat out uint fragTexIndex;
+layout(location = 0) out vec2 fragUV;
+layout(location = 1) flat out uint fragMaterialIndex;
 
 const vec2 UNIT_CORNERS[6] = vec2[6](
 vec2(0.0, 0.0), vec2(1.0, 0.0), vec2(1.0, 1.0),
@@ -43,5 +43,5 @@ void main() {
 
     // Pass data to fragment shader
     fragUV = unitPos;
-    fragTexIndex = quad.materialId;
+    fragMaterialIndex = quad.materialIndex;
 }

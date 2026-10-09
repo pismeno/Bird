@@ -94,11 +94,6 @@ Result<void> Editor::init() {
   packed_material_cache = std::make_unique<PackedMaterialCache>(rendering_context);
   rendering_context.packed_material_cache = packed_material_cache.get();
 
-  auto r_get_texture = asset_manager->acquire<ImageAsset>("editor://test_img.png");
-  if (!r_get_texture) return bird::fail(r_get_texture.error());
-  AssetHandle<ImageAsset> texture = std::move(r_get_texture).value();
-  std::cout << bindless_texture_registry->get_index(texture) << " - Tex index" << std::endl;;
-
   context = {
       .node_system_context = &node_system_context,
       .rendering_context = &rendering_context,
@@ -137,13 +132,24 @@ Result<void> Editor::init() {
                                                             "core://shaders/textures.frag.spv");
   if (!r_s_c6) return bird::fail(r_s_c6.error());
 
-  auto r_load_img = asset_manager->acquire<ImageAsset>("editor://test_img.png");
-  if (!r_load_img) return bird::fail(r_load_img.error());
-  AssetHandle<ImageAsset> img = std::move(r_load_img).value();
-  for (int i = 0; i < img->get_size_bytes(); i++) {
-    std::cout << static_cast<int>(img->pixel_data[i]) << " ";
-  }
-  std::cout << std::endl;
+  auto r_get_texture = asset_manager->acquire<ImageAsset>("editor://test_img.png");
+  if (!r_get_texture) return bird::fail(r_get_texture.error());
+  AssetHandle<ImageAsset> texture = std::move(r_get_texture).value();
+  std::cout << bindless_texture_registry->get_index(texture) << " - Tex index" << std::endl;;
+
+  auto r_get_vert_shader = asset_manager->acquire<VertexShaderAsset>("core://shaders/vertices.vert.spv");
+  if (!r_get_vert_shader) return bird::fail(r_get_vert_shader.error());
+  AssetHandle<VertexShaderAsset> vert_shader = std::move(r_get_vert_shader).value();
+  auto r_get_frag_shader = asset_manager->acquire<FragmentShaderAsset>("core://shaders/textures.frag.spv");
+  if (!r_get_frag_shader) return bird::fail(r_get_frag_shader.error());
+  AssetHandle<FragmentShaderAsset> frag_shader = std::move(r_get_frag_shader).value();
+
+  material_pool->add("test_mat", Material{
+      .properties = {{"test_texture", std::move(texture)}},
+      .vertex_shader = std::move(vert_shader),
+      .fragment_shader = std::move(frag_shader),
+  });
+
 
   RendererOptions renderer_options{
       RendererType::Vulkan,

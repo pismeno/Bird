@@ -36,3 +36,14 @@ struct MaterialID {
 inline constexpr MaterialID MaterialID::INVALID{ std::numeric_limits<uint64_t>::max() };
 
 } // bird
+
+namespace std {
+
+template <>
+struct hash<bird::MaterialID> {
+  std::size_t operator()(const bird::MaterialID& m) const noexcept {
+    return std::hash<int>{}(m.id);
+  }
+};
+
+} // std

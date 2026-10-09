@@ -174,7 +174,7 @@ Result<void> VulkanPipeline::create_graphics_pipeline(VulkanSwapchain& swapchain
 
   std::array<vk::DescriptorSetLayout, 2> set_layouts = {
       descriptor_set_layout,                                        // Set 0: UBO
-      material_handler.get_texture_descriptor_set_layout()          // Set 1: Bindless Textures
+      material_handler.get_descriptor_set_layout()                  // Set 1: Bindless Textures
   };
 
   // pipeline layout create info
