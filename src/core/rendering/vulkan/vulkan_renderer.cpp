@@ -50,7 +50,7 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
   auto r_create_command_pool = renderer->create_command_pool();
   if (!r_create_command_pool) return bird::fail(r_create_command_pool.error());
 
-  auto r_material_handler = VulkanMaterialHandler::create(*renderer->vk_context, context);
+  auto r_material_handler = VulkanMaterialHandler::create(*renderer->vk_context, *renderer->memory_allocator, context);
   if (!r_material_handler) return bird::fail(r_material_handler.error());
   renderer->material_handler = std::move(r_material_handler).value();
   std::cout << "Material Handler created successfully" << std::endl;
@@ -367,6 +367,11 @@ Result<void> VulkanRenderer::record_command_buffer(FrameData& frame) {
 
 void VulkanRenderer::begin_frame() {
   if (needs_framebuffer_resize_ || is_context_lost_) return;
+
+  auto r_update_tex_buffer = material_handler->update_texture_buffer();
+  if (!r_update_tex_buffer) {
+    std::cerr << "Failed to update texture buffer: " << r_update_tex_buffer.error() << std::endl;
+  } // TODO
 
   FrameData& frame = frames[current_frame_];
   auto vkr_fence = vk_context->get_logical_device().waitForFences(*frame.in_flight_fence, vk::True, UINT64_MAX);

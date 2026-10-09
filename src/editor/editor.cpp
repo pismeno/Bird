@@ -94,6 +94,11 @@ Result<void> Editor::init() {
   packed_material_cache = std::make_unique<PackedMaterialCache>(rendering_context);
   rendering_context.packed_material_cache = packed_material_cache.get();
 
+  auto r_get_texture = asset_manager->acquire<ImageAsset>("editor://test_img.png");
+  if (!r_get_texture) return bird::fail(r_get_texture.error());
+  AssetHandle<ImageAsset> texture = std::move(r_get_texture).value();
+  std::cout << bindless_texture_registry->get_index(texture) << " - Tex index" << std::endl;;
+
   context = {
       .node_system_context = &node_system_context,
       .rendering_context = &rendering_context,
