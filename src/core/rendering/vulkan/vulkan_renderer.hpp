@@ -60,10 +60,6 @@ class VulkanRenderer : public IRenderer {
     vk::raii::DescriptorSet descriptor_set        = nullptr;
   };
 
-  Result<void> create_texture_image();
-  Result<void> create_texture_image_view();
-  Result<void> create_texture_sampler();
-
   Result<void> create_command_pool();
   Result<void> create_vertex_buffer();
   Result<void> create_index_buffer();
@@ -98,10 +94,6 @@ class VulkanRenderer : public IRenderer {
   vma::raii::Buffer index_buffer = nullptr;
 
   vk::raii::CommandPool command_pool = nullptr;
-
-  vma::raii::Image texture_image = nullptr;
-  vk::raii::ImageView texture_image_view = nullptr;
-  vk::raii::Sampler texture_sampler = nullptr;
 
   std::vector<FrameData> frames;
   std::vector<vk::raii::Semaphore> render_finished_semaphores;

@@ -50,7 +50,7 @@ class VulkanMaterialHandler {
   /// Allocates a primary command buffer from command_pool and begins it with eOneTimeSubmit.
   [[nodiscard]] Result<vk::raii::CommandBuffer> allocate_upload_command_buffer();
   /// Creates a 2D optimal tiled image via VMA with dedicated allocation.
-  [[nodiscard]] Result<vma::raii::Image> create_texture_image(const ImageAsset& asset);
+  [[nodiscard]] Result<vma::raii::Image> create_texture_image(const AssetHandle<ImageAsset>& asset);
   /// Creates a standard 2D color aspect image view for the uploaded texture.
   [[nodiscard]] Result<vk::raii::ImageView> create_texture_image_view(vk::Image image);
 

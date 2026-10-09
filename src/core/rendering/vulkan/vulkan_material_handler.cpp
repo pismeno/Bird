@@ -41,7 +41,7 @@ Result<void> VulkanMaterialHandler::create_descriptor_set_layout() {
   vk::DescriptorSetLayoutBinding binding{
       .binding         = 0,
       .descriptorType  = vk::DescriptorType::eCombinedImageSampler,
-      .descriptorCount = 65536,
+      .descriptorCount = vk_context.get_texture_capacity(),
       .stageFlags      = vk::ShaderStageFlagBits::eFragment
   };
 
@@ -61,7 +61,7 @@ Result<void> VulkanMaterialHandler::create_descriptor_set_layout() {
 }
 
 Result<void> VulkanMaterialHandler::create_descriptor_pool() {
-  vk::DescriptorPoolSize pool_size{vk::DescriptorType::eCombinedImageSampler, 65536};
+  vk::DescriptorPoolSize pool_size{vk::DescriptorType::eCombinedImageSampler, vk_context.get_texture_capacity()};
 
   vk::DescriptorPoolCreateInfo create_info{
       .flags         = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind |
@@ -179,7 +179,7 @@ Result<void> VulkanMaterialHandler::update_texture_buffer() {
     const auto& asset = pending[i];
     uint32_t slot = bindless_texture_registry->get_index(asset);
 
-    auto r_gpu_image = create_texture_image(*asset);
+    auto r_gpu_image = create_texture_image(asset);
     if (!r_gpu_image) return bird::fail("Failed to create GPU texture image");
     vma::raii::Image gpu_image = std::move(r_gpu_image).value();
 
@@ -300,11 +300,11 @@ Result<vk::raii::CommandBuffer> VulkanMaterialHandler::allocate_upload_command_b
   return cmd;
 }
 
-Result<vma::raii::Image> VulkanMaterialHandler::create_texture_image(const ImageAsset& asset) {
+Result<vma::raii::Image> VulkanMaterialHandler::create_texture_image(const AssetHandle<ImageAsset>& asset) {
   vk::ImageCreateInfo image_info{
       .imageType     = vk::ImageType::e2D,
       .format        = vk::Format::eR8G8B8A8Srgb,
-      .extent        = { static_cast<uint32_t>(asset.width), static_cast<uint32_t>(asset.height), 1 },
+      .extent        = { static_cast<uint32_t>(asset->width), static_cast<uint32_t>(asset->height), 1 },
       .mipLevels     = 1,
       .arrayLayers   = 1,
       .samples       = vk::SampleCountFlagBits::e1,

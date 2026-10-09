@@ -60,16 +60,6 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
   renderer->pipeline = std::move(r_pipeline).value();
   std::cout << "Pipeline created successfully" << std::endl;
 
-  // 3. Initialize Assets
-  auto r_create_texture_image = renderer->create_texture_image();
-  if (!r_create_texture_image) return bird::fail(r_create_texture_image.error());
-
-  auto r_create_texture_image_view = renderer->create_texture_image_view();
-  if (!r_create_texture_image_view) return bird::fail(r_create_texture_image_view.error());
-
-  auto r_create_texture_sampler = renderer->create_texture_sampler();
-  if (!r_create_texture_sampler) return bird::fail(r_create_texture_sampler.error());
-
   auto r_create_vertex_buffer = renderer->create_vertex_buffer();
   if (!r_create_vertex_buffer) return bird::fail(r_create_vertex_buffer.error());
 
@@ -196,100 +186,6 @@ Result<void> VulkanRenderer::create_frame_data() {
     render_finished_semaphores.push_back(std::move(vkr_render_fin.value));
   }
 
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::create_texture_image() {
-  auto r_load_img = asset_manager->acquire<ImageAsset>("editor://test_img.png");
-  if (!r_load_img) return bird::fail(r_load_img.error());
-  AssetHandle<ImageAsset> img_asset = std::move(r_load_img).value();
-
-  auto r_staging_buffer = memory_allocator->create_buffer(
-      vk::BufferUsageFlagBits::eTransferSrc,
-      std::span(img_asset->pixel_data)
-  );
-
-  if (!r_staging_buffer) return bird::fail(r_staging_buffer.error());
-  vma::raii::Buffer staging_buffer = std::move(r_staging_buffer).value();
-
-  vk::ImageCreateInfo image_info{
-      .imageType     = vk::ImageType::e2D,
-      .format        = vk::Format::eR8G8B8A8Srgb,
-      .extent        = { static_cast<uint32_t>(img_asset->width), static_cast<uint32_t>(img_asset->height), 1 },
-      .mipLevels     = 1,
-      .arrayLayers   = 1,
-      .samples       = vk::SampleCountFlagBits::e1,
-      .tiling        = vk::ImageTiling::eOptimal,
-      .usage         = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-      .sharingMode   = vk::SharingMode::eExclusive,
-      .initialLayout = vk::ImageLayout::eUndefined
-  };
-
-  vma::AllocationCreateInfo image_alloc_info{
-      .flags = vma::AllocationCreateFlagBits::eDedicatedMemory,
-      .usage = vma::MemoryUsage::eAuto
-  };
-
-  auto vkr_create_image = memory_allocator->get_allocator().createImage(image_info, image_alloc_info);
-  if (vkr_create_image.result != vk::Result::eSuccess) return bird::fail("Failed to create texture image");
-  texture_image = std::move(vkr_create_image.value);
-
-  // Command recording
-  auto r_cmd_buffer = begin_single_time_commands();
-  if (!r_cmd_buffer) return bird::fail(r_cmd_buffer.error());
-  vk::raii::CommandBuffer cmd_buffer = std::move(r_cmd_buffer).value();
-
-  transition_image_layout(cmd_buffer, texture_image,
-                          vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
-                          {}, vk::AccessFlagBits2::eTransferWrite,
-                          vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eTransfer);
-
-  vk::BufferImageCopy region{
-      .imageSubresource = { .aspectMask = vk::ImageAspectFlagBits::eColor, .mipLevel = 0, .baseArrayLayer = 0, .layerCount = 1 },
-      .imageExtent      = {static_cast<uint32_t>(img_asset->width), static_cast<uint32_t>(img_asset->height), 1}
-  };
-
-  cmd_buffer.copyBufferToImage(*staging_buffer, *texture_image, vk::ImageLayout::eTransferDstOptimal, region);
-
-  transition_image_layout(cmd_buffer, texture_image,
-                          vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-                          vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead,
-                          vk::PipelineStageFlagBits2::eTransfer, vk::PipelineStageFlagBits2::eFragmentShader);
-
-  end_single_time_commands(cmd_buffer);
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::create_texture_image_view() {
-  vk::ImageViewCreateInfo view_info{
-      .image            = *texture_image,
-      .viewType         = vk::ImageViewType::e2D,
-      .format           = vk::Format::eR8G8B8A8Srgb,
-      .subresourceRange = { .aspectMask = vk::ImageAspectFlagBits::eColor, .levelCount = 1, .layerCount = 1 }
-  };
-
-  auto vkr_create_view = vk_context->get_logical_device().createImageView(view_info);
-  if (vkr_create_view.result != vk::Result::eSuccess) return bird::fail("Failed to create texture image view");
-  texture_image_view = std::move(vkr_create_view.value);
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::create_texture_sampler() {
-  vk::SamplerCreateInfo sampler_info{
-      .magFilter               = vk::Filter::eNearest,
-      .minFilter               = vk::Filter::eLinear,
-      .mipmapMode              = vk::SamplerMipmapMode::eLinear,
-      .addressModeU            = vk::SamplerAddressMode::eRepeat,
-      .addressModeV            = vk::SamplerAddressMode::eRepeat,
-      .addressModeW            = vk::SamplerAddressMode::eRepeat,
-      .maxAnisotropy           = 1.0f,
-      .compareOp               = vk::CompareOp::eAlways,
-      .borderColor             = vk::BorderColor::eIntOpaqueBlack,
-  };
-
-  auto vkr_create_sampler = vk_context->get_logical_device().createSampler(sampler_info);
-  if (vkr_create_sampler.result != vk::Result::eSuccess) return bird::fail("Failed to create texture sampler");
-  texture_sampler = std::move(vkr_create_sampler.value);
   return bird::ok();
 }
 

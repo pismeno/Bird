@@ -86,6 +86,14 @@ Result<void> VulkanContext::create_surface(void* native_window_handle) {
   return bird::ok();
 }
 
+inline uint32_t calculate_texture_capacity(const vk::PhysicalDeviceLimits& limits) {
+  return std::min({
+                      limits.maxPerStageDescriptorSampledImages,
+                      limits.maxDescriptorSetSampledImages,
+                      limits.maxPerStageResources
+                  });
+}
+
 Result<void> VulkanContext::pick_physical_device() {
   auto phys_devs_res = vk_instance.enumeratePhysicalDevices();
   if (phys_devs_res.result != vk::Result::eSuccess) {
@@ -102,61 +110,88 @@ Result<void> VulkanContext::pick_physical_device() {
   }
 
   physical_device = *devIter;
+  texture_capacity = std::min(calculate_texture_capacity(physical_device.getProperties().limits), PREFERRED_MAX_TEXTURES);
   return bird::ok();
 }
+
 bool VulkanContext::is_physical_device_suitable(const vk::PhysicalDevice &physical_device) const {
-  std::vector<const char*> requiredDeviceExtension = {vk::KHRSwapchainExtensionName};
+  const auto properties = physical_device.getProperties();
 
-  bool supportsVulkan1_3 = physical_device.getProperties().apiVersion >= vk::ApiVersion13;
+  // Minimum Vulkan version
+  if (properties.apiVersion < vk::ApiVersion13) {
+    return false;
+  }
 
-  // getQueueFamilyProperties doesn't fail, so it returns the vector directly (no ResultValue)
-  auto queueFamilies    = physical_device.getQueueFamilyProperties();
-  bool supportsGraphics = std::ranges::any_of( queueFamilies, []( auto const & qfp ) { return !!( qfp.queueFlags & vk::QueueFlagBits::eGraphics ); } );
+  // Queue family: find one that supports both graphics and surface presentation
+  const auto queue_families = physical_device.getQueueFamilyProperties();
+  bool has_suitable_queue = false;
 
-  auto ext_res = physical_device.enumerateDeviceExtensionProperties();
-  if (ext_res.result != vk::Result::eSuccess) return false;
-  auto availableDeviceExtensions = ext_res.value;
+  for (uint32_t i = 0; i < queue_families.size(); ++i) {
+    const bool supports_graphics = bool(queue_families[i].queueFlags & vk::QueueFlagBits::eGraphics);
+    const auto present_res = physical_device.getSurfaceSupportKHR(i, *surface);
+    const bool supports_present = (present_res.result == vk::Result::eSuccess && present_res.value);
 
-  bool supportsAllRequiredExtensions =
-      std::ranges::all_of( requiredDeviceExtension,
-                           [&availableDeviceExtensions]( auto const & requiredDeviceExtension )
-                           {
-                             return std::ranges::any_of( availableDeviceExtensions,
-                                                         [requiredDeviceExtension]( auto const & availableDeviceExtension )
-                                                         { return strcmp( availableDeviceExtension.extensionName, requiredDeviceExtension ) == 0; } );
-                           } );
+    if (supports_graphics && supports_present) {
+      has_suitable_queue = true;
+      break;
+    }
+  }
 
-  auto features = physical_device.getFeatures2<
+  if (!has_suitable_queue) {
+    return false;
+  }
+
+  // Required extensions
+  const std::vector<const char*> required_extensions = {
+      vk::KHRSwapchainExtensionName
+  };
+
+  const auto ext_res = physical_device.enumerateDeviceExtensionProperties();
+  if (ext_res.result != vk::Result::eSuccess) {
+    return false;
+  }
+
+  const auto& available_extensions = ext_res.value;
+  for (const char* required : required_extensions) {
+    bool found = false;
+    for (const auto& available : available_extensions) {
+      if (std::strcmp(available.extensionName, required) == 0) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      return false;
+    }
+  }
+
+  // Feature checks
+  const auto features = physical_device.getFeatures2<
       vk::PhysicalDeviceFeatures2,
       vk::PhysicalDeviceVulkan11Features,
       vk::PhysicalDeviceVulkan13Features,
       vk::PhysicalDeviceDescriptorIndexingFeatures,
       vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
 
-  const auto & vulkan11Features =
-      features.template get<vk::PhysicalDeviceVulkan11Features>();
+  const auto& v11 = features.template get<vk::PhysicalDeviceVulkan11Features>();
+  const auto& v13 = features.template get<vk::PhysicalDeviceVulkan13Features>();
+  const auto& desc_idx = features.template get<vk::PhysicalDeviceDescriptorIndexingFeatures>();
+  const auto& dyn_state = features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
 
-  const auto & vulkan13Features =
-      features.template get<vk::PhysicalDeviceVulkan13Features>();
+  const bool supports_features =
+      v11.shaderDrawParameters &&
+      v13.synchronization2 &&
+      v13.dynamicRendering &&
+      desc_idx.descriptorBindingPartiallyBound &&
+      desc_idx.descriptorBindingSampledImageUpdateAfterBind &&
+      dyn_state.extendedDynamicState;
 
-  const auto & descriptorIndexingFeatures =
-      features.template get<vk::PhysicalDeviceDescriptorIndexingFeatures>();
+  if (!supports_features) {
+    return false;
+  }
 
-  const auto & extendedDynamicStateFeatures =
-      features.template get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
-
-  bool supportsRequiredFeatures =
-      vulkan11Features.shaderDrawParameters &&
-      vulkan13Features.synchronization2 &&
-      vulkan13Features.dynamicRendering &&
-      descriptorIndexingFeatures.descriptorBindingPartiallyBound &&
-      descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind &&
-      extendedDynamicStateFeatures.extendedDynamicState;
-
-  return supportsVulkan1_3 &&
-         supportsGraphics &&
-         supportsAllRequiredExtensions &&
-         supportsRequiredFeatures;
+  // Hardware limits
+  return calculate_texture_capacity(properties.limits) >= MIN_REQUIRED_TEXTURES;
 }
 
 Result<void> VulkanContext::create_logical_device() {

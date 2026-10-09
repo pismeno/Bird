@@ -10,6 +10,9 @@ namespace bird {
 
 class VulkanContext {
  public:
+  static constexpr uint32_t PREFERRED_MAX_TEXTURES = 65536;
+  static constexpr uint32_t MIN_REQUIRED_TEXTURES  = 1024;
+
   ~VulkanContext() = default;
 
   const inline vk::raii::Instance& get_instance() const { return vk_instance; }
@@ -18,6 +21,7 @@ class VulkanContext {
   const inline vk::raii::Queue& get_graphics_queue() const { return graphics_queue; }
   const inline uint32_t get_graphics_queue_index() const { return queue_index; }
   const inline vk::raii::SurfaceKHR& get_surface() const { return surface; }
+  const inline uint32_t get_texture_capacity() const { return texture_capacity; }
 
   static Result<std::unique_ptr<VulkanContext>> create(void* native_window_handle);
  private:
@@ -38,6 +42,8 @@ class VulkanContext {
   vk::raii::Device logical_device = nullptr;
   uint32_t queue_index = ~0;
   vk::raii::Queue graphics_queue = nullptr;
+
+  uint32_t texture_capacity;
 };
 
 } // bird
