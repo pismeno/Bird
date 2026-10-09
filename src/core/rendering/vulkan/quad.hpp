@@ -10,7 +10,7 @@ struct alignas(16) Quad {
   glm::mat3x2 transform;
   uint32_t material_index;
 
-  uint32_t _padding; // so the last 4 bytes are zeroed out
+  uint32_t _padding = 0; // so the last 4 bytes are zeroed out
 };
 
 } // bird

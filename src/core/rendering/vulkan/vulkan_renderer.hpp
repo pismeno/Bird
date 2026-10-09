@@ -113,7 +113,6 @@ class VulkanRenderer : public IRenderer {
               glm::vec2(100.0f, 100.0f) // Column 2: Position X = 100, Position Y = 100
           ),
           0, // material_index
-          0  // _padding
       },
 
       // 2. Wide Rectangle with HORIZONTAL SHEAR (Skew X)
@@ -125,7 +124,6 @@ class VulkanRenderer : public IRenderer {
               glm::vec2(300.0f, 100.0f)
           ),
           0,
-          0
       },
 
       // 3. Tall Rectangle with VERTICAL SHEAR (Skew Y)
@@ -137,7 +135,6 @@ class VulkanRenderer : public IRenderer {
               glm::vec2(100.0f, 300.0f)
           ),
           0,
-          0
       },
 
       // 4. Rotated Square: 100x100 rotated 45 degrees at Position (300, 300)
@@ -149,7 +146,6 @@ class VulkanRenderer : public IRenderer {
               glm::vec2(300.0f, 300.0f)
           ),
           0,
-          0
       }
   };
 };
