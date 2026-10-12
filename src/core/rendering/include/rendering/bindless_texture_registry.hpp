@@ -5,6 +5,7 @@
 
 #include "resources/asset_handle.hpp"
 #include "resources/asset_types.hpp"
+#include "utils/result.hpp"
 
 namespace bird {
 

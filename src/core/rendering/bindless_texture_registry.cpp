@@ -1,7 +1,8 @@
 #include "rendering/bindless_texture_registry.hpp"
-#include "utils/result.hpp"
 
 #include <cstdint>
+
+#include "utils/result.hpp"
 
 namespace bird {
 

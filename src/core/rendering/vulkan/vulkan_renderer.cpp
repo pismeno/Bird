@@ -48,7 +48,7 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
   auto r_create_command_pool = renderer->create_command_pool();
   if (!r_create_command_pool) return bird::fail(r_create_command_pool.error());
 
-  auto r_material_handler = VulkanMaterialHandler::create(*renderer->vk_context, *renderer->memory_allocator, context);
+  auto r_material_handler = VulkanMaterialHandler::create(*renderer->vk_context, *renderer->memory_allocator, *renderer->frames_rendered, context);
   if (!r_material_handler) return bird::fail(r_material_handler.error());
   renderer->material_handler = std::move(r_material_handler).value();
   std::cout << "Material Handler created successfully" << std::endl;
