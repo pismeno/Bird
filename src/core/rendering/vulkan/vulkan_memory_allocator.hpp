@@ -14,10 +14,10 @@ class VulkanMemoryAllocator {
  public:
   ~VulkanMemoryAllocator() = default;
 
-  Result<vma::raii::Buffer> create_buffer(vk::BufferUsageFlags usage, vk::DeviceSize size, const void* data = nullptr);
+  Result<vma::raii::Buffer> create_buffer(vk::BufferUsageFlags usage, vk::DeviceSize size, const void* data = nullptr) const;
 
   template <typename T>
-  Result<vma::raii::Buffer> create_buffer(vk::BufferUsageFlags usage, std::span<T> data) {
+  Result<vma::raii::Buffer> create_buffer(vk::BufferUsageFlags usage, std::span<T> data) const {
     return create_buffer(usage, data.size_bytes(), data.data());
   }
 

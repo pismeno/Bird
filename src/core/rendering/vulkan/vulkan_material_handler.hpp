@@ -14,6 +14,7 @@
 #include "resources/asset_handle.hpp"
 #include "resources/asset_types.hpp"
 #include "utils/result.hpp"
+#include "utils/counter.hpp"
 
 namespace bird {
 
@@ -21,31 +22,41 @@ class VulkanMaterialHandler {
  public:
   static inline constexpr size_t MATERIAL_STRIDE = 128;
   static inline constexpr size_t MAX_MATERIALS = 1000;
+  static inline constexpr uint64_t FREE_MATERIAL_AFTER_FRAMES = 144 * 60;
 
   ~VulkanMaterialHandler() = default;
 
   Result<void> update_texture_buffer();
   Result<void> prepare_materials(std::vector<MaterialID> material_ids);
+  void free_unused_materials();
+  void free_material(const MaterialID& material_id);
 
   inline const vk::raii::DescriptorSetLayout& get_descriptor_set_layout() const { return descriptor_set_layout; }
   inline const vk::raii::DescriptorSet& get_descriptor_set() const { return descriptor_set; }
-  Result<uint32_t> get_material_index(MaterialID material_id) const;
+  Result<uint32_t> get_material_index(const MaterialID& material_id) const;
 
-  static Result<std::unique_ptr<VulkanMaterialHandler>> create(const VulkanContext& vk_context, VulkanMemoryAllocator& memory_allocator, const RenderingContext& context);
+  static Result<std::unique_ptr<VulkanMaterialHandler>> create(const VulkanContext& vk_context, VulkanMemoryAllocator& memory_allocator, const Counter& frame_counter, const RenderingContext& context);
  private:
+  explicit VulkanMaterialHandler(
+      const VulkanContext& vk_context,
+      const VulkanMemoryAllocator& memory_allocator,
+      const Counter& frames_rendered,
+      const RenderingContext& context)
+      : frames_rendered(frames_rendered),
+        vk_context(vk_context),
+        memory_allocator(memory_allocator),
+        bindless_texture_registry(context.bindless_texture_registry),
+        packed_material_cache(context.packed_material_cache) {}
+
   struct GpuTexture {
     vma::raii::Image image = nullptr;
     vk::raii::ImageView view = nullptr;
   };
 
-  explicit VulkanMaterialHandler(
-      const VulkanContext& vk_context,
-      VulkanMemoryAllocator& memory_allocator,
-      const RenderingContext& context)
-      : vk_context(vk_context),
-        memory_allocator(memory_allocator),
-        bindless_texture_registry(context.bindless_texture_registry),
-        packed_material_cache(context.packed_material_cache) {}
+  struct GpuMaterial {
+    MaterialID material_id;
+    uint64_t last_used_on_frame;
+  };
 
   Result<void> create_descriptor_set_layouts();
   Result<void> create_descriptor_pool();
@@ -61,6 +72,8 @@ class VulkanMaterialHandler {
   /// Creates a standard 2D color aspect image view for the uploaded texture.
   [[nodiscard]] Result<vk::raii::ImageView> create_texture_image_view(vk::Image image);
 
+  uint32_t make_material_index();
+
   vk::raii::DescriptorSetLayout descriptor_set_layout = nullptr;
   vk::raii::DescriptorPool descriptor_pool = nullptr;
   vk::raii::DescriptorSet descriptor_set = nullptr;
@@ -74,12 +87,14 @@ class VulkanMaterialHandler {
   // Keeps textures alive; indexed by their bindless slot index
   std::vector<GpuTexture> allocated_textures;
 
-  std::vector<MaterialID> allocated_materials;
+  std::vector<GpuMaterial> allocated_materials;
   std::unordered_map<MaterialID, uint32_t> material_indices;
+  std::vector<uint32_t> recycled_material_indices;
   uint32_t next_unused_material_index{0};
 
+  const Counter& frames_rendered;
   const VulkanContext& vk_context;
-  VulkanMemoryAllocator& memory_allocator;
+  const VulkanMemoryAllocator& memory_allocator;
   BindlessTextureRegistry* bindless_texture_registry;
   PackedMaterialCache* packed_material_cache;
 };

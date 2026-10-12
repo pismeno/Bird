@@ -9,9 +9,10 @@ namespace bird {
 Result<std::unique_ptr<VulkanMaterialHandler>> VulkanMaterialHandler::create(
     const VulkanContext& vk_context,
     VulkanMemoryAllocator& memory_allocator,
+    const Counter& frame_counter,
     const RenderingContext& context)
 {
-  std::unique_ptr<VulkanMaterialHandler> handler(new VulkanMaterialHandler(vk_context, memory_allocator, context));
+  std::unique_ptr<VulkanMaterialHandler> handler(new VulkanMaterialHandler(vk_context, memory_allocator, frame_counter, context));
 
   auto r_layout = handler->create_descriptor_set_layouts();
   if (!r_layout) return bird::fail(r_layout.error());
@@ -395,12 +396,16 @@ Result<vk::raii::ImageView> VulkanMaterialHandler::create_texture_image_view(vk:
 Result<void> VulkanMaterialHandler::prepare_materials(std::vector<MaterialID> material_ids) {
   if (material_ids.empty()) return bird::ok(); // No materials to prepare
 
-  std::unordered_set<MaterialID> allocated_set(allocated_materials.begin(), allocated_materials.end());
-
   std::vector<MaterialID> to_prepare;
+  to_prepare.reserve(material_ids.size());
+
   for (MaterialID material_id : material_ids) {
-    if (!allocated_set.contains(material_id)) {
+    auto it = material_indices.find(material_id);
+    if (it == material_indices.end()) {
       to_prepare.push_back(material_id);
+    } else {
+      uint32_t slot_index = it->second;
+      allocated_materials[slot_index].last_used_on_frame = frames_rendered.count;
     }
   }
 
@@ -411,8 +416,16 @@ Result<void> VulkanMaterialHandler::prepare_materials(std::vector<MaterialID> ma
     if (!r_packed) return bird::fail(r_packed.error());
     const PackedMaterial& packed_material = r_packed.value();
 
-    allocated_materials.push_back(mat_id);
-    uint32_t slot_index = next_unused_material_index++;
+    if (packed_material.data.empty()) {
+      continue;
+    }
+
+    if (packed_material.data.size() > MATERIAL_STRIDE) {
+      return bird::fail("Packed material data is too large for VulkanMaterialHandler, it exceeds " + std::to_string(MATERIAL_STRIDE) + " bytes");
+    }
+
+    allocated_materials.push_back({ mat_id, frames_rendered.count });
+    uint32_t slot_index = make_material_index();
     material_indices[mat_id] = slot_index;
 
     // Find the exact MATERIAL_STRIDE-byte aligned slot for this material
@@ -420,24 +433,56 @@ Result<void> VulkanMaterialHandler::prepare_materials(std::vector<MaterialID> ma
 
     std::memset(target_address, 0, MATERIAL_STRIDE);
 
-    // Get the size of the copy, capping it at stride
-    size_t copy_size = std::min(packed_material.data.size(), MATERIAL_STRIDE);
-
-    if (copy_size > 0) {
-      std::memcpy(target_address, packed_material.data.data(), copy_size);
-    }
+    std::memcpy(target_address, packed_material.data.data(), packed_material.data.size());
   }
 
   return bird::ok();
 }
 
-Result<uint32_t> VulkanMaterialHandler::get_material_index(MaterialID material_id) const {
+void VulkanMaterialHandler::free_unused_materials() {
+  std::vector<MaterialID> to_free;
+  to_free.reserve(allocated_materials.size());
+  for (GpuMaterial& mat : allocated_materials) {
+    if (mat.last_used_on_frame > FREE_MATERIAL_AFTER_FRAMES) {
+      free_material(mat.material_id);
+    }
+  }
+}
+
+void VulkanMaterialHandler::free_material(const MaterialID& material_id) {
+  auto it = material_indices.find(material_id);
+  if (it != material_indices.end()) {
+    uint32_t slot_index = it->second;
+
+    // Add the slot back to the pool of available indices
+    recycled_material_indices.push_back(slot_index);
+
+    // Remove from tracking structures
+    material_indices.erase(it);
+
+    // We do not zero-out gpu memory since it is done during material data copying there
+  }
+}
+
+Result<uint32_t> VulkanMaterialHandler::get_material_index(const MaterialID& material_id) const {
   auto it = material_indices.find(material_id);
   if (it == material_indices.end()) {
     return bird::fail("Material ID not found in allocated materials");
   }
 
   return it->second;
+}
+
+uint32_t VulkanMaterialHandler::make_material_index() {
+  uint32_t index;
+  if (!recycled_material_indices.empty()) {
+    index = recycled_material_indices.back();
+    recycled_material_indices.pop_back();
+  } else {
+    index = next_unused_material_index++;
+  }
+
+  return index;
 }
 
 } // bird

@@ -26,6 +26,7 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
   std::unique_ptr<VulkanRenderer> renderer(new VulkanRenderer());
 
   renderer->asset_manager = context.resources_context->asset_manager;
+  renderer->frames_rendered = std::make_unique<Counter>();
 
   // 1. Initialize Subsystems
   auto r_context = VulkanContext::create(native_window_handle);

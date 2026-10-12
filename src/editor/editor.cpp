@@ -145,7 +145,9 @@ Result<void> Editor::init() {
   AssetHandle<FragmentShaderAsset> frag_shader = std::move(r_get_frag_shader).value();
 
   material_pool->add("test_mat", Material{
-      .properties = {{"test_texture", std::move(texture)}},
+      .properties = {
+          {"test_texture", std::move(texture)}
+          },
       .vertex_shader = std::move(vert_shader),
       .fragment_shader = std::move(frag_shader),
   });

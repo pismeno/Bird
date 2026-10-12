@@ -26,6 +26,7 @@
 #include <resources/asset_manager.hpp>
 #include <resources/asset_types.hpp>
 #include <utils/result.hpp>
+#include "utils/counter.hpp"
 
 namespace bird {
 
@@ -82,6 +83,7 @@ class VulkanRenderer : public IRenderer {
       vk::PipelineStageFlags2 src_stage_mask,
       vk::PipelineStageFlags2 dst_stage_mask);
 
+  std::unique_ptr<Counter> frames_rendered;
   std::unique_ptr<VulkanContext> vk_context;
   std::unique_ptr<VulkanMemoryAllocator> memory_allocator;
   std::unique_ptr<VulkanSwapchain> swapchain;
