@@ -19,6 +19,14 @@ class BindlessTextureRegistry {
    */
   uint32_t get_index(const AssetHandle<ImageAsset>& texture);
 
+  Result<uint32_t> get_existing_index(uint64_t texture_id) const;
+  inline Result<uint32_t> get_existing_index(const AssetHandle<ImageAsset>& texture) const { return get_existing_index(texture.get_packed_id()); }
+
+  /**
+   * @brief Free the bindless index for the given texture.
+   */
+  void free_index(uint64_t texture_id);
+
   /**
    * @brief Get all pending texture uploads.
    */
@@ -32,9 +40,10 @@ class BindlessTextureRegistry {
   uint32_t allocate_index(const AssetHandle<ImageAsset>& texture);
 
   std::unordered_map<uint64_t, uint32_t> bindless_indices;
-  std::unordered_map<uint64_t, AssetHandle<ImageAsset>> pending_texture_uploads;
-
+  std::vector<uint32_t> recycled_indices;
   uint32_t next_unused_index {0};
+
+  std::unordered_map<uint64_t, AssetHandle<ImageAsset>> pending_texture_uploads;
 };
 
 } // bird

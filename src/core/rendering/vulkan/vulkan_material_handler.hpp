@@ -11,6 +11,7 @@
 #include "rendering/bindless_texture_registry.hpp"
 #include "rendering/packed_material_cache.hpp"
 #include "resources/material_types.hpp"
+#include "resources/material_pool.hpp"
 #include "resources/asset_handle.hpp"
 #include "resources/asset_types.hpp"
 #include "utils/result.hpp"
@@ -30,6 +31,7 @@ class VulkanMaterialHandler {
   Result<void> prepare_materials(std::vector<MaterialID> material_ids);
   void free_unused_materials();
   void free_material(const MaterialID& material_id);
+  void free_texture(uint64_t texture_id);
 
   inline const vk::raii::DescriptorSetLayout& get_descriptor_set_layout() const { return descriptor_set_layout; }
   inline const vk::raii::DescriptorSet& get_descriptor_set() const { return descriptor_set; }
@@ -46,6 +48,7 @@ class VulkanMaterialHandler {
         vk_context(vk_context),
         memory_allocator(memory_allocator),
         bindless_texture_registry(context.bindless_texture_registry),
+        material_pool(context.resources_context->material_pool),
         packed_material_cache(context.packed_material_cache) {}
 
   struct GpuTexture {
@@ -54,6 +57,7 @@ class VulkanMaterialHandler {
   };
 
   struct GpuMaterial {
+    uint32_t index;
     MaterialID material_id;
     uint64_t last_used_on_frame;
   };
@@ -74,6 +78,9 @@ class VulkanMaterialHandler {
 
   uint32_t make_material_index();
 
+  void add_texture_reference(uint64_t texture_id);
+  void remove_texture_reference(uint64_t texture_id);
+
   vk::raii::DescriptorSetLayout descriptor_set_layout = nullptr;
   vk::raii::DescriptorPool descriptor_pool = nullptr;
   vk::raii::DescriptorSet descriptor_set = nullptr;
@@ -86,9 +93,9 @@ class VulkanMaterialHandler {
 
   // Keeps textures alive; indexed by their bindless slot index
   std::vector<GpuTexture> allocated_textures;
+  std::unordered_map<uint64_t, uint32_t> texture_ref_counts;
 
-  std::vector<GpuMaterial> allocated_materials;
-  std::unordered_map<MaterialID, uint32_t> material_indices;
+  std::unordered_map<MaterialID, GpuMaterial> allocated_materials;
   std::vector<uint32_t> recycled_material_indices;
   uint32_t next_unused_material_index{0};
 
@@ -96,6 +103,7 @@ class VulkanMaterialHandler {
   const VulkanContext& vk_context;
   const VulkanMemoryAllocator& memory_allocator;
   BindlessTextureRegistry* bindless_texture_registry;
+  MaterialPool* material_pool;
   PackedMaterialCache* packed_material_cache;
 };
 

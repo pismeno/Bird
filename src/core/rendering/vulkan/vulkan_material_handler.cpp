@@ -394,45 +394,48 @@ Result<vk::raii::ImageView> VulkanMaterialHandler::create_texture_image_view(vk:
 }
 
 Result<void> VulkanMaterialHandler::prepare_materials(std::vector<MaterialID> material_ids) {
-  if (material_ids.empty()) return bird::ok(); // No materials to prepare
+  if (material_ids.empty()) return bird::ok();
 
   std::vector<MaterialID> to_prepare;
   to_prepare.reserve(material_ids.size());
 
   for (MaterialID material_id : material_ids) {
-    auto it = material_indices.find(material_id);
-    if (it == material_indices.end()) {
+    auto it = allocated_materials.find(material_id);
+    if (it == allocated_materials.end()) {
       to_prepare.push_back(material_id);
     } else {
-      uint32_t slot_index = it->second;
-      allocated_materials[slot_index].last_used_on_frame = frames_rendered.count;
+      it->second.last_used_on_frame = frames_rendered.count;
     }
   }
 
-  auto* gpu_dest = static_cast<std::byte*>(material_buffer_mapped);
+  std::byte* gpu_dest = static_cast<std::byte*>(material_buffer_mapped);
 
   for (MaterialID mat_id : to_prepare) {
+    // Increase texture references
+    const Material& material = material_pool->get(mat_id);
+    for (auto& [name, property] : material.properties) {
+      if (auto texture = std::get_if<AssetHandle<ImageAsset>>(&property)) {
+        add_texture_reference(texture->get_packed_id());
+      }
+    }
+
     auto r_packed = packed_material_cache->get(mat_id);
     if (!r_packed) return bird::fail(r_packed.error());
     const PackedMaterial& packed_material = r_packed.value();
 
-    if (packed_material.data.empty()) {
-      continue;
-    }
+    if (packed_material.data.empty()) continue;
 
     if (packed_material.data.size() > MATERIAL_STRIDE) {
       return bird::fail("Packed material data is too large for VulkanMaterialHandler, it exceeds " + std::to_string(MATERIAL_STRIDE) + " bytes");
     }
 
-    allocated_materials.push_back({ mat_id, frames_rendered.count });
     uint32_t slot_index = make_material_index();
-    material_indices[mat_id] = slot_index;
 
-    // Find the exact MATERIAL_STRIDE-byte aligned slot for this material
+    // Store both slot and frame count in the map!
+    allocated_materials[mat_id] = { slot_index, frames_rendered.count };
+
     std::byte* target_address = gpu_dest + (slot_index * MATERIAL_STRIDE);
-
     std::memset(target_address, 0, MATERIAL_STRIDE);
-
     std::memcpy(target_address, packed_material.data.data(), packed_material.data.size());
   }
 
@@ -440,37 +443,69 @@ Result<void> VulkanMaterialHandler::prepare_materials(std::vector<MaterialID> ma
 }
 
 void VulkanMaterialHandler::free_unused_materials() {
-  std::vector<MaterialID> to_free;
-  to_free.reserve(allocated_materials.size());
-  for (GpuMaterial& mat : allocated_materials) {
-    if (mat.last_used_on_frame > FREE_MATERIAL_AFTER_FRAMES) {
-      free_material(mat.material_id);
+  // When erasing from a map while iterating, you must advance the iterator safely
+  for (auto it = allocated_materials.begin(); it != allocated_materials.end(); ) {
+    if ((frames_rendered.count - it->second.last_used_on_frame) > FREE_MATERIAL_AFTER_FRAMES) {
+      MaterialID id_to_free = it->first;
+      it++; // Advance BEFORE freeing so the iterator isn't invalidated
+      free_material(id_to_free);
+    } else {
+      it++;
     }
   }
 }
 
 void VulkanMaterialHandler::free_material(const MaterialID& material_id) {
-  auto it = material_indices.find(material_id);
-  if (it != material_indices.end()) {
-    uint32_t slot_index = it->second;
+  auto it = allocated_materials.find(material_id);
+  if (it != allocated_materials.end()) {
+    uint32_t slot_index = it->second.index;
 
-    // Add the slot back to the pool of available indices
     recycled_material_indices.push_back(slot_index);
+    allocated_materials.erase(it);
+  }
 
-    // Remove from tracking structures
-    material_indices.erase(it);
-
-    // We do not zero-out gpu memory since it is done during material data copying there
+  const Material& material = material_pool->get(material_id);
+  for (auto& [name, property] : material.properties) {
+    if (auto texture = std::get_if<AssetHandle<ImageAsset>>(&property)) {
+      remove_texture_reference(texture->get_packed_id());
+    }
   }
 }
 
+void VulkanMaterialHandler::add_texture_reference(uint64_t texture_id) {
+  texture_ref_counts[texture_id]++;
+}
+
+void VulkanMaterialHandler::remove_texture_reference(uint64_t texture_id) {
+  auto it = texture_ref_counts.find(texture_id);
+  if (it != texture_ref_counts.end()) {
+    if (it->second > 0) {
+      it->second--;
+    }
+    // If count hits zero, the texture is completely unused
+    if (it->second == 0) {
+      free_texture(texture_id);
+      texture_ref_counts.erase(it);
+    }
+  }
+}
+
+void VulkanMaterialHandler::free_texture(uint64_t texture_id) {
+  auto r_index = bindless_texture_registry->get_existing_index(texture_id);
+
+  if (!r_index) return;
+  uint32_t index = r_index.value();
+  allocated_textures[index] = GpuTexture{nullptr, nullptr};
+  bindless_texture_registry->free_index(texture_id);
+}
+
 Result<uint32_t> VulkanMaterialHandler::get_material_index(const MaterialID& material_id) const {
-  auto it = material_indices.find(material_id);
-  if (it == material_indices.end()) {
+  auto it = allocated_materials.find(material_id);
+  if (it == allocated_materials.end()) {
     return bird::fail("Material ID not found in allocated materials");
   }
 
-  return it->second;
+  return it->second.index;
 }
 
 uint32_t VulkanMaterialHandler::make_material_index() {
