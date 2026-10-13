@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "vulkan_pipeline.hpp"
+#include "combined_shader_key.hpp"
 
 namespace bird {
 
@@ -16,22 +17,7 @@ class VulkanPipelineCache {
 
   Result<VulkanPipeline*> get(const AssetHandle<VertexShaderAsset>& vert, const AssetHandle<FragmentShaderAsset>& frag);
  private:
-  struct PipelineKey {
-    uint64_t vert_id;
-    uint64_t frag_id;
-
-    bool operator==(const PipelineKey& other) const {
-      return vert_id == other.vert_id && frag_id == other.frag_id;
-    }
-  };
-
-  struct PipelineKeyHash {
-    std::size_t operator()(const PipelineKey& k) const {
-      return std::hash<uint64_t>()(k.vert_id) ^ (std::hash<uint64_t>()(k.frag_id) << 1);
-    }
-  };
-
-  std::unordered_map<PipelineKey, std::unique_ptr<VulkanPipeline>, PipelineKeyHash> pipelines;
+  std::unordered_map<CombinedShaderKey, std::unique_ptr<VulkanPipeline>, CombinedShaderKeyHash> pipelines;
 
   VulkanSwapchain& swapchain;
   VulkanContext& vk_context;

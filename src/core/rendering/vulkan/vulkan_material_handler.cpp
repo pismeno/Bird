@@ -396,6 +396,8 @@ Result<vk::raii::ImageView> VulkanMaterialHandler::create_texture_image_view(vk:
 Result<void> VulkanMaterialHandler::prepare_materials(std::vector<MaterialID> material_ids) {
   if (material_ids.empty()) return bird::ok();
 
+  update_texture_buffer();
+
   std::vector<MaterialID> to_prepare;
   to_prepare.reserve(material_ids.size());
 

@@ -306,43 +306,133 @@ Result<void> VulkanRenderer::record_command_buffer(FrameData& frame) {
 void VulkanRenderer::begin_frame() {
   if (needs_framebuffer_resize_ || is_context_lost_) return;
 
-  auto r_prepare_materials = material_handler->prepare_materials({MaterialID::from(0, 0)});
-  if (!r_prepare_materials) {
-    std::cerr << "Failed to prepare materials: " << r_prepare_materials.error() << std::endl;
-  } // TODO
-
-  auto r_update_tex_buffer = material_handler->update_texture_buffer();
-  if (!r_update_tex_buffer) {
-    std::cerr << "Failed to update texture buffer: " << r_update_tex_buffer.error() << std::endl;
-  } // TODO
-
   FrameData& frame = frames[current_frame_];
-  auto vkr_fence = vk_context->get_logical_device().waitForFences(*frame.in_flight_fence, vk::True, UINT64_MAX);
 
+  // 1. Wait for the GPU to finish with this frame's resources
+  auto vkr_fence = vk_context->get_logical_device().waitForFences(*frame.in_flight_fence, vk::True, UINT64_MAX);
   if (vkr_fence == vk::Result::eErrorDeviceLost) {
     is_context_lost_ = true;
     return;
   }
   vk_context->get_logical_device().resetFences(*frame.in_flight_fence);
-}
 
-void VulkanRenderer::begin_pass(const ViewData& view_data) {
-  if (needs_framebuffer_resize_ || is_context_lost_) return;
-
-  update_ubo(view_data, frames[current_frame_]);
-  update_quad_ssbo(frames[current_frame_]);
-
-  auto r_acquire = swapchain->acquire_next_image(frames[current_frame_].image_available_semaphore);
+  // 2. Acquire the next image to draw onto (Your "target_texture" logic)
+  auto r_acquire = swapchain->acquire_next_image(frame.image_available_semaphore);
   if (!r_acquire) {
     needs_framebuffer_resize_ = true;
     return;
   }
   current_image_index_ = r_acquire.value();
+
+  // 3. Begin the Vulkan Command Buffer for this frame
+  if (frame.command_buffer.begin({}) != vk::Result::eSuccess) {
+    std::cerr << "Failed to begin command buffer\n";
+    return;
+  }
+
+  // 4. Transition the target texture so we can render to it
+  transition_image_layout(frame.command_buffer, swapchain->get_images()[current_image_index_],
+                          vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
+                          {}, vk::AccessFlagBits2::eColorAttachmentWrite,
+                          vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+}
+
+void VulkanRenderer::begin_pass(const ViewData& view_data) {
+  if (needs_framebuffer_resize_ || is_context_lost_) return;
+
+  // Store the camera/view data. We don't issue Vulkan commands yet because
+  // we need to gather all the quads first!
+  current_view_data_ = view_data;
+}
+
+void VulkanRenderer::submit(const RenderQuadCommand render_command) {
+  pending_commands.push_back(render_command);
+}
+
+void VulkanRenderer::submit(const std::vector<RenderQuadCommand>& render_commands) {
+  pending_commands.insert(pending_commands.end(),
+                          render_commands.begin(),
+                          render_commands.end());
 }
 
 void VulkanRenderer::end_pass() {
-  if (needs_framebuffer_resize_ || is_context_lost_) return;
-  (void) record_command_buffer(frames[current_frame_]);
+  if (needs_framebuffer_resize_ || is_context_lost_ || pending_commands.empty()) return;
+
+  FrameData& frame = frames[current_frame_];
+
+  // --- 1. CPU PHASE: FLUSH THE COMMAND QUEUE ---
+
+  // Gather unique materials
+  std::vector<MaterialID> frame_materials;
+  frame_materials.reserve(pending_commands.size());
+  for (const auto& cmd : pending_commands) {
+    frame_materials.push_back(cmd.material_id);
+  }
+
+  std::sort(frame_materials.begin(), frame_materials.end(), [](const MaterialID& a, const MaterialID& b) {
+    return a.id < b.id;
+  });
+  frame_materials.erase(std::unique(frame_materials.begin(), frame_materials.end()), frame_materials.end());
+
+  // Prepare bindless textures
+  auto r_prepare_materials = material_handler->prepare_materials(frame_materials);
+
+  // Build batches (This internally calls pending_commands.clear(), giving you a fresh queue)
+  build_batches();
+
+  // Update CPU-mapped GPU buffers
+  update_ubo(current_view_data_, frame);
+  update_quad_ssbo(frame);
+
+  // --- 2. GPU PHASE: RECORD RENDER COMMANDS ---
+
+  vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 1.0f, 0.5f, 1.0f);
+  vk::RenderingAttachmentInfo attachmentInfo = {
+      .imageView   = *swapchain->get_image_views()[current_image_index_], // Or your custom target_texture View
+      .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+      .loadOp      = vk::AttachmentLoadOp::eClear,
+      .storeOp     = vk::AttachmentStoreOp::eStore,
+      .clearValue  = clearColor};
+
+  vk::RenderingInfo renderingInfo = {
+      .renderArea           = {.offset = {0, 0}, .extent = swapchain->get_extent()},
+      .layerCount           = 1,
+      .colorAttachmentCount = 1,
+      .pColorAttachments    = &attachmentInfo};
+
+  frame.command_buffer.beginRendering(renderingInfo);
+
+  frame.command_buffer.setViewport(0, vk::Viewport(0.0f, static_cast<float>(swapchain->get_extent().height), static_cast<float>(swapchain->get_extent().width), -static_cast<float>(swapchain->get_extent().height), 0.0f, 1.0f));
+  frame.command_buffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain->get_extent()));
+
+  std::array<vk::DescriptorSet, 2> sets = {
+      *frame.descriptor_set,                 // Set 0: UBO + Quad SSBO
+      material_handler->get_descriptor_set() // Set 1: Bindless Textures + Material SSBO
+  };
+
+  // Issue draw calls from batches
+  for (const auto& batch : batches) {
+    if (batch.quad_count == 0) continue;
+
+    MaterialID batch_mat_id = batch_materials_pool[batch.first_material_offset];
+    const Material& mat = material_pool->get(batch_mat_id);
+
+    auto r_get_pipeline = pipeline_cache->get(mat.vertex_shader, mat.fragment_shader);
+    if (!r_get_pipeline) continue;
+
+    VulkanPipeline* pipeline = r_get_pipeline.value();
+    pipeline->bind(frame.command_buffer);
+
+    frame.command_buffer.bindDescriptorSets(
+        vk::PipelineBindPoint::eGraphics,
+        *pipeline->get_layout(),
+        0, sets, nullptr
+    );
+
+    frame.command_buffer.draw(batch.quad_count * 6, 1, batch.first_quad * 6, 0);
+  }
+
+  frame.command_buffer.endRendering();
 }
 
 void VulkanRenderer::end_frame() {
@@ -350,7 +440,20 @@ void VulkanRenderer::end_frame() {
 
   FrameData& frame = frames[current_frame_];
 
-  vk::PipelineStageFlags waitDestinationStageMask( vk::PipelineStageFlagBits::eColorAttachmentOutput );
+  // 1. Transition image to presentation layout
+  transition_image_layout(frame.command_buffer, swapchain->get_images()[current_image_index_],
+                          vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR,
+                          vk::AccessFlagBits2::eColorAttachmentWrite, {},
+                          vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe);
+
+  // 2. End the command buffer
+  if (frame.command_buffer.end() != vk::Result::eSuccess) {
+    std::cerr << "Failed to end command buffer\n";
+    return;
+  }
+
+  // 3. Submit the frame to the GPU queue
+  vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
   const vk::SubmitInfo submitInfo{
       .waitSemaphoreCount   = 1,
       .pWaitSemaphores      = &*frame.image_available_semaphore,
@@ -358,12 +461,13 @@ void VulkanRenderer::end_frame() {
       .commandBufferCount   = 1,
       .pCommandBuffers      = &*frame.command_buffer,
       .signalSemaphoreCount = 1,
-      .pSignalSemaphores    = &*render_finished_semaphores[current_image_index_] // FIX applied
+      .pSignalSemaphores    = &*render_finished_semaphores[current_image_index_]
   };
 
   vk_context->get_graphics_queue().submit(submitInfo, *frame.in_flight_fence);
 
-  auto r_present = swapchain->present(vk_context->get_graphics_queue(), render_finished_semaphores[current_image_index_], current_image_index_); // FIX applied
+  // 4. Present it to the screen
+  auto r_present = swapchain->present(vk_context->get_graphics_queue(), render_finished_semaphores[current_image_index_], current_image_index_);
   if (!r_present) {
     needs_framebuffer_resize_ = true;
   }
@@ -430,6 +534,97 @@ inline void VulkanRenderer::move_to_next_frame() {
 bool VulkanRenderer::is_context_lost() const noexcept { return is_context_lost_; }
 bool VulkanRenderer::needs_framebuffer_resize() const noexcept { return needs_framebuffer_resize_; }
 
-void VulkanRenderer::submit(const RenderCommand render_command) {}
+void VulkanRenderer::build_batches() {
+  // 1. Clear GPU-bound structures (clears count, but keeps allocated capacity)
+  quads.clear();
+  batches.clear();
+  batch_materials_pool.clear();
+
+  if (pending_commands.empty()) return;
+
+  // 2. Sort all commands for the frame
+  std::stable_sort(pending_commands.begin(), pending_commands.end(),
+                   [this](const RenderQuadCommand& a, const RenderQuadCommand& b) {
+                     if (a.z_index != b.z_index) {
+                       return a.z_index < b.z_index; // Primary: Z-Index (Back to front)
+                     }
+
+                     const Material& mat_a = material_pool->get(a.material_id);
+                     const Material& mat_b = material_pool->get(b.material_id);
+
+                     CombinedShaderKey shaders_a{ mat_a.vertex_shader.get_packed_id(), mat_a.fragment_shader.get_packed_id() };
+                     CombinedShaderKey shaders_b{ mat_b.vertex_shader.get_packed_id(), mat_b.fragment_shader.get_packed_id() };
+
+                     if (shaders_a != shaders_b) {
+                       return shaders_a < shaders_b; // Secondary: Shader ID
+                     }
+
+                     // Tertiary: Material ID (using the underlying 64-bit int for grouping)
+                     return a.material_id.id < b.material_id.id;
+                   });
+
+  // 3. Pre-allocate quad memory to prevent reallocations
+  quads.reserve(pending_commands.size());
+
+  std::optional<CombinedShaderKey> current_shader;
+
+  // 4. Build batches and quads
+  for (const auto& cmd : pending_commands) {
+    // Resolve Material
+    auto r_get_mat_idx = material_handler->get_material_index(cmd.material_id);
+    if (!r_get_mat_idx) continue;
+
+    const Material& mat = material_pool->get(cmd.material_id);
+    CombinedShaderKey shader_key{ mat.vertex_shader.get_packed_id(), mat.fragment_shader.get_packed_id() };
+
+    // Check if we need a new batch (only breaks on shader change)
+    if (!current_shader.has_value() || shader_key != current_shader.value()) {
+      RenderBatch new_batch;
+      new_batch.shader_key = shader_key;
+      new_batch.first_quad = static_cast<uint32_t>(quads.size());
+      new_batch.quad_count = 0;
+
+      new_batch.first_material_offset = static_cast<uint32_t>(batch_materials_pool.size());
+      new_batch.material_count = 0;
+
+      batches.push_back(new_batch);
+      current_shader = shader_key;
+    }
+
+    RenderBatch& active_batch = batches.back();
+
+    // 5. Track unique materials for this batch using the actual MaterialID
+    auto mat_start = batch_materials_pool.begin() + active_batch.first_material_offset;
+    auto mat_end = batch_materials_pool.end();
+
+    // Find the material in the current batch's tracked list
+    auto it = std::find(mat_start, mat_end, cmd.material_id);
+
+    // Calculate the LOCAL index for the shader (0, 1, 2...)
+    uint32_t local_mat_idx = static_cast<uint32_t>(std::distance(mat_start, it));
+
+    // If it wasn't found, add it to the pool
+    if (it == mat_end) {
+      batch_materials_pool.push_back(cmd.material_id);
+      active_batch.material_count++;
+    }
+
+    // 6. Build the quad
+    Quad quad;
+    quad.transform[0] = glm::vec2(cmd.transform[0]);
+    quad.transform[1] = glm::vec2(cmd.transform[1]);
+    quad.transform[2] = glm::vec2(cmd.transform[2]);
+
+    // Important: Assign the LOCAL index so the shader looks up the right array slot
+    quad.material_index = local_mat_idx;
+    quad._padding = 0;
+
+    quads.push_back(quad);
+    active_batch.quad_count++;
+  }
+
+  // 7. Clear pending commands so they don't bleed into the next frame
+  pending_commands.clear();
+}
 
 } // bird

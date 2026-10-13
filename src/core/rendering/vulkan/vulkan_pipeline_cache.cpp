@@ -3,7 +3,7 @@
 namespace bird {
 
 Result<VulkanPipeline*> VulkanPipelineCache::get(const AssetHandle<VertexShaderAsset>& vert, const AssetHandle<FragmentShaderAsset>& frag) {
-  PipelineKey key{vert.get_packed_id(), frag.get_packed_id()};
+  CombinedShaderKey key{vert.get_packed_id(), frag.get_packed_id()};
   auto it = pipelines.find(key);
   if (it != pipelines.end()) {
     return it->second.get();

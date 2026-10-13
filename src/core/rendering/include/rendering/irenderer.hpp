@@ -5,7 +5,7 @@
 #include <cstdint>
 
 #include <rendering/rendering_context.hpp>
-#include <resources/render_command.hpp>
+#include <resources/render_commands.hpp>
 #include <resources/view_data.hpp>
 #include <utils/result.hpp>
 
@@ -33,7 +33,8 @@ public:
 
   virtual void begin_frame() = 0;
   virtual void begin_pass(const ViewData& view_data) = 0;
-  virtual void submit(const RenderCommand render_command) = 0;
+  virtual void submit(const RenderQuadCommand render_command) = 0;
+  virtual void submit(const std::vector<RenderQuadCommand>& render_commands) = 0;
   virtual void end_pass() = 0;
   virtual void end_frame() = 0;
 

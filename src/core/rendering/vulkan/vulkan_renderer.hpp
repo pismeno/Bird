@@ -15,6 +15,7 @@
 #include <memory>
 
 #include <rendering/vulkan/quad.hpp>
+#include <rendering/vulkan/render_batch.hpp>
 #include <rendering/vulkan/vulkan_context.hpp>
 #include <rendering/vulkan/vulkan_memory_allocator.hpp>
 #include <rendering/vulkan/vulkan_swapchain.hpp>
@@ -22,7 +23,7 @@
 #include <rendering/vulkan/vulkan_pipeline.hpp>
 #include <rendering/vulkan/vulkan_material_handler.hpp>
 #include <rendering/rendering_context.hpp>
-#include <resources/render_command.hpp>
+#include <resources/render_commands.hpp>
 #include <resources/asset_handle.hpp>
 #include <resources/asset_manager.hpp>
 #include <resources/asset_types.hpp>
@@ -40,7 +41,8 @@ class VulkanRenderer : public IRenderer {
 
   void begin_frame() override;
   void begin_pass(const ViewData& view_data) override;
-  void submit(const RenderCommand render_command) override;
+  void submit(const RenderQuadCommand render_command) override;
+  void submit(const std::vector<RenderQuadCommand>& render_commands) override;
   void end_pass() override;
   void end_frame() override;
 
@@ -70,6 +72,7 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_descriptor_set_layout();
   Result<void> create_frame_data();
 
+  void build_batches();
   Result<void> record_command_buffer(FrameData& frame);
   void update_ubo(const ViewData& view_data, FrameData& frame);
   void update_quad_ssbo(FrameData& frame);
@@ -105,55 +108,16 @@ class VulkanRenderer : public IRenderer {
   bool needs_framebuffer_resize_ = false;
   uint32_t current_image_index_ = 0;
   uint32_t current_frame_ = 0;
+  ViewData current_view_data_;
 
   // bird systems
   AssetManager* asset_manager;
   MaterialPool* material_pool;
 
-  const std::vector<bird::Quad> quads = {
-      // 1. Standard Square: 100x100 at Position (100, 100)
-      {
-          glm::mat3x2(
-              glm::vec2(100.0f, 0.0f),  // Column 0: Scale X = 100, Shear Y = 0
-              glm::vec2(0.0f, 100.0f),  // Column 1: Shear X = 0,   Scale Y = 100
-              glm::vec2(100.0f, 100.0f) // Column 2: Position X = 100, Position Y = 100
-          ),
-          0, // material_index
-      },
-
-      // 2. Wide Rectangle with HORIZONTAL SHEAR (Skew X)
-      // The top of the rectangle will be pushed 100 pixels to the right
-      {
-          glm::mat3x2(
-              glm::vec2(250.0f, 0.0f),  // Column 0: Scale X = 250, Shear Y = 0
-              glm::vec2(100.0f, 50.0f), // Column 1: SHEAR X = 100, Scale Y = 50
-              glm::vec2(300.0f, 100.0f)
-          ),
-          0,
-      },
-
-      // 3. Tall Rectangle with VERTICAL SHEAR (Skew Y)
-      // The right side of the rectangle will be pulled 100 pixels down
-      {
-          glm::mat3x2(
-              glm::vec2(50.0f, 100.0f), // Column 0: Scale X = 50, SHEAR Y = 100
-              glm::vec2(50.0f, 200.0f),  // Column 1: Shear X = 0,  Scale Y = 200
-              glm::vec2(100.0f, 300.0f)
-          ),
-          0,
-      },
-
-      // 4. Rotated Square: 100x100 rotated 45 degrees at Position (300, 300)
-      // Formula: [Scale * cos, Scale * sin], [Scale * -sin, Scale * cos]
-      {
-          glm::mat3x2(
-              glm::vec2(100.0f * std::cos(0.785398f),  100.0f * std::sin(0.785398f)),
-              glm::vec2(100.0f * -std::sin(0.785398f), 100.0f * std::cos(0.785398f)),
-              glm::vec2(300.0f, 300.0f)
-          ),
-          0,
-      }
-  };
+  std::vector<RenderQuadCommand> pending_commands;
+  std::vector<RenderBatch> batches;
+  std::vector<Quad> quads;
+  std::vector<MaterialID> batch_materials_pool;
 };
 
 } // bird

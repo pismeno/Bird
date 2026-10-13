@@ -108,48 +108,56 @@ Result<void> Editor::init() {
 
   context.shader_compiler = shader_compiler.get();
 
-  auto r_s_c1 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/forward_2d.vert.glsl",
-                                                            "core://shaders/forward_2d.vert.spv");
+  auto r_s_c1 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_a.vert.glsl",
+                                                            "core://shaders/mat_a.vert.spv");
   if (!r_s_c1) return bird::fail(r_s_c1.error());
 
-  auto r_s_c2 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/forward_2d.frag.glsl",
-                                                            "core://shaders/forward_2d.frag.spv");
+  auto r_s_c2 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_a.frag.glsl",
+                                                            "core://shaders/mat_a.frag.spv");
   if (!r_s_c2) return bird::fail(r_s_c2.error());
 
-  auto r_s_c3 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/triangle.vert.glsl",
-                                                            "core://shaders/triangle.vert.spv");
+  auto r_s_c3 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_b.vert.glsl",
+                                                            "core://shaders/mat_b.vert.spv");
   if (!r_s_c3) return bird::fail(r_s_c3.error());
 
-  auto r_s_c4 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/triangle.frag.glsl",
-                                                            "core://shaders/triangle.frag.spv");
+  auto r_s_c4 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_b.frag.glsl",
+                                                            "core://shaders/mat_b.frag.spv");
   if (!r_s_c4) return bird::fail(r_s_c4.error());
-
-  auto r_s_c5 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/vertices.vert.glsl",
-                                                            "core://shaders/vertices.vert.spv");
-  if (!r_s_c5) return bird::fail(r_s_c5.error());
-
-  auto r_s_c6 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/textures.frag.glsl",
-                                                            "core://shaders/textures.frag.spv");
-  if (!r_s_c6) return bird::fail(r_s_c6.error());
 
   auto r_get_texture = asset_manager->acquire<ImageAsset>("editor://test_img.png");
   if (!r_get_texture) return bird::fail(r_get_texture.error());
   AssetHandle<ImageAsset> texture = std::move(r_get_texture).value();
   std::cout << bindless_texture_registry->get_index(texture) << " - Tex index" << std::endl;;
 
-  auto r_get_vert_shader = asset_manager->acquire<VertexShaderAsset>("core://shaders/vertices.vert.spv");
-  if (!r_get_vert_shader) return bird::fail(r_get_vert_shader.error());
-  AssetHandle<VertexShaderAsset> vert_shader = std::move(r_get_vert_shader).value();
-  auto r_get_frag_shader = asset_manager->acquire<FragmentShaderAsset>("core://shaders/textures.frag.spv");
-  if (!r_get_frag_shader) return bird::fail(r_get_frag_shader.error());
-  AssetHandle<FragmentShaderAsset> frag_shader = std::move(r_get_frag_shader).value();
+  auto r_get_vert_shader_a = asset_manager->acquire<VertexShaderAsset>("core://shaders/mat_a.vert.spv");
+  if (!r_get_vert_shader_a) return bird::fail(r_get_vert_shader_a.error());
+  AssetHandle<VertexShaderAsset> vert_shader_a = std::move(r_get_vert_shader_a).value();
+  auto r_get_frag_shader_a = asset_manager->acquire<FragmentShaderAsset>("core://shaders/mat_a.frag.spv");
+  if (!r_get_frag_shader_a) return bird::fail(r_get_frag_shader_a.error());
+  AssetHandle<FragmentShaderAsset> frag_shader_a = std::move(r_get_frag_shader_a).value();
 
-  material_pool->add("test_mat", Material{
+  auto r_get_vert_shader = asset_manager->acquire<VertexShaderAsset>("core://shaders/mat_b.vert.spv");
+  if (!r_get_vert_shader) return bird::fail(r_get_vert_shader.error());
+  AssetHandle<VertexShaderAsset> vert_shader_b = std::move(r_get_vert_shader).value();
+  auto r_get_frag_shader = asset_manager->acquire<FragmentShaderAsset>("core://shaders/mat_b.frag.spv");
+  if (!r_get_frag_shader) return bird::fail(r_get_frag_shader.error());
+  AssetHandle<FragmentShaderAsset> frag_shader_b = std::move(r_get_frag_shader).value();
+
+  material_pool->add("test_mat_a", Material{
       .properties = {
-          {"test_texture", std::move(texture)}
+          {"test_texture", texture}
           },
-      .vertex_shader = std::move(vert_shader),
-      .fragment_shader = std::move(frag_shader),
+      .vertex_shader = std::move(vert_shader_a),
+      .fragment_shader = std::move(frag_shader_a),
+  });
+
+  material_pool->add("test_mat_b", Material{
+      .properties = {
+          {"test_texture", texture},
+          {"tint", glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)}
+      },
+      .vertex_shader = std::move(vert_shader_b),
+      .fragment_shader = std::move(frag_shader_b),
   });
 
 
@@ -172,6 +180,8 @@ Result<void> Editor::init() {
 }
 
 Result<void> Editor::run() {
+  MaterialID test_mat_id = MaterialID::from(0, 0);
+  MaterialID test_mat_id2 = MaterialID::from(1, 0);
 
   while (!window->should_close()) {
     bird::ViewData view_data{};
@@ -180,14 +190,52 @@ Result<void> Editor::run() {
     float height = static_cast<float>(window->get_framebuffer_height());
 
     view_data.projection = glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
-
     view_data.view = glm::mat4(1.0f);
-
     view_data.viewProjection = view_data.projection * view_data.view;
 
     window->update();
+
     renderer->begin_frame();
     renderer->begin_pass(view_data);
+
+    // --- TEST COMMANDS ---
+    std::vector<RenderQuadCommand> test_commands;
+
+    // Helper lambda to create a 2D affine transform matrix (Scale + Translation)
+    auto make_transform = [](float x, float y, float w, float h) {
+      glm::mat3 m(1.0f);
+      m[0][0] = w; // Scale X
+      m[1][1] = h; // Scale Y
+      m[2][0] = x; // Translation X
+      m[2][1] = y; // Translation Y
+      return m;
+    };
+
+    // Quad 1: Large background quad
+    RenderQuadCommand cmd1;
+    cmd1.material_id = test_mat_id2;
+    cmd1.z_index = 0;
+    cmd1.transform = make_transform(100.0f, 100.0f, 400.0f, 400.0f);
+    test_commands.push_back(cmd1);
+
+    // Quad 2: Smaller quad, overlapping Quad 1 (higher Z-index draws on top)
+    RenderQuadCommand cmd2;
+    cmd2.material_id = test_mat_id;
+    cmd2.z_index = 1;
+    cmd2.transform = make_transform(300.0f, 300.0f, 200.0f, 200.0f);
+    test_commands.push_back(cmd2);
+
+    // Quad 3: Another quad, overlapping Quad 2 (highest Z-index)
+    RenderQuadCommand cmd3;
+    cmd3.material_id = test_mat_id;
+    cmd3.z_index = 2;
+    cmd3.transform = make_transform(200.0f, 400.0f, 150.0f, 150.0f);
+    test_commands.push_back(cmd3);
+
+    // Submit the commands to the queue
+    renderer->submit(test_commands);
+    // ---------------------
+
     renderer->end_pass();
     renderer->end_frame();
 
