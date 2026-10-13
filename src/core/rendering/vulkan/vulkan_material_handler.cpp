@@ -432,9 +432,14 @@ Result<void> VulkanMaterialHandler::prepare_materials(std::vector<MaterialID> ma
     }
 
     uint32_t slot_index = make_material_index();
+    uint32_t shader_index = (slot_index * static_cast<uint32_t>(MATERIAL_STRIDE)) / static_cast<uint32_t>(packed_material.data.size());
 
-    // Store both slot and frame count in the map!
-    allocated_materials[mat_id] = { slot_index, frames_rendered.count };
+    // Store both slot, shader index, and frame count in the map!
+    allocated_materials[mat_id] = {
+        .slot_index = slot_index,
+        .shader_index = shader_index,
+        .last_used_on_frame = frames_rendered.count
+    };
 
     std::byte* target_address = gpu_dest + (slot_index * MATERIAL_STRIDE);
     std::memset(target_address, 0, MATERIAL_STRIDE);
@@ -460,7 +465,7 @@ void VulkanMaterialHandler::free_unused_materials() {
 void VulkanMaterialHandler::free_material(const MaterialID& material_id) {
   auto it = allocated_materials.find(material_id);
   if (it != allocated_materials.end()) {
-    uint32_t slot_index = it->second.index;
+    uint32_t slot_index = it->second.slot_index;
 
     recycled_material_indices.push_back(slot_index);
     allocated_materials.erase(it);
@@ -507,7 +512,7 @@ Result<uint32_t> VulkanMaterialHandler::get_material_index(const MaterialID& mat
     return bird::fail("Material ID not found in allocated materials");
   }
 
-  return it->second.index;
+  return it->second.shader_index;
 }
 
 uint32_t VulkanMaterialHandler::make_material_index() {

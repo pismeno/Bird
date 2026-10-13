@@ -57,8 +57,8 @@ class VulkanMaterialHandler {
   };
 
   struct GpuMaterial {
-    uint32_t index;
-    MaterialID material_id;
+    uint32_t slot_index;
+    uint32_t shader_index;
     uint64_t last_used_on_frame;
   };
 

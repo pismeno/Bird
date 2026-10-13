@@ -376,6 +376,9 @@ void VulkanRenderer::end_pass() {
 
   // Prepare bindless textures
   auto r_prepare_materials = material_handler->prepare_materials(frame_materials);
+  if (!r_prepare_materials) {
+    std::cerr << "VulkanRenderer::end_pass failed to prepare materials: " << r_prepare_materials.error() << std::endl;
+  }
 
   // Build batches (This internally calls pending_commands.clear(), giving you a fresh queue)
   build_batches();
@@ -418,7 +421,10 @@ void VulkanRenderer::end_pass() {
     const Material& mat = material_pool->get(batch_mat_id);
 
     auto r_get_pipeline = pipeline_cache->get(mat.vertex_shader, mat.fragment_shader);
-    if (!r_get_pipeline) continue;
+    if (!r_get_pipeline) {
+      std::cerr << "VulkanRenderer::end_pass failed to get pipeline: " << r_get_pipeline.error() << std::endl;
+      continue;
+    }
 
     VulkanPipeline* pipeline = r_get_pipeline.value();
     pipeline->bind(frame.command_buffer);
@@ -572,7 +578,11 @@ void VulkanRenderer::build_batches() {
   for (const auto& cmd : pending_commands) {
     // Resolve Material
     auto r_get_mat_idx = material_handler->get_material_index(cmd.material_id);
-    if (!r_get_mat_idx) continue;
+    if (!r_get_mat_idx) {
+      std::cerr << "VulkanRenderer::build_batches failed to get material index for material " << cmd.material_id.id << ": " << r_get_mat_idx.error() << std::endl;
+      continue;
+    }
+    uint32_t gpu_material_index = r_get_mat_idx.value();
 
     const Material& mat = material_pool->get(cmd.material_id);
     CombinedShaderKey shader_key{ mat.vertex_shader.get_packed_id(), mat.fragment_shader.get_packed_id() };
@@ -615,8 +625,8 @@ void VulkanRenderer::build_batches() {
     quad.transform[1] = glm::vec2(cmd.transform[1]);
     quad.transform[2] = glm::vec2(cmd.transform[2]);
 
-    // Important: Assign the LOCAL index so the shader looks up the right array slot
-    quad.material_index = local_mat_idx;
+    // Important: Assign the GLOBAL GPU slot index so the shader looks up the right material
+    quad.material_index = gpu_material_index;
     quad._padding = 0;
 
     quads.push_back(quad);
