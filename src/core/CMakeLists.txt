@@ -13,6 +13,7 @@ add_library(BirdUtils INTERFACE)
 target_sources(BirdUtils INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/include/utils/result.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/include/utils/string_hash.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/include/utils/counter.hpp
 )
 
 target_include_directories(BirdUtils INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/utils/include)
@@ -135,9 +136,11 @@ target_sources(BirdRendering
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_swapchain.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_pipeline.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_pipeline.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_pipeline_cache.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_pipeline_cache.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_material_handler.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vulkan_material_handler.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/vertex.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/rendering/vulkan/quad.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/bindless_texture_registry.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/material_shader_layout_reflector.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/packed_material_cache.cpp

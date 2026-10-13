@@ -18,6 +18,7 @@
 #include <rendering/vulkan/vulkan_context.hpp>
 #include <rendering/vulkan/vulkan_memory_allocator.hpp>
 #include <rendering/vulkan/vulkan_swapchain.hpp>
+#include <rendering/vulkan/vulkan_pipeline_cache.hpp>
 #include <rendering/vulkan/vulkan_pipeline.hpp>
 #include <rendering/vulkan/vulkan_material_handler.hpp>
 #include <rendering/rendering_context.hpp>
@@ -66,6 +67,7 @@ class VulkanRenderer : public IRenderer {
   };
 
   Result<void> create_command_pool();
+  Result<void> create_descriptor_set_layout();
   Result<void> create_frame_data();
 
   Result<void> record_command_buffer(FrameData& frame);
@@ -88,8 +90,9 @@ class VulkanRenderer : public IRenderer {
   std::unique_ptr<VulkanMemoryAllocator> memory_allocator;
   std::unique_ptr<VulkanSwapchain> swapchain;
   std::unique_ptr<VulkanMaterialHandler> material_handler;
-  std::unique_ptr<VulkanPipeline> pipeline;
+  std::unique_ptr<VulkanPipelineCache> pipeline_cache;
 
+  vk::raii::DescriptorSetLayout descriptor_set_layout = nullptr;
   vk::raii::DescriptorPool ubo_descriptor_pool = nullptr;
 
   vk::raii::CommandPool command_pool = nullptr;
@@ -105,6 +108,7 @@ class VulkanRenderer : public IRenderer {
 
   // bird systems
   AssetManager* asset_manager;
+  MaterialPool* material_pool;
 
   const std::vector<bird::Quad> quads = {
       // 1. Standard Square: 100x100 at Position (100, 100)

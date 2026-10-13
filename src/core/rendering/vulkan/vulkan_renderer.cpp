@@ -1,6 +1,5 @@
 #include "rendering/vulkan/vulkan_renderer.hpp"
 
-#include <vector>
 #include <cstdint>
 #include <cstring>
 #include <algorithm>
@@ -26,6 +25,7 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
   std::unique_ptr<VulkanRenderer> renderer(new VulkanRenderer());
 
   renderer->asset_manager = context.resources_context->asset_manager;
+  renderer->material_pool = context.resources_context->material_pool;
   renderer->frames_rendered = std::make_unique<Counter>();
 
   // 1. Initialize Subsystems
@@ -53,9 +53,11 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
   renderer->material_handler = std::move(r_material_handler).value();
   std::cout << "Material Handler created successfully" << std::endl;
 
-  auto r_pipeline = VulkanPipeline::create(*renderer->swapchain, *renderer->vk_context, *renderer->material_handler, renderer->asset_manager);
-  if (!r_pipeline) return bird::fail(r_pipeline.error());
-  renderer->pipeline = std::move(r_pipeline).value();
+  auto r_create_desc_set_layot = renderer->create_descriptor_set_layout();
+  if (!r_create_desc_set_layot) return bird::fail(r_create_desc_set_layot.error());
+  std::cout << "Descriptor set layout created successfully" << std::endl;
+
+  renderer->pipeline_cache = std::make_unique<VulkanPipelineCache>(*renderer->swapchain, *renderer->vk_context, *renderer->material_handler, renderer->descriptor_set_layout);
   std::cout << "Pipeline created successfully" << std::endl;
 
   auto r_create_frame_data = renderer->create_frame_data();
@@ -78,6 +80,38 @@ Result<void> VulkanRenderer::create_command_pool() {
   }
 
   command_pool = std::move(vkr_create_command_pool.value);
+  return bird::ok();
+}
+
+Result<void> VulkanRenderer::create_descriptor_set_layout() {
+  vk::DescriptorSetLayoutBinding ubo_binding{
+      .binding            = 0,
+      .descriptorType     = vk::DescriptorType::eUniformBuffer,
+      .descriptorCount    = 1,
+      .stageFlags         = vk::ShaderStageFlagBits::eVertex,
+      .pImmutableSamplers = nullptr
+  };
+
+  vk::DescriptorSetLayoutBinding ssbo_binding = {
+      .binding = 1,
+      .descriptorType = vk::DescriptorType::eStorageBuffer, // <--- Storage Buffer!
+      .descriptorCount = 1,
+      .stageFlags = vk::ShaderStageFlagBits::eVertex
+  };
+
+  std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {ubo_binding, ssbo_binding};
+
+  vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_info = {
+      .bindingCount = static_cast<uint32_t>(bindings.size()),
+      .pBindings = bindings.data()
+  };
+
+  auto vkr_create_desc_set_layout = vk_context->get_logical_device().createDescriptorSetLayout(descriptor_set_layout_info);
+  if (vkr_create_desc_set_layout.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create descriptor set layout");
+  }
+
+  descriptor_set_layout = std::move(vkr_create_desc_set_layout.value);
   return bird::ok();
 }
 
@@ -149,7 +183,7 @@ Result<void> VulkanRenderer::create_frame_data() {
     frame.quad_buffer_mapped = static_cast<Quad*>(frame.quad_buffer.getAllocation().getInfo().pMappedData);
 
     // Allocate Set 0 for this frame
-    vk::DescriptorSetLayout raw_ubo_layout = *pipeline->get_descriptor_set_layout();
+    vk::DescriptorSetLayout raw_ubo_layout = *descriptor_set_layout;
     vk::DescriptorSetAllocateInfo desc_alloc_info{
         .descriptorPool     = *ubo_descriptor_pool,
         .descriptorSetCount = 1,
@@ -231,6 +265,11 @@ Result<void> VulkanRenderer::record_command_buffer(FrameData& frame) {
       .pColorAttachments    = &attachmentInfo};
 
   frame.command_buffer.beginRendering(renderingInfo);
+
+  const Material& mat = material_pool->get(MaterialID::from(0, 0));
+  auto r_get_pipeline = pipeline_cache->get(mat.vertex_shader, mat.fragment_shader);
+  if (!r_get_pipeline) return bird::fail(r_get_pipeline.error());
+  VulkanPipeline* pipeline = r_get_pipeline.value();\
 
   pipeline->bind(frame.command_buffer);
 
