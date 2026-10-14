@@ -242,67 +242,6 @@ Result<void> VulkanRenderer::create_frame_data() {
   return bird::ok();
 }
 
-Result<void> VulkanRenderer::record_command_buffer(FrameData& frame) {
-  if (frame.command_buffer.begin({}) != vk::Result::eSuccess) return bird::fail("Failed to begin command buffer");
-
-  transition_image_layout(frame.command_buffer, swapchain->get_images()[current_image_index_],
-                          vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
-                          {}, vk::AccessFlagBits2::eColorAttachmentWrite,
-                          vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput);
-
-  vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 1.0f, 0.5f, 1.0f);
-  vk::RenderingAttachmentInfo attachmentInfo = {
-      .imageView   = *swapchain->get_image_views()[current_image_index_],
-      .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-      .loadOp      = vk::AttachmentLoadOp::eClear,
-      .storeOp     = vk::AttachmentStoreOp::eStore,
-      .clearValue  = clearColor};
-
-  vk::RenderingInfo renderingInfo = {
-      .renderArea           = {.offset = {0, 0}, .extent = swapchain->get_extent()},
-      .layerCount           = 1,
-      .colorAttachmentCount = 1,
-      .pColorAttachments    = &attachmentInfo};
-
-  frame.command_buffer.beginRendering(renderingInfo);
-
-  const Material& mat = material_pool->get(MaterialID::from(0, 0));
-  auto r_get_pipeline = pipeline_cache->get(mat.vertex_shader, mat.fragment_shader);
-  if (!r_get_pipeline) return bird::fail(r_get_pipeline.error());
-  VulkanPipeline* pipeline = r_get_pipeline.value();\
-
-  pipeline->bind(frame.command_buffer);
-
-  std::array<vk::DescriptorSet, 2> sets = {
-      *frame.descriptor_set,                               // Set 0: UBO
-      material_handler->get_descriptor_set()               // Set 1: Bindless textures
-  };
-
-  frame.command_buffer.bindDescriptorSets(
-      vk::PipelineBindPoint::eGraphics,
-      *pipeline->get_layout(),
-      0, // firstSet = 0
-      sets,
-      nullptr
-  );
-
-  frame.command_buffer.setViewport(0, vk::Viewport(0.0f, static_cast<float>(swapchain->get_extent().height), static_cast<float>(swapchain->get_extent().width), -static_cast<float>(swapchain->get_extent().height), 0.0f, 1.0f));
-  frame.command_buffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain->get_extent()));
-
-  frame.command_buffer.draw(quads.size() * 6, 1, 0, 0);
-
-  frame.command_buffer.endRendering();
-
-  transition_image_layout(frame.command_buffer, swapchain->get_images()[current_image_index_],
-                          vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR,
-                          vk::AccessFlagBits2::eColorAttachmentWrite, {},
-                          vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe);
-
-  if (frame.command_buffer.end() != vk::Result::eSuccess) return bird::fail("Failed to end command buffer");
-
-  return bird::ok();
-}
-
 void VulkanRenderer::begin_frame() {
   if (needs_framebuffer_resize_ || is_context_lost_) return;
 
@@ -339,9 +278,6 @@ void VulkanRenderer::begin_frame() {
 
 void VulkanRenderer::begin_pass(const ViewData& view_data) {
   if (needs_framebuffer_resize_ || is_context_lost_) return;
-
-  // Store the camera/view data. We don't issue Vulkan commands yet because
-  // we need to gather all the quads first!
   current_view_data_ = view_data;
 }
 
@@ -361,21 +297,8 @@ void VulkanRenderer::end_pass() {
   FrameData& frame = frames[current_frame_];
 
   // --- 1. CPU PHASE: FLUSH THE COMMAND QUEUE ---
-
-  // Gather unique materials
-  std::vector<MaterialID> frame_materials;
-  frame_materials.reserve(pending_commands.size());
-  for (const auto& cmd : pending_commands) {
-    frame_materials.push_back(cmd.material_id);
-  }
-
-  std::sort(frame_materials.begin(), frame_materials.end(), [](const MaterialID& a, const MaterialID& b) {
-    return a.id < b.id;
-  });
-  frame_materials.erase(std::unique(frame_materials.begin(), frame_materials.end()), frame_materials.end());
-
-  // Prepare bindless textures
-  auto r_prepare_materials = material_handler->prepare_materials(frame_materials);
+  std::vector<MaterialID> pass_materials = get_needed_pass_materials();
+  auto r_prepare_materials = material_handler->prepare_materials(pass_materials);
   if (!r_prepare_materials) {
     std::cerr << "VulkanRenderer::end_pass failed to prepare materials: " << r_prepare_materials.error() << std::endl;
   }
@@ -441,6 +364,20 @@ void VulkanRenderer::end_pass() {
   frame.command_buffer.endRendering();
 }
 
+std::vector<MaterialID> VulkanRenderer::get_needed_pass_materials() {
+  std::vector<MaterialID> needed_materials;
+  needed_materials.reserve(this->pending_commands.size());
+  for (const auto& cmd : this->pending_commands) {
+    needed_materials.push_back(cmd.material_id);
+  }
+
+  std::sort(needed_materials.begin(), needed_materials.end(), [](const MaterialID& a, const MaterialID& b) {
+    return a.id < b.id;
+  });
+  needed_materials.erase(std::unique(needed_materials.begin(), needed_materials.end()), needed_materials.end());
+  return std::move(needed_materials);
+}
+
 void VulkanRenderer::end_frame() {
   if (needs_framebuffer_resize_ || is_context_lost_) return;
 
@@ -478,6 +415,8 @@ void VulkanRenderer::end_frame() {
     needs_framebuffer_resize_ = true;
   }
 
+  frames_rendered->count++;
+  material_handler->free_unused_materials();
   move_to_next_frame();
 }
 

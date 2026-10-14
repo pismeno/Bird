@@ -73,7 +73,6 @@ class VulkanRenderer : public IRenderer {
   Result<void> create_frame_data();
 
   void build_batches();
-  Result<void> record_command_buffer(FrameData& frame);
   void update_ubo(const ViewData& view_data, FrameData& frame);
   void update_quad_ssbo(FrameData& frame);
   inline void move_to_next_frame();
@@ -118,6 +117,8 @@ class VulkanRenderer : public IRenderer {
   std::vector<RenderBatch> batches;
   std::vector<Quad> quads;
   std::vector<MaterialID> batch_materials_pool;
+
+  std::vector<MaterialID> get_needed_pass_materials();
 };
 
 } // bird

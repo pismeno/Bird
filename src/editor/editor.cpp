@@ -183,7 +183,10 @@ Result<void> Editor::run() {
   MaterialID test_mat_id = MaterialID::from(0, 0);
   MaterialID test_mat_id2 = MaterialID::from(1, 0);
 
+  uint64_t frames = 0;
   while (!window->should_close()) {
+    frames++;
+
     bird::ViewData view_data{};
 
     float width = static_cast<float>(window->get_framebuffer_width());
@@ -216,7 +219,7 @@ Result<void> Editor::run() {
     cmd1.material_id = test_mat_id2;
     cmd1.z_index = 0;
     cmd1.transform = make_transform(100.0f, 100.0f, 400.0f, 400.0f);
-    test_commands.push_back(cmd1);
+    if (frames < 4000 || frames > 30000) test_commands.push_back(cmd1);
 
     // Quad 2: Smaller quad, overlapping Quad 1 (higher Z-index draws on top)
     RenderQuadCommand cmd2;
