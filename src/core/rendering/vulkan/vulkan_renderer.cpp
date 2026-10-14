@@ -1,6 +1,5 @@
 #include "rendering/vulkan/vulkan_renderer.hpp"
 
-#include <vector>
 #include <cstdint>
 #include <cstring>
 #include <algorithm>
@@ -8,13 +7,10 @@
 #include <memory>
 #include <iostream>
 
-#include <rendering/vulkan/vertex.hpp>
 #include <rendering/vulkan/vulkan_context.hpp>
 #include <rendering/vulkan/vulkan_memory_allocator.hpp>
 #include <rendering/vulkan/vulkan_swapchain.hpp>
 #include <rendering/vulkan/vulkan_pipeline.hpp>
-#include <resources/asset_handle.hpp>
-#include <resources/asset_types.hpp>
 #include <utils/result.hpp>
 
 namespace bird {
@@ -29,6 +25,8 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
   std::unique_ptr<VulkanRenderer> renderer(new VulkanRenderer());
 
   renderer->asset_manager = context.resources_context->asset_manager;
+  renderer->material_pool = context.resources_context->material_pool;
+  renderer->frames_rendered = std::make_unique<Counter>();
 
   // 1. Initialize Subsystems
   auto r_context = VulkanContext::create(native_window_handle);
@@ -50,32 +48,20 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
   auto r_create_command_pool = renderer->create_command_pool();
   if (!r_create_command_pool) return bird::fail(r_create_command_pool.error());
 
-  auto r_pipeline = VulkanPipeline::create(*renderer->swapchain, *renderer->vk_context, renderer->asset_manager);
-  if (!r_pipeline) return bird::fail(r_pipeline.error());
-  renderer->pipeline = std::move(r_pipeline).value();
+  auto r_material_handler = VulkanMaterialHandler::create(*renderer->vk_context, *renderer->memory_allocator, *renderer->frames_rendered, context);
+  if (!r_material_handler) return bird::fail(r_material_handler.error());
+  renderer->material_handler = std::move(r_material_handler).value();
+  std::cout << "Material Handler created successfully" << std::endl;
+
+  auto r_create_desc_set_layot = renderer->create_descriptor_set_layout();
+  if (!r_create_desc_set_layot) return bird::fail(r_create_desc_set_layot.error());
+  std::cout << "Descriptor set layout created successfully" << std::endl;
+
+  renderer->pipeline_cache = std::make_unique<VulkanPipelineCache>(*renderer->swapchain, *renderer->vk_context, *renderer->material_handler, renderer->descriptor_set_layout);
   std::cout << "Pipeline created successfully" << std::endl;
-
-  // 3. Initialize Assets
-  auto r_create_texture_image = renderer->create_texture_image();
-  if (!r_create_texture_image) return bird::fail(r_create_texture_image.error());
-
-  auto r_create_texture_image_view = renderer->create_texture_image_view();
-  if (!r_create_texture_image_view) return bird::fail(r_create_texture_image_view.error());
-
-  auto r_create_texture_sampler = renderer->create_texture_sampler();
-  if (!r_create_texture_sampler) return bird::fail(r_create_texture_sampler.error());
-
-  auto r_create_vertex_buffer = renderer->create_vertex_buffer();
-  if (!r_create_vertex_buffer) return bird::fail(r_create_vertex_buffer.error());
-
-  auto r_create_index_buffer = renderer->create_index_buffer();
-  if (!r_create_index_buffer) return bird::fail(r_create_index_buffer.error());
 
   auto r_create_frame_data = renderer->create_frame_data();
   if (!r_create_frame_data) return bird::fail(r_create_frame_data.error());
-
-  auto r_create_descriptor_pool = renderer->create_descriptor_pool();
-  if (!r_create_descriptor_pool) return bird::fail(r_create_descriptor_pool.error());
 
   std::cout << "Vulkan Renderer initialized successfully" << std::endl;
 
@@ -97,9 +83,67 @@ Result<void> VulkanRenderer::create_command_pool() {
   return bird::ok();
 }
 
+Result<void> VulkanRenderer::create_descriptor_set_layout() {
+  vk::DescriptorSetLayoutBinding ubo_binding{
+      .binding            = 0,
+      .descriptorType     = vk::DescriptorType::eUniformBuffer,
+      .descriptorCount    = 1,
+      .stageFlags         = vk::ShaderStageFlagBits::eVertex,
+      .pImmutableSamplers = nullptr
+  };
+
+  vk::DescriptorSetLayoutBinding ssbo_binding = {
+      .binding = 1,
+      .descriptorType = vk::DescriptorType::eStorageBuffer, // <--- Storage Buffer!
+      .descriptorCount = 1,
+      .stageFlags = vk::ShaderStageFlagBits::eVertex
+  };
+
+  std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {ubo_binding, ssbo_binding};
+
+  vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_info = {
+      .bindingCount = static_cast<uint32_t>(bindings.size()),
+      .pBindings = bindings.data()
+  };
+
+  auto vkr_create_desc_set_layout = vk_context->get_logical_device().createDescriptorSetLayout(descriptor_set_layout_info);
+  if (vkr_create_desc_set_layout.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create descriptor set layout");
+  }
+
+  descriptor_set_layout = std::move(vkr_create_desc_set_layout.value);
+  return bird::ok();
+}
+
 Result<void> VulkanRenderer::create_frame_data() {
   frames.resize(MAX_FRAMES_IN_FLIGHT);
 
+  // 1. Create Descriptor Pool for UBOs (Set 0)
+  std::array<vk::DescriptorPoolSize, 2> pool_sizes = {
+      vk::DescriptorPoolSize{
+          .type            = vk::DescriptorType::eUniformBuffer,
+          .descriptorCount = MAX_FRAMES_IN_FLIGHT
+      },
+      vk::DescriptorPoolSize{
+          .type            = vk::DescriptorType::eStorageBuffer, // <--- Add this!
+          .descriptorCount = MAX_FRAMES_IN_FLIGHT
+      }
+  };
+
+  vk::DescriptorPoolCreateInfo pool_info{
+      .flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+      .maxSets       = MAX_FRAMES_IN_FLIGHT,
+      .poolSizeCount = static_cast<uint32_t>(pool_sizes.size()),
+      .pPoolSizes    = pool_sizes.data()
+  };
+
+  auto vkr_ubo_pool = vk_context->get_logical_device().createDescriptorPool(pool_info);
+  if (vkr_ubo_pool.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to create UBO descriptor pool");
+  }
+  ubo_descriptor_pool = std::move(vkr_ubo_pool.value);
+
+  // 2. Allocate Command Buffers
   vk::CommandBufferAllocateInfo alloc_info{
       .commandPool        = *command_pool,
       .level              = vk::CommandBufferLevel::ePrimary,
@@ -107,12 +151,15 @@ Result<void> VulkanRenderer::create_frame_data() {
   };
 
   auto vkr_cmd_buffers = vk_context->get_logical_device().allocateCommandBuffers(alloc_info);
-  if (vkr_cmd_buffers.result != vk::Result::eSuccess) return bird::fail("Failed to allocate command buffers");
+  if (vkr_cmd_buffers.result != vk::Result::eSuccess) {
+    return bird::fail("Failed to allocate command buffers");
+  }
 
+  // 3. Initialize Per-Frame Data
   for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
     FrameData& frame = frames[i];
 
-    // 1. Sync Objects (Image Available & Fence)
+    // Sync Objects
     auto vkr_image_avail = vk_context->get_logical_device().createSemaphore(vk::SemaphoreCreateInfo());
     if (vkr_image_avail.result != vk::Result::eSuccess) return bird::fail("Failed to create semaphore");
     frame.image_available_semaphore = std::move(vkr_image_avail.value);
@@ -121,17 +168,70 @@ Result<void> VulkanRenderer::create_frame_data() {
     if (vkr_fence.result != vk::Result::eSuccess) return bird::fail("Failed to create fence");
     frame.in_flight_fence = std::move(vkr_fence.value);
 
-    // 2. Command Buffer
+    // Command Buffer
     frame.command_buffer = std::move(vkr_cmd_buffers.value[i]);
 
-    // 3. Uniform Buffer
+    // Uniform Buffer
     auto ubo_res = memory_allocator->create_buffer(vk::BufferUsageFlagBits::eUniformBuffer, sizeof(ViewData));
     if (!ubo_res) return bird::fail(ubo_res.error());
     frame.uniform_buffer = std::move(ubo_res).value();
     frame.uniform_buffer_mapped = frame.uniform_buffer.getAllocation().getInfo().pMappedData;
+
+    auto r_create_quad_buf = memory_allocator->create_buffer(vk::BufferUsageFlagBits::eStorageBuffer, sizeof(Quad) * MAX_QUADS);
+    if (!r_create_quad_buf) return bird::fail(r_create_quad_buf.error());
+    frame.quad_buffer = std::move(r_create_quad_buf).value();
+    frame.quad_buffer_mapped = static_cast<Quad*>(frame.quad_buffer.getAllocation().getInfo().pMappedData);
+
+    // Allocate Set 0 for this frame
+    vk::DescriptorSetLayout raw_ubo_layout = *descriptor_set_layout;
+    vk::DescriptorSetAllocateInfo desc_alloc_info{
+        .descriptorPool     = *ubo_descriptor_pool,
+        .descriptorSetCount = 1,
+        .pSetLayouts        = &raw_ubo_layout
+    };
+
+    auto vkr_desc_set = vk_context->get_logical_device().allocateDescriptorSets(desc_alloc_info);
+    if (vkr_desc_set.result != vk::Result::eSuccess) {
+      return bird::fail("Failed to allocate frame UBO descriptor set");
+    }
+    frame.descriptor_set = std::move(vkr_desc_set.value[0]);
+
+    // Point Set 0 to this frame's uniform buffer
+    vk::DescriptorBufferInfo ubo_info{
+        .buffer = *frame.uniform_buffer,
+        .offset = 0,
+        .range  = sizeof(ViewData)
+    };
+
+    vk::DescriptorBufferInfo ssbo_info{
+        .buffer = *frame.quad_buffer,
+        .offset = 0,
+        .range  = sizeof(Quad) * MAX_QUADS
+    };
+
+    std::array<vk::WriteDescriptorSet, 2> descriptor_writes = {
+        vk::WriteDescriptorSet{
+            .dstSet          = *frame.descriptor_set,
+            .dstBinding      = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType  = vk::DescriptorType::eUniformBuffer,
+            .pBufferInfo     = &ubo_info
+        },
+        vk::WriteDescriptorSet{
+            .dstSet          = *frame.descriptor_set,
+            .dstBinding      = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType  = vk::DescriptorType::eStorageBuffer,
+            .pBufferInfo     = &ssbo_info
+        }
+    };
+
+    vk_context->get_logical_device().updateDescriptorSets(descriptor_writes, nullptr);
   }
 
-  // 4. Render Finished Semaphores (Tied to Swapchain Image count, not Frame In-Flight count)
+  // 4. Render Finished Semaphores (Tied to Swapchain image count)
   render_finished_semaphores.clear();
   for (size_t i = 0; i < swapchain->get_image_count(); i++) {
     auto vkr_render_fin = vk_context->get_logical_device().createSemaphore(vk::SemaphoreCreateInfo());
@@ -142,179 +242,79 @@ Result<void> VulkanRenderer::create_frame_data() {
   return bird::ok();
 }
 
-Result<void> VulkanRenderer::create_texture_image() {
-  auto r_load_img = asset_manager->acquire<ImageAsset>("editor://test_img.png");
-  if (!r_load_img) return bird::fail(r_load_img.error());
-  AssetHandle<ImageAsset> img_asset = std::move(r_load_img).value();
+void VulkanRenderer::begin_frame() {
+  if (needs_framebuffer_resize_ || is_context_lost_) return;
 
-  auto r_staging_buffer = memory_allocator->create_buffer(
-      vk::BufferUsageFlagBits::eTransferSrc,
-      std::span(img_asset->pixel_data)
-  );
+  FrameData& frame = frames[current_frame_];
 
-  if (!r_staging_buffer) return bird::fail(r_staging_buffer.error());
-  vma::raii::Buffer staging_buffer = std::move(r_staging_buffer).value();
+  // 1. Wait for the GPU to finish with this frame's resources
+  auto vkr_fence = vk_context->get_logical_device().waitForFences(*frame.in_flight_fence, vk::True, UINT64_MAX);
+  if (vkr_fence == vk::Result::eErrorDeviceLost) {
+    is_context_lost_ = true;
+    return;
+  }
+  vk_context->get_logical_device().resetFences(*frame.in_flight_fence);
 
-  vk::ImageCreateInfo image_info{
-      .imageType     = vk::ImageType::e2D,
-      .format        = vk::Format::eR8G8B8A8Srgb,
-      .extent        = { static_cast<uint32_t>(img_asset->width), static_cast<uint32_t>(img_asset->height), 1 },
-      .mipLevels     = 1,
-      .arrayLayers   = 1,
-      .samples       = vk::SampleCountFlagBits::e1,
-      .tiling        = vk::ImageTiling::eOptimal,
-      .usage         = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-      .sharingMode   = vk::SharingMode::eExclusive,
-      .initialLayout = vk::ImageLayout::eUndefined
-  };
+  // 2. Acquire the next image to draw onto (Your "target_texture" logic)
+  auto r_acquire = swapchain->acquire_next_image(frame.image_available_semaphore);
+  if (!r_acquire) {
+    needs_framebuffer_resize_ = true;
+    return;
+  }
+  current_image_index_ = r_acquire.value();
 
-  vma::AllocationCreateInfo image_alloc_info{
-      .flags = vma::AllocationCreateFlagBits::eDedicatedMemory,
-      .usage = vma::MemoryUsage::eAuto
-  };
-
-  auto vkr_create_image = memory_allocator->get_allocator().createImage(image_info, image_alloc_info);
-  if (vkr_create_image.result != vk::Result::eSuccess) return bird::fail("Failed to create texture image");
-  texture_image = std::move(vkr_create_image.value);
-
-  // Command recording
-  auto r_cmd_buffer = begin_single_time_commands();
-  if (!r_cmd_buffer) return bird::fail(r_cmd_buffer.error());
-  vk::raii::CommandBuffer cmd_buffer = std::move(r_cmd_buffer).value();
-
-  transition_image_layout(cmd_buffer, texture_image,
-                          vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
-                          {}, vk::AccessFlagBits2::eTransferWrite,
-                          vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eTransfer);
-
-  vk::BufferImageCopy region{
-      .imageSubresource = { .aspectMask = vk::ImageAspectFlagBits::eColor, .mipLevel = 0, .baseArrayLayer = 0, .layerCount = 1 },
-      .imageExtent      = {static_cast<uint32_t>(img_asset->width), static_cast<uint32_t>(img_asset->height), 1}
-  };
-
-  cmd_buffer.copyBufferToImage(*staging_buffer, *texture_image, vk::ImageLayout::eTransferDstOptimal, region);
-
-  transition_image_layout(cmd_buffer, texture_image,
-                          vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-                          vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead,
-                          vk::PipelineStageFlagBits2::eTransfer, vk::PipelineStageFlagBits2::eFragmentShader);
-
-  end_single_time_commands(cmd_buffer);
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::create_texture_image_view() {
-  vk::ImageViewCreateInfo view_info{
-      .image            = *texture_image,
-      .viewType         = vk::ImageViewType::e2D,
-      .format           = vk::Format::eR8G8B8A8Srgb,
-      .subresourceRange = { .aspectMask = vk::ImageAspectFlagBits::eColor, .levelCount = 1, .layerCount = 1 }
-  };
-
-  auto vkr_create_view = vk_context->get_logical_device().createImageView(view_info);
-  if (vkr_create_view.result != vk::Result::eSuccess) return bird::fail("Failed to create texture image view");
-  texture_image_view = std::move(vkr_create_view.value);
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::create_texture_sampler() {
-  vk::SamplerCreateInfo sampler_info{
-      .magFilter               = vk::Filter::eNearest,
-      .minFilter               = vk::Filter::eLinear,
-      .mipmapMode              = vk::SamplerMipmapMode::eLinear,
-      .addressModeU            = vk::SamplerAddressMode::eRepeat,
-      .addressModeV            = vk::SamplerAddressMode::eRepeat,
-      .addressModeW            = vk::SamplerAddressMode::eRepeat,
-      .maxAnisotropy           = 1.0f,
-      .compareOp               = vk::CompareOp::eAlways,
-      .borderColor             = vk::BorderColor::eIntOpaqueBlack,
-  };
-
-  auto vkr_create_sampler = vk_context->get_logical_device().createSampler(sampler_info);
-  if (vkr_create_sampler.result != vk::Result::eSuccess) return bird::fail("Failed to create texture sampler");
-  texture_sampler = std::move(vkr_create_sampler.value);
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::create_vertex_buffer() {
-  auto r_buf = memory_allocator->create_buffer(vk::BufferUsageFlagBits::eVertexBuffer, std::span(vertices));
-  if (!r_buf) return bird::fail(r_buf.error());
-  vertex_buffer = std::move(r_buf).value();
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::create_index_buffer() {
-  auto r_buf = memory_allocator->create_buffer(vk::BufferUsageFlagBits::eIndexBuffer, std::span(indices));
-  if (!r_buf) return bird::fail(r_buf.error());
-  index_buffer = std::move(r_buf).value();
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::create_descriptor_pool() {
-  std::array<vk::DescriptorPoolSize, 2> pool_sizes = {{
-                                                          { .type = vk::DescriptorType::eUniformBuffer, .descriptorCount = MAX_FRAMES_IN_FLIGHT },
-                                                          { .type = vk::DescriptorType::eCombinedImageSampler, .descriptorCount = MAX_FRAMES_IN_FLIGHT }
-                                                      }};
-
-  vk::DescriptorPoolCreateInfo pool_info{
-      .flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-      .maxSets       = MAX_FRAMES_IN_FLIGHT,
-      .poolSizeCount = static_cast<uint32_t>(pool_sizes.size()),
-      .pPoolSizes    = pool_sizes.data()
-  };
-
-  auto vkr_create = vk_context->get_logical_device().createDescriptorPool(pool_info);
-  if (vkr_create.result != vk::Result::eSuccess) return bird::fail("Failed to create descriptor pool");
-  descriptor_pool = std::move(vkr_create.value);
-
-  std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, *pipeline->get_descriptor_set_layout());
-  vk::DescriptorSetAllocateInfo alloc_info{
-      .descriptorPool     = *descriptor_pool,
-      .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
-      .pSetLayouts        = layouts.data()
-  };
-
-  auto vkr_alloc_sets = vk_context->get_logical_device().allocateDescriptorSets(alloc_info);
-  if (vkr_alloc_sets.result != vk::Result::eSuccess) return bird::fail("Failed to allocate descriptor sets");
-
-  // Assign sets into the FrameData structs
-  for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-    frames[i].descriptor_set = std::move(vkr_alloc_sets.value[i]);
-
-    vk::DescriptorBufferInfo buffer_info{
-        .buffer = *frames[i].uniform_buffer,
-        .offset = 0,
-        .range  = sizeof(ViewData)
-    };
-
-    vk::DescriptorImageInfo image_info{
-        .sampler     = *texture_sampler,
-        .imageView   = *texture_image_view,
-        .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal
-    };
-
-    std::array<vk::WriteDescriptorSet, 2> descriptor_writes = {{
-                                                                   { .dstSet = *frames[i].descriptor_set, .dstBinding = 0, .dstArrayElement = 0, .descriptorCount = 1, .descriptorType = vk::DescriptorType::eUniformBuffer, .pBufferInfo = &buffer_info },
-                                                                   { .dstSet = *frames[i].descriptor_set, .dstBinding = 1, .dstArrayElement = 0, .descriptorCount = 1, .descriptorType = vk::DescriptorType::eCombinedImageSampler, .pImageInfo = &image_info }
-                                                               }};
-
-    vk_context->get_logical_device().updateDescriptorSets(descriptor_writes, nullptr);
+  // 3. Begin the Vulkan Command Buffer for this frame
+  if (frame.command_buffer.begin({}) != vk::Result::eSuccess) {
+    std::cerr << "Failed to begin command buffer\n";
+    return;
   }
 
-  return bird::ok();
-}
-
-Result<void> VulkanRenderer::record_command_buffer(FrameData& frame) {
-  if (frame.command_buffer.begin({}) != vk::Result::eSuccess) return bird::fail("Failed to begin command buffer");
-
+  // 4. Transition the target texture so we can render to it
   transition_image_layout(frame.command_buffer, swapchain->get_images()[current_image_index_],
                           vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
                           {}, vk::AccessFlagBits2::eColorAttachmentWrite,
                           vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+}
+
+void VulkanRenderer::begin_pass(const ViewData& view_data) {
+  if (needs_framebuffer_resize_ || is_context_lost_) return;
+  current_view_data_ = view_data;
+}
+
+void VulkanRenderer::submit(const RenderQuadCommand render_command) {
+  pending_commands.push_back(render_command);
+}
+
+void VulkanRenderer::submit(const std::vector<RenderQuadCommand>& render_commands) {
+  pending_commands.insert(pending_commands.end(),
+                          render_commands.begin(),
+                          render_commands.end());
+}
+
+void VulkanRenderer::end_pass() {
+  if (needs_framebuffer_resize_ || is_context_lost_ || pending_commands.empty()) return;
+
+  FrameData& frame = frames[current_frame_];
+
+  // --- 1. CPU PHASE: FLUSH THE COMMAND QUEUE ---
+  std::vector<MaterialID> pass_materials = get_needed_pass_materials();
+  auto r_prepare_materials = material_handler->prepare_materials(pass_materials);
+  if (!r_prepare_materials) {
+    std::cerr << "VulkanRenderer::end_pass failed to prepare materials: " << r_prepare_materials.error() << std::endl;
+  }
+
+  // Build batches (This internally calls pending_commands.clear(), giving you a fresh queue)
+  build_batches();
+
+  // Update CPU-mapped GPU buffers
+  update_ubo(current_view_data_, frame);
+  update_quad_ssbo(frame);
+
+  // --- 2. GPU PHASE: RECORD RENDER COMMANDS ---
 
   vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 1.0f, 0.5f, 1.0f);
   vk::RenderingAttachmentInfo attachmentInfo = {
-      .imageView   = *swapchain->get_image_views()[current_image_index_],
+      .imageView   = *swapchain->get_image_views()[current_image_index_], // Or your custom target_texture View
       .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
       .loadOp      = vk::AttachmentLoadOp::eClear,
       .storeOp     = vk::AttachmentStoreOp::eStore,
@@ -328,57 +328,54 @@ Result<void> VulkanRenderer::record_command_buffer(FrameData& frame) {
 
   frame.command_buffer.beginRendering(renderingInfo);
 
-  pipeline->bind(frame.command_buffer);
-
-  frame.command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline->get_layout(), 0, {*frame.descriptor_set}, nullptr);
-  frame.command_buffer.bindVertexBuffers(0, *vertex_buffer, {0});
-  frame.command_buffer.bindIndexBuffer(*index_buffer, 0, vk::IndexType::eUint16);
   frame.command_buffer.setViewport(0, vk::Viewport(0.0f, static_cast<float>(swapchain->get_extent().height), static_cast<float>(swapchain->get_extent().width), -static_cast<float>(swapchain->get_extent().height), 0.0f, 1.0f));
   frame.command_buffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), swapchain->get_extent()));
 
-  frame.command_buffer.drawIndexed(indices.size(), 1, 0, 0, 0);
+  std::array<vk::DescriptorSet, 2> sets = {
+      *frame.descriptor_set,                 // Set 0: UBO + Quad SSBO
+      material_handler->get_descriptor_set() // Set 1: Bindless Textures + Material SSBO
+  };
+
+  // Issue draw calls from batches
+  for (const auto& batch : batches) {
+    if (batch.quad_count == 0) continue;
+
+    MaterialID batch_mat_id = batch_materials_pool[batch.first_material_offset];
+    const Material& mat = material_pool->get(batch_mat_id);
+
+    auto r_get_pipeline = pipeline_cache->get(mat.vertex_shader, mat.fragment_shader);
+    if (!r_get_pipeline) {
+      std::cerr << "VulkanRenderer::end_pass failed to get pipeline: " << r_get_pipeline.error() << std::endl;
+      continue;
+    }
+
+    VulkanPipeline* pipeline = r_get_pipeline.value();
+    pipeline->bind(frame.command_buffer);
+
+    frame.command_buffer.bindDescriptorSets(
+        vk::PipelineBindPoint::eGraphics,
+        *pipeline->get_layout(),
+        0, sets, nullptr
+    );
+
+    frame.command_buffer.draw(batch.quad_count * 6, 1, batch.first_quad * 6, 0);
+  }
 
   frame.command_buffer.endRendering();
-
-  transition_image_layout(frame.command_buffer, swapchain->get_images()[current_image_index_],
-                          vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR,
-                          vk::AccessFlagBits2::eColorAttachmentWrite, {},
-                          vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe);
-
-  if (frame.command_buffer.end() != vk::Result::eSuccess) return bird::fail("Failed to end command buffer");
-
-  return bird::ok();
 }
 
-void VulkanRenderer::begin_frame() {
-  if (needs_framebuffer_resize_ || is_context_lost_) return;
-
-  FrameData& frame = frames[current_frame_];
-  auto vkr_fence = vk_context->get_logical_device().waitForFences(*frame.in_flight_fence, vk::True, UINT64_MAX);
-
-  if (vkr_fence == vk::Result::eErrorDeviceLost) {
-    is_context_lost_ = true;
-    return;
+std::vector<MaterialID> VulkanRenderer::get_needed_pass_materials() {
+  std::vector<MaterialID> needed_materials;
+  needed_materials.reserve(this->pending_commands.size());
+  for (const auto& cmd : this->pending_commands) {
+    needed_materials.push_back(cmd.material_id);
   }
-  vk_context->get_logical_device().resetFences(*frame.in_flight_fence);
-}
 
-void VulkanRenderer::begin_pass(const ViewData& view_data) {
-  if (needs_framebuffer_resize_ || is_context_lost_) return;
-
-  update_ubo(view_data, frames[current_frame_]);
-
-  auto r_acquire = swapchain->acquire_next_image(frames[current_frame_].image_available_semaphore);
-  if (!r_acquire) {
-    needs_framebuffer_resize_ = true;
-    return;
-  }
-  current_image_index_ = r_acquire.value();
-}
-
-void VulkanRenderer::end_pass() {
-  if (needs_framebuffer_resize_ || is_context_lost_) return;
-  (void) record_command_buffer(frames[current_frame_]);
+  std::sort(needed_materials.begin(), needed_materials.end(), [](const MaterialID& a, const MaterialID& b) {
+    return a.id < b.id;
+  });
+  needed_materials.erase(std::unique(needed_materials.begin(), needed_materials.end()), needed_materials.end());
+  return std::move(needed_materials);
 }
 
 void VulkanRenderer::end_frame() {
@@ -386,7 +383,20 @@ void VulkanRenderer::end_frame() {
 
   FrameData& frame = frames[current_frame_];
 
-  vk::PipelineStageFlags waitDestinationStageMask( vk::PipelineStageFlagBits::eColorAttachmentOutput );
+  // 1. Transition image to presentation layout
+  transition_image_layout(frame.command_buffer, swapchain->get_images()[current_image_index_],
+                          vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR,
+                          vk::AccessFlagBits2::eColorAttachmentWrite, {},
+                          vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe);
+
+  // 2. End the command buffer
+  if (frame.command_buffer.end() != vk::Result::eSuccess) {
+    std::cerr << "Failed to end command buffer\n";
+    return;
+  }
+
+  // 3. Submit the frame to the GPU queue
+  vk::PipelineStageFlags waitDestinationStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput);
   const vk::SubmitInfo submitInfo{
       .waitSemaphoreCount   = 1,
       .pWaitSemaphores      = &*frame.image_available_semaphore,
@@ -394,21 +404,28 @@ void VulkanRenderer::end_frame() {
       .commandBufferCount   = 1,
       .pCommandBuffers      = &*frame.command_buffer,
       .signalSemaphoreCount = 1,
-      .pSignalSemaphores    = &*render_finished_semaphores[current_image_index_] // FIX applied
+      .pSignalSemaphores    = &*render_finished_semaphores[current_image_index_]
   };
 
   vk_context->get_graphics_queue().submit(submitInfo, *frame.in_flight_fence);
 
-  auto r_present = swapchain->present(vk_context->get_graphics_queue(), render_finished_semaphores[current_image_index_], current_image_index_); // FIX applied
+  // 4. Present it to the screen
+  auto r_present = swapchain->present(vk_context->get_graphics_queue(), render_finished_semaphores[current_image_index_], current_image_index_);
   if (!r_present) {
     needs_framebuffer_resize_ = true;
   }
 
+  frames_rendered->count++;
+  material_handler->free_unused_materials();
   move_to_next_frame();
 }
 
 void VulkanRenderer::update_ubo(const ViewData& view_data, FrameData& frame) {
   memcpy(frame.uniform_buffer_mapped, &view_data, sizeof(view_data));
+}
+
+void VulkanRenderer::update_quad_ssbo(FrameData& frame) {
+  std::memcpy(frame.quad_buffer_mapped, quads.data(), sizeof(bird::Quad) * quads.size());
 }
 
 Result<void> VulkanRenderer::resize_framebuffer(uint32_t width, uint32_t height) {
@@ -426,36 +443,6 @@ Result<void> VulkanRenderer::resize_framebuffer(uint32_t width, uint32_t height)
 
   needs_framebuffer_resize_ = false;
   return bird::ok();
-}
-
-Result<vk::raii::CommandBuffer> VulkanRenderer::begin_single_time_commands() {
-  vk::CommandBufferAllocateInfo alloc_info{
-      .commandPool        = *command_pool,
-      .level              = vk::CommandBufferLevel::ePrimary,
-      .commandBufferCount = 1
-  };
-
-  auto vkr_alloc = vk_context->get_logical_device().allocateCommandBuffers(alloc_info);
-  if (vkr_alloc.result != vk::Result::eSuccess) return bird::fail("Failed to allocate command buffer");
-
-  vk::raii::CommandBuffer command_buffer = std::move(vkr_alloc.value[0]);
-
-  vk::CommandBufferBeginInfo begin_info{.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
-  if (command_buffer.begin(begin_info) != vk::Result::eSuccess) return bird::fail("Failed to begin");
-
-  return std::move(command_buffer);
-}
-
-void VulkanRenderer::end_single_time_commands(vk::raii::CommandBuffer& command_buffer) {
-  (void)command_buffer.end();
-
-  vk::SubmitInfo submit_info{
-      .commandBufferCount = 1,
-      .pCommandBuffers    = &*command_buffer
-  };
-
-  vk_context->get_graphics_queue().submit(submit_info, nullptr);
-  vk_context->get_graphics_queue().waitIdle();
 }
 
 void VulkanRenderer::transition_image_layout(
@@ -492,6 +479,101 @@ inline void VulkanRenderer::move_to_next_frame() {
 bool VulkanRenderer::is_context_lost() const noexcept { return is_context_lost_; }
 bool VulkanRenderer::needs_framebuffer_resize() const noexcept { return needs_framebuffer_resize_; }
 
-void VulkanRenderer::submit(const RenderCommand render_command) {}
+void VulkanRenderer::build_batches() {
+  // 1. Clear GPU-bound structures (clears count, but keeps allocated capacity)
+  quads.clear();
+  batches.clear();
+  batch_materials_pool.clear();
+
+  if (pending_commands.empty()) return;
+
+  // 2. Sort all commands for the frame
+  std::stable_sort(pending_commands.begin(), pending_commands.end(),
+                   [this](const RenderQuadCommand& a, const RenderQuadCommand& b) {
+                     if (a.z_index != b.z_index) {
+                       return a.z_index < b.z_index; // Primary: Z-Index (Back to front)
+                     }
+
+                     const Material& mat_a = material_pool->get(a.material_id);
+                     const Material& mat_b = material_pool->get(b.material_id);
+
+                     CombinedShaderKey shaders_a{ mat_a.vertex_shader.get_packed_id(), mat_a.fragment_shader.get_packed_id() };
+                     CombinedShaderKey shaders_b{ mat_b.vertex_shader.get_packed_id(), mat_b.fragment_shader.get_packed_id() };
+
+                     if (shaders_a != shaders_b) {
+                       return shaders_a < shaders_b; // Secondary: Shader ID
+                     }
+
+                     // Tertiary: Material ID (using the underlying 64-bit int for grouping)
+                     return a.material_id.id < b.material_id.id;
+                   });
+
+  // 3. Pre-allocate quad memory to prevent reallocations
+  quads.reserve(pending_commands.size());
+
+  std::optional<CombinedShaderKey> current_shader;
+
+  // 4. Build batches and quads
+  for (const auto& cmd : pending_commands) {
+    // Resolve Material
+    auto r_get_mat_idx = material_handler->get_material_index(cmd.material_id);
+    if (!r_get_mat_idx) {
+      std::cerr << "VulkanRenderer::build_batches failed to get material index for material " << cmd.material_id.id << ": " << r_get_mat_idx.error() << std::endl;
+      continue;
+    }
+    uint32_t gpu_material_index = r_get_mat_idx.value();
+
+    const Material& mat = material_pool->get(cmd.material_id);
+    CombinedShaderKey shader_key{ mat.vertex_shader.get_packed_id(), mat.fragment_shader.get_packed_id() };
+
+    // Check if we need a new batch (only breaks on shader change)
+    if (!current_shader.has_value() || shader_key != current_shader.value()) {
+      RenderBatch new_batch;
+      new_batch.shader_key = shader_key;
+      new_batch.first_quad = static_cast<uint32_t>(quads.size());
+      new_batch.quad_count = 0;
+
+      new_batch.first_material_offset = static_cast<uint32_t>(batch_materials_pool.size());
+      new_batch.material_count = 0;
+
+      batches.push_back(new_batch);
+      current_shader = shader_key;
+    }
+
+    RenderBatch& active_batch = batches.back();
+
+    // 5. Track unique materials for this batch using the actual MaterialID
+    auto mat_start = batch_materials_pool.begin() + active_batch.first_material_offset;
+    auto mat_end = batch_materials_pool.end();
+
+    // Find the material in the current batch's tracked list
+    auto it = std::find(mat_start, mat_end, cmd.material_id);
+
+    // Calculate the LOCAL index for the shader (0, 1, 2...)
+    uint32_t local_mat_idx = static_cast<uint32_t>(std::distance(mat_start, it));
+
+    // If it wasn't found, add it to the pool
+    if (it == mat_end) {
+      batch_materials_pool.push_back(cmd.material_id);
+      active_batch.material_count++;
+    }
+
+    // 6. Build the quad
+    Quad quad;
+    quad.transform[0] = glm::vec2(cmd.transform[0]);
+    quad.transform[1] = glm::vec2(cmd.transform[1]);
+    quad.transform[2] = glm::vec2(cmd.transform[2]);
+
+    // Important: Assign the GLOBAL GPU slot index so the shader looks up the right material
+    quad.material_index = gpu_material_index;
+    quad._padding = 0;
+
+    quads.push_back(quad);
+    active_batch.quad_count++;
+  }
+
+  // 7. Clear pending commands so they don't bleed into the next frame
+  pending_commands.clear();
+}
 
 } // bird

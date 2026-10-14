@@ -8,7 +8,7 @@
 namespace bird {
 
 /**
- * @brief Unique identifier for a node. It consists of a 32-bit index and a 32-bit generation-counter.
+ * @brief Unique identifier for a material. It consists of a 32-bit index and a 32-bit generation-counter.
  */
 struct MaterialID {
   uint64_t id;
@@ -36,3 +36,14 @@ struct MaterialID {
 inline constexpr MaterialID MaterialID::INVALID{ std::numeric_limits<uint64_t>::max() };
 
 } // bird
+
+namespace std {
+
+template <>
+struct hash<bird::MaterialID> {
+  std::size_t operator()(const bird::MaterialID& m) const noexcept {
+    return std::hash<int>{}(m.id);
+  }
+};
+
+} // std

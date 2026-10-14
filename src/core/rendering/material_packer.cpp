@@ -1,9 +1,13 @@
 #include "rendering/material_packer.hpp"
 
+#include <resources/asset_handle.hpp>
+#include "resources/asset_types.hpp"
+
 namespace bird {
 
 PackedMaterial MaterialPacker::pack(const Material& material, const MaterialShaderLayout& layout) const {
   std::vector<std::byte> buffer(layout.total_size, std::byte{0});
+  std::vector<AssetHandle<ImageAsset>> referenced_textures;
 
   for (const auto& [prop_name, prop_value] : material.properties) {
     auto it = layout.properties.find(prop_name); // Look up the property in the layout map

@@ -14,17 +14,21 @@
 #include <string>
 #include <memory>
 
-#include <rendering/vulkan/vertex.hpp>
+#include <rendering/vulkan/quad.hpp>
+#include <rendering/vulkan/render_batch.hpp>
 #include <rendering/vulkan/vulkan_context.hpp>
 #include <rendering/vulkan/vulkan_memory_allocator.hpp>
 #include <rendering/vulkan/vulkan_swapchain.hpp>
+#include <rendering/vulkan/vulkan_pipeline_cache.hpp>
 #include <rendering/vulkan/vulkan_pipeline.hpp>
+#include <rendering/vulkan/vulkan_material_handler.hpp>
 #include <rendering/rendering_context.hpp>
-#include <resources/render_command.hpp>
+#include <resources/render_commands.hpp>
 #include <resources/asset_handle.hpp>
 #include <resources/asset_manager.hpp>
 #include <resources/asset_types.hpp>
 #include <utils/result.hpp>
+#include "utils/counter.hpp"
 
 namespace bird {
 
@@ -33,10 +37,12 @@ class VulkanRenderer : public IRenderer {
   ~VulkanRenderer();
 
   static constexpr inline uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+  static constexpr inline size_t MAX_QUADS = 100000;
 
   void begin_frame() override;
   void begin_pass(const ViewData& view_data) override;
-  void submit(const RenderCommand render_command) override;
+  void submit(const RenderQuadCommand render_command) override;
+  void submit(const std::vector<RenderQuadCommand>& render_commands) override;
   void end_pass() override;
   void end_frame() override;
 
@@ -50,31 +56,25 @@ class VulkanRenderer : public IRenderer {
 
   struct FrameData {
     vk::raii::Semaphore image_available_semaphore = nullptr;
-    vk::raii::Fence     in_flight_fence           = nullptr;
-    vk::raii::CommandBuffer command_buffer        = nullptr;
+    vk::raii::Fence in_flight_fence = nullptr;
 
-    vma::raii::Buffer   uniform_buffer            = nullptr;
-    void*               uniform_buffer_mapped     = nullptr;
+    vk::raii::CommandBuffer command_buffer = nullptr;
 
-    vk::raii::DescriptorSet descriptor_set        = nullptr;
+    vma::raii::Buffer uniform_buffer = nullptr;
+    void* uniform_buffer_mapped = nullptr;
+    vma::raii::Buffer quad_buffer = nullptr;
+    Quad* quad_buffer_mapped = nullptr;
+
+    vk::raii::DescriptorSet descriptor_set = nullptr;
   };
 
-  Result<void> create_texture_image();
-  Result<void> create_texture_image_view();
-  Result<void> create_texture_sampler();
-
   Result<void> create_command_pool();
-  Result<void> create_vertex_buffer();
-  Result<void> create_index_buffer();
-  Result<void> create_descriptor_pool();
-
+  Result<void> create_descriptor_set_layout();
   Result<void> create_frame_data();
 
-  Result<vk::raii::CommandBuffer> begin_single_time_commands();
-  void end_single_time_commands(vk::raii::CommandBuffer& command_buffer);
-
-  Result<void> record_command_buffer(FrameData& frame);
+  void build_batches();
   void update_ubo(const ViewData& view_data, FrameData& frame);
+  void update_quad_ssbo(FrameData& frame);
   inline void move_to_next_frame();
 
   void transition_image_layout(
@@ -87,20 +87,17 @@ class VulkanRenderer : public IRenderer {
       vk::PipelineStageFlags2 src_stage_mask,
       vk::PipelineStageFlags2 dst_stage_mask);
 
+  std::unique_ptr<Counter> frames_rendered;
   std::unique_ptr<VulkanContext> vk_context;
   std::unique_ptr<VulkanMemoryAllocator> memory_allocator;
   std::unique_ptr<VulkanSwapchain> swapchain;
-  std::unique_ptr<VulkanPipeline> pipeline;
+  std::unique_ptr<VulkanMaterialHandler> material_handler;
+  std::unique_ptr<VulkanPipelineCache> pipeline_cache;
 
-  vma::raii::Buffer vertex_buffer = nullptr;
-  vma::raii::Buffer index_buffer = nullptr;
+  vk::raii::DescriptorSetLayout descriptor_set_layout = nullptr;
+  vk::raii::DescriptorPool ubo_descriptor_pool = nullptr;
 
-  vk::raii::DescriptorPool descriptor_pool = nullptr;
   vk::raii::CommandPool command_pool = nullptr;
-
-  vma::raii::Image texture_image = nullptr;
-  vk::raii::ImageView texture_image_view = nullptr;
-  vk::raii::Sampler texture_sampler = nullptr;
 
   std::vector<FrameData> frames;
   std::vector<vk::raii::Semaphore> render_finished_semaphores;
@@ -110,20 +107,18 @@ class VulkanRenderer : public IRenderer {
   bool needs_framebuffer_resize_ = false;
   uint32_t current_image_index_ = 0;
   uint32_t current_frame_ = 0;
+  ViewData current_view_data_;
 
   // bird systems
   AssetManager* asset_manager;
+  MaterialPool* material_pool;
 
-  const std::vector<Vertex> vertices = {
-      {{-0.5f, -0.5f}, {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-      {{ 0.5f,  0.5f}, {0.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-      {{-0.5f,  0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-      {{ 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}};
+  std::vector<RenderQuadCommand> pending_commands;
+  std::vector<RenderBatch> batches;
+  std::vector<Quad> quads;
+  std::vector<MaterialID> batch_materials_pool;
 
-  const std::vector<uint16_t> indices = {
-      0, 3, 1,   // Top-Left -> Top-Right -> Bottom-Right (CW)
-      0, 1, 2    // Top-Left -> Bottom-Right -> Bottom-Left (CW)
-  };
+  std::vector<MaterialID> get_needed_pass_materials();
 };
 
-} // namespace bird
+} // bird

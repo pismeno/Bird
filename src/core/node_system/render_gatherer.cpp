@@ -7,11 +7,11 @@
 #include <node_system/scene.hpp>
 #include <node_system/managers/drawable_manager.hpp>
 #include <node_system/managers/transform_manager.hpp>
-#include <resources/render_command.hpp>
+#include <resources/render_commands.hpp>
 
 namespace bird {
 
-std::vector<RenderCommand> RenderGatherer::gather_render_commands(Scene& scene) {
+std::vector<RenderQuadCommand> RenderGatherer::gather_render_commands(Scene& scene) {
   auto drawable_manager = scene.get_manager<DrawableManager>();
   auto transform_manager = scene.get_manager<TransformManager>();
 
@@ -22,13 +22,13 @@ std::vector<RenderCommand> RenderGatherer::gather_render_commands(Scene& scene) 
 
   uint32_t max_index = scene.get_highest_allocated_node_index();
 
-  std::vector<RenderCommand> commands;
+  std::vector<RenderQuadCommand> commands;
   commands.reserve(max_index);
 
   for (uint32_t i = 0; i < max_index; ++i) {
     if (drawables[i].is_visible) {
 
-      commands.emplace_back(RenderCommand{
+      commands.emplace_back(RenderQuadCommand{
           matrices[i],
           //drawables[i].texture_id,
           drawables[i].z_index

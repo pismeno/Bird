@@ -1,6 +1,6 @@
 #pragma once
 
-#include <resources/render_command.hpp>
+#include <resources/render_commands.hpp>
 #include <node_system/scene.hpp>
 
 namespace bird {
@@ -14,7 +14,7 @@ class RenderGatherer {
    * @param scene reference to the scene
    * @return vector of generated render commands
    */
-  std::vector<RenderCommand> gather_render_commands(Scene& scene);
+  std::vector<RenderQuadCommand> gather_render_commands(Scene& scene);
 };
 
 } // bird

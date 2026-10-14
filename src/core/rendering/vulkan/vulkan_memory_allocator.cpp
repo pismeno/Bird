@@ -35,7 +35,7 @@ Result<void> VulkanMemoryAllocator::create_vma(VulkanContext& vk_context) {
   return bird::ok();
 }
 
-Result<vma::raii::Buffer> VulkanMemoryAllocator::create_buffer(vk::BufferUsageFlags usage, vk::DeviceSize size, const void* data) {
+Result<vma::raii::Buffer> VulkanMemoryAllocator::create_buffer(vk::BufferUsageFlags usage, vk::DeviceSize size, const void* data) const {
   vk::BufferCreateInfo buffer_info{
       .size        = size,
       .usage       = usage,
