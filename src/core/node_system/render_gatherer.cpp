@@ -27,11 +27,10 @@ std::vector<RenderQuadCommand> RenderGatherer::gather_render_commands(Scene& sce
 
   for (uint32_t i = 0; i < max_index; ++i) {
     if (drawables[i].is_visible) {
-
       commands.emplace_back(RenderQuadCommand{
-          matrices[i],
-          //drawables[i].texture_id,
-          drawables[i].z_index
+          .transform = matrices[i],
+          .material_id = drawables[i].material_id,
+          .z_index = drawables[i].z_index
       });
     }
   }

@@ -71,4 +71,22 @@ Result<void> DrawableManager::on_deserialize_scene(const nlohmann::json &json) {
   return bird::ok();
 }
 
+Result<void> DrawableManager::set_node_visible(NodeID node_id, bool visible) {
+  if (!has_drawable(node_id)) return bird::fail("Node has no drawable");
+  drawables[node_id.index()].is_visible = visible;
+  return bird::ok();
+}
+
+Result<void> DrawableManager::set_node_material(NodeID node_id, MaterialID material_id) {
+  if (!has_drawable(node_id)) return bird::fail("Node has no drawable");
+  drawables[node_id.index()].material_id = material_id;
+  return bird::ok();
+}
+
+Result<void> DrawableManager::set_node_z_index(NodeID node_id, uint32_t z_index) {
+  if (!has_drawable(node_id)) return bird::fail("Node has no drawable");
+  drawables[node_id.index()].z_index = z_index;
+  return bird::ok();
+}
+
 } // bird
