@@ -25,9 +25,6 @@ struct RendererOptions {
 
 class IRenderer {
 public:
-  /// @brief Pixels per Unit
-  static constexpr float PPU = 100.0f; // TODO move into some sort of settings
-
   explicit IRenderer() = default;
   virtual ~IRenderer() = default;
 

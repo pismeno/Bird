@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 
 #include <utils/result.hpp>
+#include "glm/vec4.hpp"
 
 namespace bird {
 
@@ -74,6 +75,12 @@ Result<void> DrawableManager::on_deserialize_scene(const nlohmann::json &json) {
 Result<void> DrawableManager::set_node_visible(NodeID node_id, bool visible) {
   if (!has_drawable(node_id)) return bird::fail("Node has no drawable");
   drawables[node_id.index()].is_visible = visible;
+  return bird::ok();
+}
+
+Result<void> DrawableManager::set_node_size(NodeID node_id, glm::vec2 size) {
+  if (!has_drawable(node_id)) return bird::fail("Node has no drawable");
+  drawables[node_id.index()].size = size;
   return bird::ok();
 }
 

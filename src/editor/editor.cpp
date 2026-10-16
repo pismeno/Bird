@@ -183,6 +183,10 @@ Result<void> Editor::init() {
 }
 
 Result<void> Editor::run() {
+  auto r_get_texture = asset_manager->acquire<ImageAsset>("editor://test_img.png");
+  if (!r_get_texture) return bird::fail(r_get_texture.error());
+  AssetHandle<ImageAsset> texture = std::move(r_get_texture).value();
+
   MaterialID test_mat_id = MaterialID::from(0, 0);
   MaterialID test_mat_id2 = MaterialID::from(1, 0);
 
@@ -198,17 +202,29 @@ Result<void> Editor::run() {
 
   auto t_1 = transform_manager->set_node_position(root_node, glm::vec2(0.0f, 0.0f));
   if (!t_1) return t_1;
-  auto t_2 = transform_manager->set_node_position(child_node1, glm::vec2(2.0f, 2.0f));
+  auto t_2 = transform_manager->set_node_position(child_node1, glm::vec2(1.0f, 1.0f));
   if (!t_2) return t_2;
-  auto t_3 = transform_manager->set_node_position(child_node2, glm::vec2(3.0f, 3.0f));
+  auto t_3 = transform_manager->set_node_position(child_node2, glm::vec2(1.0f, 1.5f));
   if (!t_3) return t_3;
 
-  auto r_scale = transform_manager->set_node_scale(root_node, glm::vec2(100.0f, 100.0f));
+  auto r_scale = transform_manager->set_node_scale(root_node, glm::vec2(8.0f, 8.0f));
   if (!r_scale) return r_scale;
   auto r_scale2 = transform_manager->set_node_scale(child_node1, glm::vec2(1.0f, 1.0f));
   if (!r_scale2) return r_scale2;
   auto r_scale3 = transform_manager->set_node_scale(child_node2, glm::vec2(1.0f, 1.0f));
   if (!r_scale3) return r_scale3;
+
+  glm::vec2 world_size = glm::vec2(
+      (float)texture->width / PPU,
+      (float)texture->height / PPU
+  );
+
+  auto r_s_1 = drawable_manager->set_node_size(root_node, world_size);
+  if (!r_s_1) return r_s_1;
+  auto r_s_2 = drawable_manager->set_node_size(child_node1, world_size);
+  if (!r_s_2) return r_s_2;
+  auto r_s_3 = drawable_manager->set_node_size(child_node2, world_size);
+  if (!r_s_3) return r_s_3;
 
   auto r_mat_1 = drawable_manager->set_node_material(root_node, test_mat_id);
   if (!r_mat_1) return r_mat_1;
@@ -228,13 +244,19 @@ Result<void> Editor::run() {
   while (!window->should_close()) {
     bird::ViewData view_data{};
 
-    auto r_set = transform_manager->set_node_position(root_node, glm::vec2(inputs.get_mouse_position().x, inputs.get_mouse_position().y));
-    if (!r_set) std::cerr << r_set.error();
 
     float width = static_cast<float>(window->get_framebuffer_width());
     float height = static_cast<float>(window->get_framebuffer_height());
 
-    view_data.projection = glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
+    // FIX 3: Divide screen dimensions by PPU so projection maps to World Units.
+    // (Preserving your top-left 0,0 origin style)
+    float world_width = width / PPU;
+    float world_height = height / PPU;
+
+    auto r_move_to_mouse =  transform_manager->set_node_position(root_node, { inputs.get_mouse_x() / PPU, inputs.get_mouse_y() / PPU });
+    if (!r_move_to_mouse) return r_move_to_mouse;
+
+    view_data.projection = glm::ortho(0.0f, world_width, world_height, 0.0f, -1.0f, 1.0f);
     view_data.view = glm::mat4(1.0f);
     view_data.viewProjection = view_data.projection * view_data.view;
 

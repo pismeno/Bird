@@ -27,8 +27,14 @@ std::vector<RenderQuadCommand> RenderGatherer::gather_render_commands(Scene& sce
 
   for (uint32_t i = 0; i < max_index; ++i) {
     if (drawables[i].is_visible) {
+      glm::mat3 size_offset(1.0f);
+      size_offset[0][0] = drawables[i].size.x;
+      size_offset[1][1] = drawables[i].size.y;
+
+      glm::mat3 final_transform = matrices[i] * size_offset;
+
       commands.emplace_back(RenderQuadCommand{
-          .transform = matrices[i],
+          .transform = final_transform,
           .material_id = drawables[i].material_id,
           .z_index = drawables[i].z_index
       });

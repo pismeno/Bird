@@ -1,11 +1,12 @@
 #pragma once
 
-#include <node_system/inode_manager.hpp>
-
 #include <vector>
 #include <cstdint>
 #include <limits>
 
+#include <glm/glm.hpp>
+
+#include <node_system/inode_manager.hpp>
 #include <node_system/node_types.hpp>
 #include <resources/material_types.hpp>
 
@@ -14,6 +15,7 @@ namespace bird {
 struct Drawable {
   bool is_visible = false;
 
+  glm::vec2 size = {1.0f, 1.0f};
   MaterialID material_id = MaterialID::INVALID;
   uint32_t z_index = 0;
 };
@@ -42,6 +44,7 @@ class DrawableManager : public NodeManagerBase<DrawableManager> {
   [[nodiscard]] inline const std::vector<Drawable>& get_all_drawables() const noexcept { return drawables; }
 
   Result<void> set_node_visible(NodeID node_id, bool visible);
+  Result<void> set_node_size(NodeID node_id, glm::vec2 size);
   Result<void> set_node_material(NodeID node_id, MaterialID material_id);
   Result<void> set_node_z_index(NodeID node_id, uint32_t z_index);
 

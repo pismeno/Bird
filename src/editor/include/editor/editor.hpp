@@ -26,6 +26,8 @@ namespace bird {
 
 class Editor {
  public:
+  static constexpr float PPU = 32.0f; // TODO move into some sort of settings
+
   explicit Editor() = default;
   ~Editor() = default;
 
