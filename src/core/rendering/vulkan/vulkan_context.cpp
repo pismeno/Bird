@@ -9,22 +9,22 @@
 
 #include "utils/result.hpp"
 
-namespace bird {
+namespace mole {
 
 Result<std::unique_ptr<VulkanContext>> VulkanContext::create(void* native_window_handle) {
   auto context = std::unique_ptr<VulkanContext>(new VulkanContext());
 
   auto r_create_instance = context->create_instance();
-  if (!r_create_instance) return bird::fail(r_create_instance.error());
+  if (!r_create_instance) return mole::fail(r_create_instance.error());
 
   auto r_create_surface = context->create_surface(native_window_handle);
-  if (!r_create_surface) return bird::fail(r_create_surface.error());
+  if (!r_create_surface) return mole::fail(r_create_surface.error());
 
   auto r_pick_physical_device = context->pick_physical_device();
-  if (!r_pick_physical_device) return bird::fail(r_pick_physical_device.error());
+  if (!r_pick_physical_device) return mole::fail(r_pick_physical_device.error());
 
   auto r_create_logical_device = context->create_logical_device();
-  if (!r_create_logical_device) return bird::fail(r_create_logical_device.error());
+  if (!r_create_logical_device) return mole::fail(r_create_logical_device.error());
 
   return std::move(context);
 }
@@ -33,7 +33,7 @@ Result<void> VulkanContext::create_instance() {
   vk::ApplicationInfo app_info{
       .pApplicationName = "Hello Triangle",
       .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-      .pEngineName = "BirdEngine",
+      .pEngineName = "MoleEngine",
       .engineVersion = VK_MAKE_VERSION(1, 0, 0),
       .apiVersion = VK_API_VERSION_1_3
   };
@@ -61,12 +61,12 @@ Result<void> VulkanContext::create_instance() {
 
   auto vkr_create = vk::createInstance(create_info);
   if (vkr_create.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create Vulkan Instance");
+    return mole::fail("Failed to create Vulkan Instance");
   }
 
   vk_instance = vk::raii::Instance(context, vkr_create.value);
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> VulkanContext::create_surface(void* native_window_handle) {
@@ -79,11 +79,11 @@ Result<void> VulkanContext::create_surface(void* native_window_handle) {
   vk::Instance raw_instance = *vk_instance;
   auto surf_res = raw_instance.createWin32SurfaceKHR(createInfo);
   if (surf_res.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create Win32 Surface");
+    return mole::fail("Failed to create Win32 Surface");
   }
 
   surface = vk::raii::SurfaceKHR(vk_instance, surf_res.value);
-  return bird::ok();
+  return mole::ok();
 }
 
 inline uint32_t calculate_texture_capacity(const vk::PhysicalDeviceLimits& limits) {
@@ -97,7 +97,7 @@ inline uint32_t calculate_texture_capacity(const vk::PhysicalDeviceLimits& limit
 Result<void> VulkanContext::pick_physical_device() {
   auto phys_devs_res = vk_instance.enumeratePhysicalDevices();
   if (phys_devs_res.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to enumerate physical devices");
+    return mole::fail("Failed to enumerate physical devices");
   }
 
   std::vector<vk::raii::PhysicalDevice> physicalDevices = phys_devs_res.value;
@@ -106,12 +106,12 @@ Result<void> VulkanContext::pick_physical_device() {
   });
 
   if (devIter == physicalDevices.end()) {
-    return bird::fail("No suitable physical device found");
+    return mole::fail("No suitable physical device found");
   }
 
   physical_device = *devIter;
   texture_capacity = std::min(calculate_texture_capacity(physical_device.getProperties().limits), PREFERRED_MAX_TEXTURES);
-  return bird::ok();
+  return mole::ok();
 }
 
 bool VulkanContext::is_physical_device_suitable(const vk::PhysicalDevice &physical_device) const {
@@ -212,7 +212,7 @@ Result<void> VulkanContext::create_logical_device() {
   }
 
   if (queue_index == ~0u) {
-    return bird::fail("Could not find a queue for graphics and present");
+    return mole::fail("Could not find a queue for graphics and present");
   }
 
   // query for Vulkan 1.3 features
@@ -236,27 +236,27 @@ Result<void> VulkanContext::create_logical_device() {
       supported_features.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
 
   if (!supported_vulkan11.shaderDrawParameters) {
-    return bird::fail("Required Vulkan 1.1 feature shaderDrawParameters is not supported");
+    return mole::fail("Required Vulkan 1.1 feature shaderDrawParameters is not supported");
   }
 
   if (!supported_vulkan13.synchronization2) {
-    return bird::fail("Required Vulkan 1.3 feature synchronization2 is not supported");
+    return mole::fail("Required Vulkan 1.3 feature synchronization2 is not supported");
   }
 
   if (!supported_vulkan13.dynamicRendering) {
-    return bird::fail("Required Vulkan 1.3 feature dynamicRendering is not supported");
+    return mole::fail("Required Vulkan 1.3 feature dynamicRendering is not supported");
   }
 
   if (!supported_descriptor_indexing.descriptorBindingPartiallyBound) {
-    return bird::fail("Required descriptor indexing feature descriptorBindingPartiallyBound is not supported");
+    return mole::fail("Required descriptor indexing feature descriptorBindingPartiallyBound is not supported");
   }
 
   if (!supported_descriptor_indexing.descriptorBindingSampledImageUpdateAfterBind) {
-    return bird::fail("Required descriptor indexing feature descriptorBindingSampledImageUpdateAfterBind is not supported");
+    return mole::fail("Required descriptor indexing feature descriptorBindingSampledImageUpdateAfterBind is not supported");
   }
 
   if (!supported_extended_dynamic_state.extendedDynamicState) {
-    return bird::fail("Required extended dynamic state feature is not supported");
+    return mole::fail("Required extended dynamic state feature is not supported");
   }
 
   vk::PhysicalDeviceVulkan11Features vulkan11_features{
@@ -315,13 +315,13 @@ Result<void> VulkanContext::create_logical_device() {
 
   auto vkr_create_logical_device = physical_device.createDevice(device_create_info);
   if (vkr_create_logical_device.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create logical device");
+    return mole::fail("Failed to create logical device");
   }
   logical_device = std::move(vkr_create_logical_device.value);
 
   graphics_queue = logical_device.getQueue(queue_index, 0);
 
-  return bird::ok();
+  return mole::ok();
 }
 
-} // bird
+} // mole

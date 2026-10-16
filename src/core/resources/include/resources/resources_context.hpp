@@ -1,6 +1,6 @@
 #pragma once
 
-namespace bird {
+namespace mole {
 
 struct OSContext;
 
@@ -17,4 +17,4 @@ struct ResourcesContext {
   MaterialPool* material_pool;
 };
 
-} // bird
+} // mole

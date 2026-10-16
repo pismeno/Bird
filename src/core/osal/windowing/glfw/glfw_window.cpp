@@ -11,7 +11,7 @@
 
 #include "osal/inputs/glfw/glfw_inputs.hpp"
 
-namespace bird {
+namespace mole {
 
 using namespace inputs;
 
@@ -36,7 +36,7 @@ Result<void> GlfwWindow::init() {
   glfw_window = glfwCreateWindow(logical_width, logical_height, title.c_str(), nullptr, nullptr);
 
   if (!glfw_window) {
-    return bird::fail("failed to create GLFW window");
+    return mole::fail("failed to create GLFW window");
   }
 
   if (this->is_fullscreen_) {
@@ -55,13 +55,13 @@ Result<void> GlfwWindow::init() {
   glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 
   glfwSetWindowSizeCallback(glfw_window, [](GLFWwindow* window, int width, int height) {
-    auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
-    bird_window->window_resize_callback(bird_window->glfw_window, width, height);
+    auto* mole_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+    mole_window->window_resize_callback(mole_window->glfw_window, width, height);
   });
 
   glfwSetFramebufferSizeCallback(glfw_window, [](GLFWwindow* window, int width, int height) {
-    auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
-    bird_window->frame_buffer_resize_callback(bird_window->glfw_window, width, height);
+    auto* mole_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+    mole_window->frame_buffer_resize_callback(mole_window->glfw_window, width, height);
   });
 
   glfwSetKeyCallback(glfw_window, GlfwInputs::key_callback);
@@ -69,7 +69,7 @@ Result<void> GlfwWindow::init() {
   glfwSetCursorPosCallback(glfw_window, GlfwInputs::cursor_pos_callback);
   glfwSetScrollCallback(glfw_window, GlfwInputs::scrollCallback);
 
-  return bird::ok();
+  return mole::ok();
 }
 
 void GlfwWindow::update() {
@@ -81,7 +81,7 @@ void GlfwWindow::update() {
 
 Result<void> GlfwWindow::close() {
   glfwDestroyWindow(glfw_window);
-  return bird::ok();
+  return mole::ok();
 }
 
 bool GlfwWindow::should_close() const noexcept {
@@ -161,4 +161,4 @@ void* GlfwWindow::get_native_handle() const {
 #endif
 }
 
-} // bird
+} // mole

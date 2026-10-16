@@ -9,7 +9,7 @@
 #include <resources/view_data.hpp>
 #include <utils/result.hpp>
 
-namespace bird {
+namespace mole {
 
 enum class RendererType {
   Metal,
@@ -45,4 +45,4 @@ public:
   static Result<std::unique_ptr<IRenderer>> create(RendererOptions options, RenderingContext& context);
 };
 
-} // namespace bird
+} // namespace mole

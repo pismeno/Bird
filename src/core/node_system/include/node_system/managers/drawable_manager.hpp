@@ -10,7 +10,7 @@
 #include <node_system/node_types.hpp>
 #include <resources/material_types.hpp>
 
-namespace bird {
+namespace mole {
 
 struct Drawable {
   bool is_visible = false;
@@ -58,4 +58,4 @@ class DrawableManager : public NodeManagerBase<DrawableManager> {
   std::vector<Drawable> drawables;
 };
 
-} // bird
+} // mole

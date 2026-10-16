@@ -6,7 +6,7 @@
 #include <editor/editor.hpp>
 
 int main() {
-  using namespace bird;
+  using namespace mole;
 
   Editor editor = Editor();
 

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 # set the project name and languages
-project(Bird LANGUAGES CXX)
+project(Mole LANGUAGES CXX)
 
 # set the C++ standard to C++20
 set(CMAKE_CXX_STANDARD 20)

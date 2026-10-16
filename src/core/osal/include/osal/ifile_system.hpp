@@ -8,7 +8,7 @@
 
 #include <utils/result.hpp>
 
-namespace bird {
+namespace mole {
 
 class IFileSystem {
  public:
@@ -56,4 +56,4 @@ class IFileSystem {
   static Result<std::unique_ptr<IFileSystem>> create();
 };
 
-} // bird
+} // mole

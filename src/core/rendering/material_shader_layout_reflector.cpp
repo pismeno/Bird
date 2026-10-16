@@ -2,7 +2,7 @@
 
 #include <spirv_cross.hpp>
 
-namespace bird {
+namespace mole {
 
 Result<MaterialShaderLayout> MaterialShaderLayoutReflector::reflect(const uint32_t* spirv_words, size_t size_bytes) const {
   MaterialShaderLayout layout_info;
@@ -52,10 +52,10 @@ Result<MaterialShaderLayout> MaterialShaderLayoutReflector::reflect(const uint32
   }
 
   if (!found_buffer) {
-    return bird::fail("Could not find a valid MaterialBuffer SSBO in the SPIR-V bytecode.");
+    return mole::fail("Could not find a valid MaterialBuffer SSBO in the SPIR-V bytecode.");
   }
 
   return layout_info;
 }
 
-} // bird
+} // mole

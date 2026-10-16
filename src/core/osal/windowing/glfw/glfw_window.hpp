@@ -7,7 +7,7 @@
 #include "osal/inputs/glfw/glfw_inputs.hpp"
 #include <utils/result.hpp>
 
-namespace bird {
+namespace mole {
 
 using namespace inputs;
 
@@ -56,4 +56,4 @@ class GlfwWindow : public IWindow {
   void frame_buffer_resize_callback(GLFWwindow* window, int width, int height);
 };
 
-} // bird
+} // mole

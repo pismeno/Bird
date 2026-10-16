@@ -1,6 +1,6 @@
 #pragma once
 
-namespace bird {
+namespace mole {
 
 struct NodeSystemContext;
 struct RenderingContext;
@@ -21,4 +21,4 @@ struct EditorContext {
   ShaderCompiler* shader_compiler;
 };
 
-} // bird
+} // mole

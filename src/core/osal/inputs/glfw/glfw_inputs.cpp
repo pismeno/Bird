@@ -4,7 +4,7 @@
 #include "GLFW/glfw3.h"
 #include "osal/windowing/glfw/glfw_window.hpp"
 
-namespace bird::inputs {
+namespace mole::inputs {
 
 bool GlfwInputs::is_key_held(KeyCode key) noexcept {
   return currentKeyState[(uint16_t) key];
@@ -96,34 +96,34 @@ inline void GlfwInputs::endFrameMouse() noexcept {
 }
 
 void GlfwInputs::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-  auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+  auto* mole_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
 
-  if (bird_window) {
-    bird_window->inputs.handleKey(key, scancode, action, mods);
+  if (mole_window) {
+    mole_window->inputs.handleKey(key, scancode, action, mods);
   }
 }
 
 void GlfwInputs::mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
-  auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+  auto* mole_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
 
-  if (bird_window) {
-    bird_window->inputs.handleMouseButton(button, action, mods);
+  if (mole_window) {
+    mole_window->inputs.handleMouseButton(button, action, mods);
   }
 }
 
 void GlfwInputs::cursor_pos_callback(GLFWwindow *window, double xpos, double ypos) {
-  auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+  auto* mole_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
 
-  if (bird_window) {
-    bird_window->inputs.handle_cursor(xpos, ypos);
+  if (mole_window) {
+    mole_window->inputs.handle_cursor(xpos, ypos);
   }
 }
 
 void GlfwInputs::scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
-  auto* bird_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
+  auto* mole_window = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(window));
 
-  if (bird_window) {
-    bird_window->inputs.handleScroll(xoffset, yoffset);
+  if (mole_window) {
+    mole_window->inputs.handleScroll(xoffset, yoffset);
   }
 }
 
@@ -169,4 +169,4 @@ void GlfwInputs::handleScroll(double xoffset, double yoffset) noexcept {
   scrollY = y;
 }
 
-} // bird::inputs
+} // mole::inputs

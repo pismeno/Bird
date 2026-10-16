@@ -8,7 +8,7 @@
 #include "resources/asset_handle.hpp"
 #include "utils/result.hpp"
 
-namespace bird {
+namespace mole {
 
 class MaterialShaderLayoutReflector {
  public:
@@ -22,4 +22,4 @@ class MaterialShaderLayoutReflector {
   inline Result<MaterialShaderLayout> reflect(const AssetHandle<A>& shader) const { return reflect(shader->as_32bit_words(), shader->get_size_bytes()); }
 };
 
-} // bird
+} // mole

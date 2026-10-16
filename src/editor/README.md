@@ -1,2 +1,2 @@
-# Bird Editor
-source code for bird editor window app
+# Mole Editor
+source code for mole editor window app

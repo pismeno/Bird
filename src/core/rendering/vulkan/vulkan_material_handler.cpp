@@ -4,7 +4,7 @@
 #include <vector>
 #include <unordered_set>
 
-namespace bird {
+namespace mole {
 
 Result<std::unique_ptr<VulkanMaterialHandler>> VulkanMaterialHandler::create(
     const VulkanContext& vk_context,
@@ -15,22 +15,22 @@ Result<std::unique_ptr<VulkanMaterialHandler>> VulkanMaterialHandler::create(
   std::unique_ptr<VulkanMaterialHandler> handler(new VulkanMaterialHandler(vk_context, memory_allocator, frame_counter, context));
 
   auto r_layout = handler->create_descriptor_set_layouts();
-  if (!r_layout) return bird::fail(r_layout.error());
+  if (!r_layout) return mole::fail(r_layout.error());
 
   auto r_pool = handler->create_descriptor_pool();
-  if (!r_pool) return bird::fail(r_pool.error());
+  if (!r_pool) return mole::fail(r_pool.error());
 
   auto r_set = handler->create_descriptor_set();
-  if (!r_set) return bird::fail(r_set.error());
+  if (!r_set) return mole::fail(r_set.error());
 
   auto r_sampler = handler->create_default_sampler();
-  if (!r_sampler) return bird::fail(r_sampler.error());
+  if (!r_sampler) return mole::fail(r_sampler.error());
 
   auto r_cmd_pool = handler->create_command_pool();
-  if (!r_cmd_pool) return bird::fail(r_cmd_pool.error());
+  if (!r_cmd_pool) return mole::fail(r_cmd_pool.error());
 
   auto r_mat_buffer = handler->create_material_buffer();
-  if (!r_mat_buffer) return bird::fail(r_mat_buffer.error());
+  if (!r_mat_buffer) return mole::fail(r_mat_buffer.error());
 
   return std::move(handler);
 }
@@ -73,10 +73,10 @@ Result<void> VulkanMaterialHandler::create_descriptor_set_layouts() {
   };
 
   auto vkr_create = vk_context.get_logical_device().createDescriptorSetLayout(create_info);
-  if (vkr_create.result != vk::Result::eSuccess) return bird::fail("Failed to create descriptor set layout");
+  if (vkr_create.result != vk::Result::eSuccess) return mole::fail("Failed to create descriptor set layout");
 
   descriptor_set_layout = std::move(vkr_create.value);
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> VulkanMaterialHandler::create_descriptor_pool() {
@@ -101,10 +101,10 @@ Result<void> VulkanMaterialHandler::create_descriptor_pool() {
 
   auto vkr_create = vk_context.get_logical_device().createDescriptorPool(create_info);
   if (vkr_create.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create descriptor pool");
+    return mole::fail("Failed to create descriptor pool");
   }
   descriptor_pool = std::move(vkr_create.value);
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> VulkanMaterialHandler::create_descriptor_set() {
@@ -117,10 +117,10 @@ Result<void> VulkanMaterialHandler::create_descriptor_set() {
   };
 
   auto vkr_create = vk_context.get_logical_device().allocateDescriptorSets(alloc_info);
-  if (vkr_create.result != vk::Result::eSuccess) return bird::fail("Failed to allocate descriptor set");
+  if (vkr_create.result != vk::Result::eSuccess) return mole::fail("Failed to allocate descriptor set");
 
   descriptor_set = std::move(vkr_create.value[0]);
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> VulkanMaterialHandler::create_default_sampler() {
@@ -137,10 +137,10 @@ Result<void> VulkanMaterialHandler::create_default_sampler() {
 
   auto vkr_sampler = vk_context.get_logical_device().createSampler(sampler_info);
   if (vkr_sampler.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create default sampler");
+    return mole::fail("Failed to create default sampler");
   }
   default_sampler = std::move(vkr_sampler.value);
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> VulkanMaterialHandler::create_command_pool() {
@@ -151,17 +151,17 @@ Result<void> VulkanMaterialHandler::create_command_pool() {
 
   auto vkr_pool = vk_context.get_logical_device().createCommandPool(pool_info);
   if (vkr_pool.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create transient command pool for texture uploads");
+    return mole::fail("Failed to create transient command pool for texture uploads");
   }
   command_pool = std::move(vkr_pool.value);
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> VulkanMaterialHandler::create_material_buffer() {
   size_t total_buffer_size = MAX_MATERIALS * MATERIAL_STRIDE;
 
   auto r_buf = memory_allocator.create_buffer(vk::BufferUsageFlagBits::eStorageBuffer, total_buffer_size);
-  if (!r_buf) return bird::fail(r_buf.error());
+  if (!r_buf) return mole::fail(r_buf.error());
 
   material_buffer = std::move(r_buf).value();
   material_buffer_mapped = material_buffer.getAllocation().getInfo().pMappedData;
@@ -184,13 +184,13 @@ Result<void> VulkanMaterialHandler::create_material_buffer() {
 
   vk_context.get_logical_device().updateDescriptorSets(write_desc, nullptr);
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> VulkanMaterialHandler::update_texture_buffer() {
   std::vector<AssetHandle<ImageAsset>> pending = bindless_texture_registry->get_pending_texture_uploads();
   if (pending.empty()) {
-    return bird::ok();
+    return mole::ok();
   }
 
   // 1. Compute offsets and total staging allocation size
@@ -208,7 +208,7 @@ Result<void> VulkanMaterialHandler::update_texture_buffer() {
 
   // 2. Stage pixel data
   auto r_staging_buf = memory_allocator.create_buffer(vk::BufferUsageFlagBits::eTransferSrc, total_staging_bytes);
-  if (!r_staging_buf) return bird::fail(r_staging_buf.error());
+  if (!r_staging_buf) return mole::fail(r_staging_buf.error());
   vma::raii::Buffer staging_buffer = std::move(r_staging_buf).value();
 
   auto* staging_mapped = static_cast<uint8_t*>(staging_buffer.getAllocation().getInfo().pMappedData);
@@ -218,7 +218,7 @@ Result<void> VulkanMaterialHandler::update_texture_buffer() {
 
   // 3. Allocate and begin one-time command buffer
   auto r_cmd = allocate_upload_command_buffer();
-  if (!r_cmd) return bird::fail(r_cmd.error());
+  if (!r_cmd) return mole::fail(r_cmd.error());
   vk::raii::CommandBuffer cmd_buffer = std::move(r_cmd).value();
 
   // 4. Create GPU resources, prep barriers, and record transfers
@@ -237,11 +237,11 @@ Result<void> VulkanMaterialHandler::update_texture_buffer() {
     uint32_t slot = bindless_texture_registry->get_index(asset);
 
     auto r_gpu_image = create_texture_image(asset);
-    if (!r_gpu_image) return bird::fail("Failed to create GPU texture image");
+    if (!r_gpu_image) return mole::fail("Failed to create GPU texture image");
     vma::raii::Image gpu_image = std::move(r_gpu_image).value();
 
     auto r_gpu_view = create_texture_image_view(*gpu_image);
-    if (!r_gpu_view) return bird::fail("Failed to create texture image view");
+    if (!r_gpu_view) return mole::fail("Failed to create texture image view");
     vk::raii::ImageView gpu_view = std::move(r_gpu_view).value();
 
     // Inlined transition: Undefined -> TransferDstOptimal
@@ -328,7 +328,7 @@ Result<void> VulkanMaterialHandler::update_texture_buffer() {
   });
 
   // 6. Submit and wait
-  if (cmd_buffer.end() != vk::Result::eSuccess) return bird::fail("Failed to end upload command buffer");
+  if (cmd_buffer.end() != vk::Result::eSuccess) return mole::fail("Failed to end upload command buffer");
 
   vk::SubmitInfo submit_info{ .commandBufferCount = 1, .pCommandBuffers = &*cmd_buffer };
   vk_context.get_graphics_queue().submit(submit_info, nullptr);
@@ -338,7 +338,7 @@ Result<void> VulkanMaterialHandler::update_texture_buffer() {
   vk_context.get_logical_device().updateDescriptorSets(descriptor_writes, nullptr);
   bindless_texture_registry->clear_pending_texture_uploads();
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<vk::raii::CommandBuffer> VulkanMaterialHandler::allocate_upload_command_buffer() {
@@ -348,11 +348,11 @@ Result<vk::raii::CommandBuffer> VulkanMaterialHandler::allocate_upload_command_b
       .commandBufferCount = 1
   };
   auto vkr = vk_context.get_logical_device().allocateCommandBuffers(alloc_info);
-  if (vkr.result != vk::Result::eSuccess) return bird::fail("Failed to allocate upload command buffer");
+  if (vkr.result != vk::Result::eSuccess) return mole::fail("Failed to allocate upload command buffer");
 
   vk::raii::CommandBuffer cmd = std::move(vkr.value[0]);
   if (cmd.begin({.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit}) != vk::Result::eSuccess) {
-    return bird::fail("Failed to begin upload command buffer");
+    return mole::fail("Failed to begin upload command buffer");
   }
   return cmd;
 }
@@ -377,7 +377,7 @@ Result<vma::raii::Image> VulkanMaterialHandler::create_texture_image(const Asset
   };
 
   auto vkr = memory_allocator.get_allocator().createImage(image_info, alloc_info);
-  if (vkr.result != vk::Result::eSuccess) return bird::fail("Failed to create GPU texture image");
+  if (vkr.result != vk::Result::eSuccess) return mole::fail("Failed to create GPU texture image");
   return std::move(vkr.value);
 }
 
@@ -389,12 +389,12 @@ Result<vk::raii::ImageView> VulkanMaterialHandler::create_texture_image_view(vk:
       .subresourceRange = { .aspectMask = vk::ImageAspectFlagBits::eColor, .levelCount = 1, .layerCount = 1 }
   };
   auto vkr = vk_context.get_logical_device().createImageView(view_info);
-  if (vkr.result != vk::Result::eSuccess) return bird::fail("Failed to create texture image view");
+  if (vkr.result != vk::Result::eSuccess) return mole::fail("Failed to create texture image view");
   return std::move(vkr.value);
 }
 
 Result<void> VulkanMaterialHandler::prepare_materials(std::vector<MaterialID> material_ids) {
-  if (material_ids.empty()) return bird::ok();
+  if (material_ids.empty()) return mole::ok();
 
   update_texture_buffer();
 
@@ -422,13 +422,13 @@ Result<void> VulkanMaterialHandler::prepare_materials(std::vector<MaterialID> ma
     }
 
     auto r_packed = packed_material_cache->get(mat_id);
-    if (!r_packed) return bird::fail(r_packed.error());
+    if (!r_packed) return mole::fail(r_packed.error());
     const PackedMaterial& packed_material = r_packed.value();
 
     if (packed_material.data.empty()) continue;
 
     if (packed_material.data.size() > MATERIAL_STRIDE) {
-      return bird::fail("Packed material data is too large for VulkanMaterialHandler, it exceeds " + std::to_string(MATERIAL_STRIDE) + " bytes");
+      return mole::fail("Packed material data is too large for VulkanMaterialHandler, it exceeds " + std::to_string(MATERIAL_STRIDE) + " bytes");
     }
 
     uint32_t slot_index = make_material_index();
@@ -446,7 +446,7 @@ Result<void> VulkanMaterialHandler::prepare_materials(std::vector<MaterialID> ma
     std::memcpy(target_address, packed_material.data.data(), packed_material.data.size());
   }
 
-  return bird::ok();
+  return mole::ok();
 }
 
 void VulkanMaterialHandler::free_unused_materials() {
@@ -509,7 +509,7 @@ void VulkanMaterialHandler::free_texture(uint64_t texture_id) {
 Result<uint32_t> VulkanMaterialHandler::get_material_index(const MaterialID& material_id) const {
   auto it = allocated_materials.find(material_id);
   if (it == allocated_materials.end()) {
-    return bird::fail("Material ID not found in allocated materials");
+    return mole::fail("Material ID not found in allocated materials");
   }
 
   return it->second.shader_index;
@@ -527,4 +527,4 @@ uint32_t VulkanMaterialHandler::make_material_index() {
   return index;
 }
 
-} // bird
+} // mole

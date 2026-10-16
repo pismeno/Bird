@@ -12,7 +12,7 @@
 #include "resources/asset_handle.hpp"
 #include "resources/asset_types.hpp"
 
-namespace bird {
+namespace mole {
 
 using MaterialProperty = std::variant<
     float,
@@ -30,4 +30,4 @@ struct Material {
   AssetHandle<FragmentShaderAsset> fragment_shader;
 };
 
-} // bird
+} // mole

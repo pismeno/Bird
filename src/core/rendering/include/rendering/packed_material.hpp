@@ -2,10 +2,10 @@
 
 #include <vector>
 
-namespace bird {
+namespace mole {
 
 struct PackedMaterial {
   std::vector<std::byte> data;
 };
 
-} // bird
+} // mole

@@ -6,13 +6,13 @@
 #include "utils/result.hpp"
 #include "rendering/vulkan/vulkan_context.hpp"
 
-namespace bird {
+namespace mole {
 
 Result<std::unique_ptr<VulkanMemoryAllocator>> VulkanMemoryAllocator::create(VulkanContext& vk_context) {
   std::unique_ptr<VulkanMemoryAllocator> allocator(new VulkanMemoryAllocator());
 
   auto r_create_vma = allocator->create_vma(vk_context);
-  if (!r_create_vma) return bird::fail(r_create_vma.error());
+  if (!r_create_vma) return mole::fail(r_create_vma.error());
 
   return std::move(allocator);
 }
@@ -27,12 +27,12 @@ Result<void> VulkanMemoryAllocator::create_vma(VulkanContext& vk_context) {
 
   auto vkr_create_allocator = vma::raii::createAllocator(vk_context.get_instance(), vk_context.get_logical_device(), create_info);
   if (vkr_create_allocator.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create AMD VMA allocator");
+    return mole::fail("Failed to create AMD VMA allocator");
   }
 
   vma_allocator = std::move(vkr_create_allocator.value);
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<vma::raii::Buffer> VulkanMemoryAllocator::create_buffer(vk::BufferUsageFlags usage, vk::DeviceSize size, const void* data) const {
@@ -51,7 +51,7 @@ Result<vma::raii::Buffer> VulkanMemoryAllocator::create_buffer(vk::BufferUsageFl
 
   auto vkr_create_buffer = vma_allocator.createBuffer(buffer_info, alloc_info);
   if (vkr_create_buffer.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create and allocate Buffer via VMA-Hpp");
+    return mole::fail("Failed to create and allocate Buffer via VMA-Hpp");
   }
 
   vma::raii::Buffer buffer = std::move(vkr_create_buffer.value);
@@ -66,4 +66,4 @@ Result<vma::raii::Buffer> VulkanMemoryAllocator::create_buffer(vk::BufferUsageFl
   return std::move(buffer);
 }
 
-} // bird
+} // mole

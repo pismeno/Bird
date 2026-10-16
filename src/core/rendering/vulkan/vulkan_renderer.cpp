@@ -13,7 +13,7 @@
 #include <rendering/vulkan/vulkan_pipeline.hpp>
 #include <utils/result.hpp>
 
-namespace bird {
+namespace mole {
 
 VulkanRenderer::~VulkanRenderer() {
   if (!is_context_lost_ && vk_context) {
@@ -30,38 +30,38 @@ Result<std::unique_ptr<VulkanRenderer>> VulkanRenderer::create(RenderingContext&
 
   // 1. Initialize Subsystems
   auto r_context = VulkanContext::create(native_window_handle);
-  if (!r_context) return bird::fail(r_context.error());
+  if (!r_context) return mole::fail(r_context.error());
   renderer->vk_context = std::move(r_context).value();
   std::cout << "Vulkan Context created successfully" << std::endl;
 
   auto r_allocator = VulkanMemoryAllocator::create(*renderer->vk_context);
-  if (!r_allocator) return bird::fail(r_allocator.error());
+  if (!r_allocator) return mole::fail(r_allocator.error());
   renderer->memory_allocator = std::move(r_allocator).value();
   std::cout << "VMA Allocator created successfully" << std::endl;
 
   auto r_swapchain = VulkanSwapchain::create(*renderer->vk_context, window_width, window_height);
-  if (!r_swapchain) return bird::fail(r_swapchain.error());
+  if (!r_swapchain) return mole::fail(r_swapchain.error());
   renderer->swapchain = std::move(r_swapchain).value();
   std::cout << "Swapchain created successfully" << std::endl;
 
   // 2. Initialize Internal Renderer State
   auto r_create_command_pool = renderer->create_command_pool();
-  if (!r_create_command_pool) return bird::fail(r_create_command_pool.error());
+  if (!r_create_command_pool) return mole::fail(r_create_command_pool.error());
 
   auto r_material_handler = VulkanMaterialHandler::create(*renderer->vk_context, *renderer->memory_allocator, *renderer->frames_rendered, context);
-  if (!r_material_handler) return bird::fail(r_material_handler.error());
+  if (!r_material_handler) return mole::fail(r_material_handler.error());
   renderer->material_handler = std::move(r_material_handler).value();
   std::cout << "Material Handler created successfully" << std::endl;
 
   auto r_create_desc_set_layot = renderer->create_descriptor_set_layout();
-  if (!r_create_desc_set_layot) return bird::fail(r_create_desc_set_layot.error());
+  if (!r_create_desc_set_layot) return mole::fail(r_create_desc_set_layot.error());
   std::cout << "Descriptor set layout created successfully" << std::endl;
 
   renderer->pipeline_cache = std::make_unique<VulkanPipelineCache>(*renderer->swapchain, *renderer->vk_context, *renderer->material_handler, renderer->descriptor_set_layout);
   std::cout << "Pipeline created successfully" << std::endl;
 
   auto r_create_frame_data = renderer->create_frame_data();
-  if (!r_create_frame_data) return bird::fail(r_create_frame_data.error());
+  if (!r_create_frame_data) return mole::fail(r_create_frame_data.error());
 
   std::cout << "Vulkan Renderer initialized successfully" << std::endl;
 
@@ -76,11 +76,11 @@ Result<void> VulkanRenderer::create_command_pool() {
 
   auto vkr_create_command_pool = vk_context->get_logical_device().createCommandPool(pool_info);
   if (vkr_create_command_pool.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create command pool");
+    return mole::fail("Failed to create command pool");
   }
 
   command_pool = std::move(vkr_create_command_pool.value);
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> VulkanRenderer::create_descriptor_set_layout() {
@@ -108,11 +108,11 @@ Result<void> VulkanRenderer::create_descriptor_set_layout() {
 
   auto vkr_create_desc_set_layout = vk_context->get_logical_device().createDescriptorSetLayout(descriptor_set_layout_info);
   if (vkr_create_desc_set_layout.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create descriptor set layout");
+    return mole::fail("Failed to create descriptor set layout");
   }
 
   descriptor_set_layout = std::move(vkr_create_desc_set_layout.value);
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> VulkanRenderer::create_frame_data() {
@@ -139,7 +139,7 @@ Result<void> VulkanRenderer::create_frame_data() {
 
   auto vkr_ubo_pool = vk_context->get_logical_device().createDescriptorPool(pool_info);
   if (vkr_ubo_pool.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create UBO descriptor pool");
+    return mole::fail("Failed to create UBO descriptor pool");
   }
   ubo_descriptor_pool = std::move(vkr_ubo_pool.value);
 
@@ -152,7 +152,7 @@ Result<void> VulkanRenderer::create_frame_data() {
 
   auto vkr_cmd_buffers = vk_context->get_logical_device().allocateCommandBuffers(alloc_info);
   if (vkr_cmd_buffers.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to allocate command buffers");
+    return mole::fail("Failed to allocate command buffers");
   }
 
   // 3. Initialize Per-Frame Data
@@ -161,11 +161,11 @@ Result<void> VulkanRenderer::create_frame_data() {
 
     // Sync Objects
     auto vkr_image_avail = vk_context->get_logical_device().createSemaphore(vk::SemaphoreCreateInfo());
-    if (vkr_image_avail.result != vk::Result::eSuccess) return bird::fail("Failed to create semaphore");
+    if (vkr_image_avail.result != vk::Result::eSuccess) return mole::fail("Failed to create semaphore");
     frame.image_available_semaphore = std::move(vkr_image_avail.value);
 
     auto vkr_fence = vk_context->get_logical_device().createFence(vk::FenceCreateInfo{.flags = vk::FenceCreateFlagBits::eSignaled});
-    if (vkr_fence.result != vk::Result::eSuccess) return bird::fail("Failed to create fence");
+    if (vkr_fence.result != vk::Result::eSuccess) return mole::fail("Failed to create fence");
     frame.in_flight_fence = std::move(vkr_fence.value);
 
     // Command Buffer
@@ -173,12 +173,12 @@ Result<void> VulkanRenderer::create_frame_data() {
 
     // Uniform Buffer
     auto ubo_res = memory_allocator->create_buffer(vk::BufferUsageFlagBits::eUniformBuffer, sizeof(ViewData));
-    if (!ubo_res) return bird::fail(ubo_res.error());
+    if (!ubo_res) return mole::fail(ubo_res.error());
     frame.uniform_buffer = std::move(ubo_res).value();
     frame.uniform_buffer_mapped = frame.uniform_buffer.getAllocation().getInfo().pMappedData;
 
     auto r_create_quad_buf = memory_allocator->create_buffer(vk::BufferUsageFlagBits::eStorageBuffer, sizeof(Quad) * MAX_QUADS);
-    if (!r_create_quad_buf) return bird::fail(r_create_quad_buf.error());
+    if (!r_create_quad_buf) return mole::fail(r_create_quad_buf.error());
     frame.quad_buffer = std::move(r_create_quad_buf).value();
     frame.quad_buffer_mapped = static_cast<Quad*>(frame.quad_buffer.getAllocation().getInfo().pMappedData);
 
@@ -192,7 +192,7 @@ Result<void> VulkanRenderer::create_frame_data() {
 
     auto vkr_desc_set = vk_context->get_logical_device().allocateDescriptorSets(desc_alloc_info);
     if (vkr_desc_set.result != vk::Result::eSuccess) {
-      return bird::fail("Failed to allocate frame UBO descriptor set");
+      return mole::fail("Failed to allocate frame UBO descriptor set");
     }
     frame.descriptor_set = std::move(vkr_desc_set.value[0]);
 
@@ -235,11 +235,11 @@ Result<void> VulkanRenderer::create_frame_data() {
   render_finished_semaphores.clear();
   for (size_t i = 0; i < swapchain->get_image_count(); i++) {
     auto vkr_render_fin = vk_context->get_logical_device().createSemaphore(vk::SemaphoreCreateInfo());
-    if (vkr_render_fin.result != vk::Result::eSuccess) return bird::fail("Failed to create render finished semaphore");
+    if (vkr_render_fin.result != vk::Result::eSuccess) return mole::fail("Failed to create render finished semaphore");
     render_finished_semaphores.push_back(std::move(vkr_render_fin.value));
   }
 
-  return bird::ok();
+  return mole::ok();
 }
 
 void VulkanRenderer::begin_frame() {
@@ -425,7 +425,7 @@ void VulkanRenderer::update_ubo(const ViewData& view_data, FrameData& frame) {
 }
 
 void VulkanRenderer::update_quad_ssbo(FrameData& frame) {
-  std::memcpy(frame.quad_buffer_mapped, quads.data(), sizeof(bird::Quad) * quads.size());
+  std::memcpy(frame.quad_buffer_mapped, quads.data(), sizeof(mole::Quad) * quads.size());
 }
 
 Result<void> VulkanRenderer::resize_framebuffer(uint32_t width, uint32_t height) {
@@ -437,12 +437,12 @@ Result<void> VulkanRenderer::resize_framebuffer(uint32_t width, uint32_t height)
   render_finished_semaphores.clear();
   for (size_t i = 0; i < swapchain->get_image_count(); i++) {
     auto vkr_render_fin = vk_context->get_logical_device().createSemaphore(vk::SemaphoreCreateInfo());
-    if (vkr_render_fin.result != vk::Result::eSuccess) return bird::fail("Failed to create semaphore");
+    if (vkr_render_fin.result != vk::Result::eSuccess) return mole::fail("Failed to create semaphore");
     render_finished_semaphores.push_back(std::move(vkr_render_fin.value));
   }
 
   needs_framebuffer_resize_ = false;
-  return bird::ok();
+  return mole::ok();
 }
 
 void VulkanRenderer::transition_image_layout(
@@ -576,4 +576,4 @@ void VulkanRenderer::build_batches() {
   pending_commands.clear();
 }
 
-} // bird
+} // mole

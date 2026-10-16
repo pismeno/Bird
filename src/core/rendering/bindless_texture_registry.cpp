@@ -4,7 +4,7 @@
 
 #include "utils/result.hpp"
 
-namespace bird {
+namespace mole {
 
 uint32_t BindlessTextureRegistry::get_index(const AssetHandle<ImageAsset>& texture) {
   uint64_t texture_id = texture.get_packed_id();
@@ -20,7 +20,7 @@ uint32_t BindlessTextureRegistry::get_index(const AssetHandle<ImageAsset>& textu
 Result<uint32_t> BindlessTextureRegistry::get_existing_index(uint64_t texture_id) const {
   auto it = bindless_indices.find(texture_id);
   if (it == bindless_indices.end()) {
-    return bird::fail("Texture ID not found in bindless indices");
+    return mole::fail("Texture ID not found in bindless indices");
   }
 
   return it->second;
@@ -70,4 +70,4 @@ void BindlessTextureRegistry::clear_pending_texture_uploads() {
   pending_texture_uploads.clear();
 }
 
-} // bird
+} // mole

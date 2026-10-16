@@ -11,7 +11,7 @@
 #include <utils/result.hpp>
 #include <utils/string_hash.hpp>
 
-namespace bird {
+namespace mole {
 
 class IAssetPool { public: virtual ~IAssetPool() = default; };
 
@@ -32,12 +32,12 @@ class AssetPool : public IAssetPool {
     // Perform I/O before touching any internal index state
     auto r_read_bytes = file_system->read_bytes(filepath);
     if (!r_read_bytes) {
-      return bird::fail(r_read_bytes.error());
+      return mole::fail(r_read_bytes.error());
     }
 
     auto r_asset = parse_asset(filepath, std::move(r_read_bytes).value());
     if (!r_asset) {
-      return bird::fail(r_asset.error());
+      return mole::fail(r_asset.error());
     }
 
     // I/O succeeded: now acquire/allocate an index safely
@@ -111,4 +111,4 @@ inline Result<T> AssetPool<T>::parse_asset(std::string_view filepath, std::vecto
 template <>
 Result<ImageAsset> AssetPool<ImageAsset>::parse_asset(std::string_view filepath, std::vector<uint8_t> raw_bytes);
 
-} // bird
+} // mole

@@ -13,9 +13,9 @@
 #include "node_types.hpp"
 #include <utils/result.hpp>
 
-namespace bird {
+namespace mole {
 
-using namespace bird;
+using namespace mole;
 
 /**
  * @brief Base class for all node managers.
@@ -69,13 +69,13 @@ class INodeManager {
    * @brief Called when the scene is being serialized.
    * @param json Json object assigned to this manager to serialize the manager's data into.
    */
-  virtual Result<void> on_serialize_scene(nlohmann::json& json) const { return bird::ok(); };
+  virtual Result<void> on_serialize_scene(nlohmann::json& json) const { return mole::ok(); };
 
   /**
    * @brief Called when the scene is being deserialized.
    * @param json This manager's data to deserialize from.
    */
-  virtual Result<void> on_deserialize_scene(const nlohmann::json& json) { return bird::ok(); };
+  virtual Result<void> on_deserialize_scene(const nlohmann::json& json) { return mole::ok(); };
 };
 
 template <typename Derived>
@@ -86,4 +86,4 @@ class NodeManagerBase : public INodeManager {
   }
 };
 
-} // bird
+} // mole

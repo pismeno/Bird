@@ -7,7 +7,7 @@
 #include "vulkan_pipeline.hpp"
 #include "combined_shader_key.hpp"
 
-namespace bird {
+namespace mole {
 
 class VulkanPipelineCache {
  public:
@@ -25,4 +25,4 @@ class VulkanPipelineCache {
   vk::raii::DescriptorSetLayout& descriptor_set_layout;
 };
 
-} // bird
+} // mole

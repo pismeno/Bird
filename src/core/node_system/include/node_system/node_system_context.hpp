@@ -1,6 +1,6 @@
 #pragma once
 
-namespace bird {
+namespace mole {
 
 struct ResourcesContext;
 
@@ -17,4 +17,4 @@ struct NodeSystemContext {
   RenderGatherer* render_gatherer;
 };
 
-} // bird
+} // mole

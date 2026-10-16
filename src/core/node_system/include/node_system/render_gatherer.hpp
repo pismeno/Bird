@@ -3,7 +3,7 @@
 #include <resources/render_commands.hpp>
 #include <node_system/scene.hpp>
 
-namespace bird {
+namespace mole {
 
 class RenderGatherer {
  public:
@@ -17,4 +17,4 @@ class RenderGatherer {
   std::vector<RenderQuadCommand> gather_render_commands(Scene& scene);
 };
 
-} // bird
+} // mole

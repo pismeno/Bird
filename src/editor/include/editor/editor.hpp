@@ -22,7 +22,7 @@
 #include <node_system/render_gatherer.hpp>
 #include <editor/shader_compiler.hpp>
 
-namespace bird {
+namespace mole {
 
 class Editor {
  public:
@@ -59,4 +59,4 @@ class Editor {
   std::unique_ptr<ShaderCompiler> shader_compiler;
 };
 
-} // bird
+} // mole

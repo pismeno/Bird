@@ -17,7 +17,7 @@ class RenderCommandEncoder;
 
 struct GLFWwindow;
 
-namespace bird {
+namespace mole {
 
 
 class MetalRenderer : public IRenderer {

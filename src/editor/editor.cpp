@@ -19,28 +19,28 @@
 #include <resources/asset_types.hpp>
 #include "resources/material_pool.hpp"
 
-namespace bird {
+namespace mole {
 
 Result<void> Editor::init() {
   auto r_create_file_system = IFileSystem::create();
   if (!r_create_file_system) {
-    return bird::fail(r_create_file_system.error());
+    return mole::fail(r_create_file_system.error());
   }
   file_system = std::move(r_create_file_system).value();
 
-  file_system->mount("core", "../engine_data/core");
-  file_system->mount("editor", "../engine_data/editor");
+  file_system->mount("core", "../../../engine_data/core");
+  file_system->mount("editor", "../../../engine_data/editor");
 
   glslang::InitializeProcess();
 
   if (!glfwInit()) {
-    return bird::fail("Failed to initialize GLFW");
+    return mole::fail("Failed to initialize GLFW");
   }
 
-  auto window_result = IWindow::create(WindowOptions{800, 600, "Bird Editor"});
+  auto window_result = IWindow::create(WindowOptions{800, 600, "Mole Editor"});
   if (!window_result) {
     glfwTerminate();
-    return bird::fail(window_result.error());
+    return mole::fail(window_result.error());
   }
   window = std::move(window_result).value();
 
@@ -54,7 +54,7 @@ Result<void> Editor::init() {
 
   auto r_create_am = AssetManager::create(resources_context);
   if (!r_create_am) {
-    return bird::fail(r_create_am.error());
+    return mole::fail(r_create_am.error());
   }
   asset_manager = std::move(r_create_am).value();
   resources_context.asset_manager = asset_manager.get();
@@ -67,7 +67,7 @@ Result<void> Editor::init() {
   };
 
   auto r_create_sf = SceneFactory::create(node_system_context);
-  if (!r_create_sf) return bird::fail(r_create_sf.error());
+  if (!r_create_sf) return mole::fail(r_create_sf.error());
   scene_factory = std::move(r_create_sf).value();
   node_system_context.scene_factory = scene_factory.get();
 
@@ -78,9 +78,9 @@ Result<void> Editor::init() {
   scene_factory->register_manager<DrawableManager>();
 
   auto r_load_scene_defs = scene_factory->load_scene_definitions_from_file("editor://scene_definitions.json");
-  if (!r_load_scene_defs) return bird::fail(r_load_scene_defs.error());
+  if (!r_load_scene_defs) return mole::fail(r_load_scene_defs.error());
   auto r_load_node_defs = scene_factory->load_node_definitions_from_file("editor://node_definitions.json");
-  if (!r_load_node_defs) return bird::fail(r_load_node_defs.error());
+  if (!r_load_node_defs) return mole::fail(r_load_node_defs.error());
 
   rendering_context = {
       .resources_context = &resources_context
@@ -105,7 +105,7 @@ Result<void> Editor::init() {
   };
 
   auto r_create_sc = ShaderCompiler::create(context);
-  if (!r_create_sc) return bird::fail(r_create_sc.error());
+  if (!r_create_sc) return mole::fail(r_create_sc.error());
 
   shader_compiler = std::move(r_create_sc).value();
 
@@ -113,37 +113,37 @@ Result<void> Editor::init() {
 
   auto r_s_c1 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_a.vert.glsl",
                                                             "core://shaders/mat_a.vert.spv");
-  if (!r_s_c1) return bird::fail(r_s_c1.error());
+  if (!r_s_c1) return mole::fail(r_s_c1.error());
 
   auto r_s_c2 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_a.frag.glsl",
                                                             "core://shaders/mat_a.frag.spv");
-  if (!r_s_c2) return bird::fail(r_s_c2.error());
+  if (!r_s_c2) return mole::fail(r_s_c2.error());
 
   auto r_s_c3 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_b.vert.glsl",
                                                             "core://shaders/mat_b.vert.spv");
-  if (!r_s_c3) return bird::fail(r_s_c3.error());
+  if (!r_s_c3) return mole::fail(r_s_c3.error());
 
   auto r_s_c4 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_b.frag.glsl",
                                                             "core://shaders/mat_b.frag.spv");
-  if (!r_s_c4) return bird::fail(r_s_c4.error());
+  if (!r_s_c4) return mole::fail(r_s_c4.error());
 
   auto r_get_texture = asset_manager->acquire<ImageAsset>("editor://test_img.png");
-  if (!r_get_texture) return bird::fail(r_get_texture.error());
+  if (!r_get_texture) return mole::fail(r_get_texture.error());
   AssetHandle<ImageAsset> texture = std::move(r_get_texture).value();
   std::cout << bindless_texture_registry->get_index(texture) << " - Tex index" << std::endl;;
 
   auto r_get_vert_shader_a = asset_manager->acquire<VertexShaderAsset>("core://shaders/mat_a.vert.spv");
-  if (!r_get_vert_shader_a) return bird::fail(r_get_vert_shader_a.error());
+  if (!r_get_vert_shader_a) return mole::fail(r_get_vert_shader_a.error());
   AssetHandle<VertexShaderAsset> vert_shader_a = std::move(r_get_vert_shader_a).value();
   auto r_get_frag_shader_a = asset_manager->acquire<FragmentShaderAsset>("core://shaders/mat_a.frag.spv");
-  if (!r_get_frag_shader_a) return bird::fail(r_get_frag_shader_a.error());
+  if (!r_get_frag_shader_a) return mole::fail(r_get_frag_shader_a.error());
   AssetHandle<FragmentShaderAsset> frag_shader_a = std::move(r_get_frag_shader_a).value();
 
   auto r_get_vert_shader = asset_manager->acquire<VertexShaderAsset>("core://shaders/mat_b.vert.spv");
-  if (!r_get_vert_shader) return bird::fail(r_get_vert_shader.error());
+  if (!r_get_vert_shader) return mole::fail(r_get_vert_shader.error());
   AssetHandle<VertexShaderAsset> vert_shader_b = std::move(r_get_vert_shader).value();
   auto r_get_frag_shader = asset_manager->acquire<FragmentShaderAsset>("core://shaders/mat_b.frag.spv");
-  if (!r_get_frag_shader) return bird::fail(r_get_frag_shader.error());
+  if (!r_get_frag_shader) return mole::fail(r_get_frag_shader.error());
   AssetHandle<FragmentShaderAsset> frag_shader_b = std::move(r_get_frag_shader).value();
 
   material_pool->add("test_mat_a", Material{
@@ -173,25 +173,25 @@ Result<void> Editor::init() {
 
   auto renderer_result = IRenderer::create(renderer_options, rendering_context);
   if (!renderer_result) {
-    return bird::fail(renderer_result.error());
+    return mole::fail(renderer_result.error());
   }
 
   renderer = std::move(renderer_result).value();
   rendering_context.renderer = renderer.get();
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> Editor::run() {
   auto r_get_texture = asset_manager->acquire<ImageAsset>("editor://test_img.png");
-  if (!r_get_texture) return bird::fail(r_get_texture.error());
+  if (!r_get_texture) return mole::fail(r_get_texture.error());
   AssetHandle<ImageAsset> texture = std::move(r_get_texture).value();
 
   MaterialID test_mat_id = MaterialID::from(0, 0);
   MaterialID test_mat_id2 = MaterialID::from(1, 0);
 
   auto r_scene = scene_factory->create_scene("scene_2d");
-  if (!r_scene) return bird::fail(r_scene.error());
+  if (!r_scene) return mole::fail(r_scene.error());
   scene = std::move(r_scene).value();
   auto* transform_manager = scene->get_manager<TransformManager>();
   auto* drawable_manager = scene->get_manager<DrawableManager>();
@@ -242,7 +242,7 @@ Result<void> Editor::run() {
 
   Inputs& inputs = window->get_inputs();
   while (!window->should_close()) {
-    bird::ViewData view_data{};
+    mole::ViewData view_data{};
 
 
     float width = static_cast<float>(window->get_framebuffer_width());
@@ -280,16 +280,16 @@ Result<void> Editor::run() {
       );
 
       if (!r_resize_framebuffer) {
-        return bird::fail(r_resize_framebuffer.error());
+        return mole::fail(r_resize_framebuffer.error());
       }
     }
 
     if (renderer->is_context_lost()) {
-      return bird::fail("Renderer context lost");
+      return mole::fail("Renderer context lost");
     }
   }
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> Editor::shutdown() {
@@ -304,7 +304,7 @@ Result<void> Editor::shutdown() {
   glfwTerminate();
   glslang::FinalizeProcess();
 
-  return bird::ok();
+  return mole::ok();
 }
 
-} // bird
+} // mole

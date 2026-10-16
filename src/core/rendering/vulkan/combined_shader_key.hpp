@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace bird {
+namespace mole {
 
 struct CombinedShaderKey {
   uint64_t vert_id;
@@ -24,4 +24,4 @@ struct CombinedShaderKeyHash {
   }
 };
 
-} // bird
+} // mole

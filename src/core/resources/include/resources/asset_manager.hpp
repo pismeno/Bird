@@ -16,7 +16,7 @@
 
 #include "resources/asset_pool.hpp"
 
-namespace bird {
+namespace mole {
 
 /**
  * @brief Central manager for loading, caching, and retrieving assets via type-specific pools.
@@ -37,7 +37,7 @@ class AssetManager {
     std::string expected_suffix = std::string(".") + T::EXTENSION + ".spv";
 
     if (!filepath.ends_with(expected_suffix)) {
-      return bird::fail("Requested shader type's file must have the suffix '" + expected_suffix + "'");
+      return mole::fail("Requested shader type's file must have the suffix '" + expected_suffix + "'");
     }
 
     return get_pool<T>()->load(filepath, std::forward<Args>(args)...);
@@ -82,4 +82,4 @@ class AssetManager {
   IFileSystem* file_system = nullptr;
 };
 
-} // bird
+} // mole

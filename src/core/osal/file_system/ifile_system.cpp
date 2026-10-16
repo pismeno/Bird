@@ -8,13 +8,13 @@
 #include "windows_file_system.hpp"
 #endif
 
-namespace bird {
+namespace mole {
 
 Result<std::unique_ptr<IFileSystem>> IFileSystem::create() {
 #ifdef BIRD_PLATFORM_WINDOWS
   return std::unique_ptr<IFileSystem>(new WindowsFileSystem());
 #else
-  return bird::fail("Unsupported platform");
+  return mole::fail("Unsupported platform");
 #endif
 }
 

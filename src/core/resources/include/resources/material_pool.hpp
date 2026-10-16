@@ -10,7 +10,7 @@
 #include "resources/asset_pool.hpp"
 #include "utils/string_hash.hpp"
 
-namespace bird {
+namespace mole {
 
 class MaterialPool {
  public:
@@ -40,4 +40,4 @@ class MaterialPool {
   std::vector<uint32_t> recycled_indices;
 };
 
-} // bird
+} // mole

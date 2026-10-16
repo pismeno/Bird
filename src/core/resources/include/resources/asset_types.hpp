@@ -5,7 +5,7 @@
 #include <string_view>
 #include <string>
 
-namespace bird {
+namespace mole {
 
 namespace {
 /**

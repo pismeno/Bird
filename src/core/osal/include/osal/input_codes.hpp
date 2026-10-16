@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace bird::inputs {
+namespace mole::inputs {
 
 // ==========================================
 // MOUSE BUTTONS
@@ -138,4 +138,4 @@ enum class KeyCode : uint16_t {
   Menu          = 348  // Context Menu Key
 };
 
-} // bird::inputs
+} // mole::inputs

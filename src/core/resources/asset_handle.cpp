@@ -3,7 +3,7 @@
 #include "resources/asset_pool.hpp"
 #include "resources/asset_types.hpp"
 
-namespace bird {
+namespace mole {
 
 template<typename T>
 AssetHandle<T>::AssetHandle(AssetPool<T>* pool, uint32_t index, uint32_t generation) noexcept
@@ -84,6 +84,6 @@ void AssetHandle<T>::release_ref() {
 template class AssetHandle<ImageAsset>;
 template class AssetHandle<VertexShaderAsset>;
 template class AssetHandle<FragmentShaderAsset>;
-template class bird::AssetHandle<bird::TextAsset>;
+template class mole::AssetHandle<mole::TextAsset>;
 
-} // bird
+} // mole

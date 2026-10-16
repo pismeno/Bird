@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <glm/glm.hpp>
 
-namespace bird {
+namespace mole {
 
 TransformManager::TransformManager() {
   global_matrices.resize(MAX_ACTIVE_NODES, glm::mat3x3(1.0f));
@@ -18,52 +18,52 @@ Result<void> TransformManager::set_node_position(NodeID node_id, glm::vec2 pos) 
   TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
-    return bird::fail("Transform not found");
+    return mole::fail("Transform not found");
   }
 
   transform->local_position = pos;
   mark_spatial_children_dirty(node_id);
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> TransformManager::set_node_scale(NodeID node_id, glm::vec2 scale) {
   TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
-    return bird::fail("Transform not found");
+    return mole::fail("Transform not found");
   }
 
   transform->local_scale = scale;
   mark_spatial_children_dirty(node_id);
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> TransformManager::set_node_shear(NodeID node_id, glm::vec2 shear) {
   TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
-    return bird::fail("Transform not found");
+    return mole::fail("Transform not found");
   }
 
   transform->local_shear = shear;
   mark_spatial_children_dirty(node_id);
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> TransformManager::set_node_rotation(NodeID node_id, float rotation) {
   TransformInfo* transform = get_transform(node_id.index());
 
   if (!transform) {
-    return bird::fail("Transform not found");
+    return mole::fail("Transform not found");
   }
 
   transform->local_rotation = rotation;
   mark_spatial_children_dirty(node_id);
 
-  return bird::ok();
+  return mole::ok();
 }
 
 void TransformManager::mark_spatial_children_dirty(NodeID parent_id) {
@@ -394,12 +394,12 @@ Result<void> TransformManager::on_serialize_scene(nlohmann::json& json) const {
     json["nodes"].push_back(transform_json);
   }
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> TransformManager::on_deserialize_scene(const nlohmann::json& json) {
   if (!json.contains("nodes") || !json["nodes"].is_array()) {
-    return bird::ok();
+    return mole::ok();
   }
 
   for (const auto& node_json : json["nodes"]) {
@@ -454,7 +454,7 @@ Result<void> TransformManager::on_deserialize_scene(const nlohmann::json& json) 
     transform->is_dirty = true;
   }
 
-  return bird::ok();
+  return mole::ok();
 }
 
-} // bird
+} // mole

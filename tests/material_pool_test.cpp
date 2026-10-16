@@ -2,7 +2,7 @@
 
 #include "resources/material_pool.hpp"
 
-using namespace bird;
+using namespace mole;
 
 TEST_CASE("MaterialPool: Basic Add and Validity") {
   MaterialPool pool;

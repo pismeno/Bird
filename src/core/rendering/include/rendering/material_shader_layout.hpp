@@ -6,7 +6,7 @@
 
 #include "utils/string_hash.hpp"
 
-namespace bird {
+namespace mole {
 
 struct ShaderPropertyLayout {
   uint32_t offset;
@@ -18,4 +18,4 @@ struct MaterialShaderLayout {
   uint32_t total_size = 0;
 };
 
-} // bird
+} // mole

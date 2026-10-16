@@ -5,7 +5,7 @@
 #include "node_system/managers/transform_manager.hpp"
 #include "node_system/node_types.hpp"
 
-using namespace bird;
+using namespace mole;
 
 inline void CHECK_TRANSLATION(const glm::mat3x3& mat, float expected_x, float expected_y) {
   CHECK(mat[2][0] == doctest::Approx(expected_x));

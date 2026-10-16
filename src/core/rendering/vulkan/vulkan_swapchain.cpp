@@ -4,16 +4,16 @@
 
 #include <vulkan/vulkan_raii.hpp>
 
-namespace bird {
+namespace mole {
 
 Result<std::unique_ptr<VulkanSwapchain>> VulkanSwapchain::create(VulkanContext& vk_context, uint32_t window_width, uint32_t window_height) {
     std::unique_ptr<VulkanSwapchain> swapchain(new VulkanSwapchain());
 
     auto r_create_swap_chain = swapchain->create_swap_chain(vk_context, window_width, window_height);
-    if (!r_create_swap_chain) return bird::fail(r_create_swap_chain.error());
+    if (!r_create_swap_chain) return mole::fail(r_create_swap_chain.error());
 
     auto r_create_image_views = swapchain->create_image_views(vk_context);
-    if (!r_create_image_views) return bird::fail(r_create_image_views.error());
+    if (!r_create_image_views) return mole::fail(r_create_image_views.error());
 
     return std::move(swapchain);
 }
@@ -62,15 +62,15 @@ Result<void> VulkanSwapchain::create_swap_chain(VulkanContext& vk_context, uint3
   const vk::raii::SurfaceKHR& surface = vk_context.get_surface();
 
   auto caps_res = physical_device.getSurfaceCapabilitiesKHR(*surface);
-  if (caps_res.result != vk::Result::eSuccess) return bird::fail("Failed to get surface capabilities");
+  if (caps_res.result != vk::Result::eSuccess) return mole::fail("Failed to get surface capabilities");
   vk::SurfaceCapabilitiesKHR surface_capabilities = caps_res.value;
 
   auto formats_res = physical_device.getSurfaceFormatsKHR(*surface);
-  if (formats_res.result != vk::Result::eSuccess) return bird::fail("Failed to get surface formats");
+  if (formats_res.result != vk::Result::eSuccess) return mole::fail("Failed to get surface formats");
   std::vector<vk::SurfaceFormatKHR> available_formats = formats_res.value;
 
   auto modes_res = physical_device.getSurfacePresentModesKHR(*surface);
-  if (modes_res.result != vk::Result::eSuccess) return bird::fail("Failed to get present modes");
+  if (modes_res.result != vk::Result::eSuccess) return mole::fail("Failed to get present modes");
   std::vector<vk::PresentModeKHR> availablePresentModes = modes_res.value;
 
   swap_chain_extent = choose_swap_extent(surface_capabilities, window_width, window_height);
@@ -96,17 +96,17 @@ Result<void> VulkanSwapchain::create_swap_chain(VulkanContext& vk_context, uint3
   vk::Device raw_dev = *logical_device;
   auto swap_res = raw_dev.createSwapchainKHR(swap_chain_create_info);
   if (swap_res.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create swapchain");
+    return mole::fail("Failed to create swapchain");
   }
   swap_chain = vk::raii::SwapchainKHR(logical_device, swap_res.value);
 
   auto images_res = swap_chain.getImages();
   if (images_res.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to retrieve swapchain images");
+    return mole::fail("Failed to retrieve swapchain images");
   }
   swap_chain_images = images_res.value;
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> VulkanSwapchain::create_image_views(VulkanContext& vk_context) {
@@ -127,13 +127,13 @@ Result<void> VulkanSwapchain::create_image_views(VulkanContext& vk_context) {
 
     auto view_res = raw_device.createImageView(image_view_create_info);
     if (view_res.result != vk::Result::eSuccess) {
-      return bird::fail("Failed to create swapchain image view");
+      return mole::fail("Failed to create swapchain image view");
     }
 
     swap_chain_image_views.emplace_back(logical_device, view_res.value);
   }
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> VulkanSwapchain::recreate(VulkanContext& vk_context, uint32_t window_width, uint32_t window_height) {
@@ -148,7 +148,7 @@ Result<void> VulkanSwapchain::recreate(VulkanContext& vk_context, uint32_t windo
   auto r_create_image_views = create_image_views(vk_context);
   if (!r_create_image_views) return r_create_image_views;
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<uint32_t> VulkanSwapchain::acquire_next_image(const vk::raii::Semaphore& present_complete_semaphore) {
@@ -157,11 +157,11 @@ Result<uint32_t> VulkanSwapchain::acquire_next_image(const vk::raii::Semaphore& 
 
   // Check for window resize conditions
   if (acquire_res.result == vk::Result::eErrorOutOfDateKHR || acquire_res.result == vk::Result::eSuboptimalKHR) {
-    return bird::fail("Swapchain out of date or suboptimal");
+    return mole::fail("Swapchain out of date or suboptimal");
   } else if (acquire_res.result == vk::Result::eErrorDeviceLost) {
-    return bird::fail("Device lost");
+    return mole::fail("Device lost");
   } else if (acquire_res.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to acquire next swapchain image");
+    return mole::fail("Failed to acquire next swapchain image");
   }
 
   return acquire_res.value;
@@ -181,14 +181,14 @@ Result<void> VulkanSwapchain::present(const vk::raii::Queue& present_queue, cons
 
   // Check for window resize conditions
   if (present_res == vk::Result::eErrorOutOfDateKHR || present_res == vk::Result::eSuboptimalKHR) {
-    return bird::fail("Swapchain out of date or suboptimal");
+    return mole::fail("Swapchain out of date or suboptimal");
   } else if (present_res == vk::Result::eErrorDeviceLost) {
-    return bird::fail("Device lost");
+    return mole::fail("Device lost");
   } else if (present_res != vk::Result::eSuccess) {
-    return bird::fail("Failed to present swapchain image");
+    return mole::fail("Failed to present swapchain image");
   }
 
-  return bird::ok();
+  return mole::ok();
 }
 
-} // bird
+} // mole

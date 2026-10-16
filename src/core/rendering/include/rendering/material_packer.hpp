@@ -8,7 +8,7 @@
 #include "rendering/packed_material.hpp"
 #include "resources/material.hpp"
 
-namespace bird {
+namespace mole {
 
 class MaterialPacker {
  public:
@@ -20,4 +20,4 @@ class MaterialPacker {
   BindlessTextureRegistry* bindless_texture_registry;
 };
 
-} // bird
+} // mole

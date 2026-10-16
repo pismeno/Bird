@@ -13,7 +13,7 @@
 #include <osal/ifile_system.hpp>
 #include <utils/result.hpp>
 
-namespace bird {
+namespace mole {
 
 using ManagerFactory = std::function<std::unique_ptr<INodeManager>()>;
 
@@ -91,4 +91,4 @@ class SceneFactory {
   IFileSystem* file_system;
 };
 
-} // bird
+} // mole

@@ -7,7 +7,7 @@
 #include "resources/material_types.hpp"
 #include "utils/result.hpp"
 
-namespace bird {
+namespace mole {
 
 class PackedMaterialCache {
  public:
@@ -33,4 +33,4 @@ class PackedMaterialCache {
   MaterialPool* material_pool;
 };
 
-} // bird
+} // mole

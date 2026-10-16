@@ -4,7 +4,7 @@
 #include <Windows.h>
 #include <string>
 
-namespace bird {
+namespace mole {
 
 namespace {
 // Internal helper for RAII handle management, hidden in anonymous namespace
@@ -54,7 +54,7 @@ Result<std::filesystem::path> WindowsFileSystem::resolve(std::string_view virtua
     return it->second / relative_path;
   }
 
-  return bird::fail("No mount point for prefix: " + prefix);
+  return mole::fail("No mount point for prefix: " + prefix);
 }
 
 void WindowsFileSystem::mount(std::string_view prefix, const std::filesystem::path& physical_path) {
@@ -167,4 +167,4 @@ Result<uint64_t> WindowsFileSystem::get_file_size(std::string_view path) const {
   return static_cast<uint64_t>(size.QuadPart);
 }
 
-} // bird
+} // mole

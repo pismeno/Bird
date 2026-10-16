@@ -9,7 +9,7 @@
 #include <rendering/vulkan/vulkan_context.hpp>
 #include "utils/result.hpp"
 
-namespace bird {
+namespace mole {
 
 class VulkanSwapchain {
  public:
@@ -42,4 +42,4 @@ class VulkanSwapchain {
   std::vector<vk::raii::ImageView> swap_chain_image_views;
 };
 
-} // bird
+} // mole

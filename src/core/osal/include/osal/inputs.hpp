@@ -4,7 +4,7 @@
 
 #include "input_codes.hpp"
 
-namespace bird::inputs {
+namespace mole::inputs {
 
 /**
  * @brief Abstract static class for querying some IWindow about inputs.
@@ -40,4 +40,4 @@ class Inputs {
   virtual void end_frame() noexcept = 0;
 };
 
-} // bird::inputs
+} // mole::inputs

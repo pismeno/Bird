@@ -7,7 +7,7 @@
 #include <osal/inputs.hpp>
 #include <utils/result.hpp>
 
-namespace bird {
+namespace mole {
 
 using namespace inputs;
 
@@ -66,4 +66,4 @@ class IWindow {
   virtual Result<void> init() = 0;
 };
 
-} // bird
+} // mole

@@ -17,7 +17,7 @@
 #include "utils/result.hpp"
 #include "utils/counter.hpp"
 
-namespace bird {
+namespace mole {
 
 class VulkanMaterialHandler {
  public:
@@ -107,4 +107,4 @@ class VulkanMaterialHandler {
   PackedMaterialCache* packed_material_cache;
 };
 
-} // bird
+} // mole

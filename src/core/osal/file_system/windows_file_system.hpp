@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <unordered_map>
 
-namespace bird {
+namespace mole {
 
 class WindowsFileSystem : public IFileSystem {
 
@@ -29,4 +29,4 @@ class WindowsFileSystem : public IFileSystem {
   std::unordered_map<std::string, std::filesystem::path> mount_points;
 };
 
-} // bird
+} // mole

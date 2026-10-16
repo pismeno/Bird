@@ -30,7 +30,7 @@
 #include <utils/result.hpp>
 #include "utils/counter.hpp"
 
-namespace bird {
+namespace mole {
 
 class VulkanRenderer : public IRenderer {
  public:
@@ -109,7 +109,7 @@ class VulkanRenderer : public IRenderer {
   uint32_t current_frame_ = 0;
   ViewData current_view_data_;
 
-  // bird systems
+  // mole systems
   AssetManager* asset_manager;
   MaterialPool* material_pool;
 
@@ -121,4 +121,4 @@ class VulkanRenderer : public IRenderer {
   std::vector<MaterialID> get_needed_pass_materials();
 };
 
-} // bird
+} // mole

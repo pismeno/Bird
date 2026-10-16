@@ -1,7 +1,7 @@
 #include "resources/material_pool.hpp"
 #include <cassert>
 
-namespace bird {
+namespace mole {
 
 const Material& MaterialPool::get(MaterialID material_id) const {
   assert(is_valid(material_id) && "Attempting to get an invalid Material!"); // TODO return fallback material here
@@ -152,4 +152,4 @@ void MaterialPool::set_property(std::string_view string_material_id, std::string
   set_property(id, property, std::move(value)); // Fall through to the ID-based function
 }
 
-} // bird
+} // mole

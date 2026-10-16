@@ -6,7 +6,7 @@
 
 #include "utils/result.hpp"
 
-namespace bird {
+namespace mole {
 
 class VulkanContext {
  public:
@@ -46,4 +46,4 @@ class VulkanContext {
   uint32_t texture_capacity;
 };
 
-} // bird
+} // mole

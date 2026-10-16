@@ -9,7 +9,7 @@
 #include <node_system/managers/transform_manager.hpp>
 #include <resources/render_commands.hpp>
 
-namespace bird {
+namespace mole {
 
 std::vector<RenderQuadCommand> RenderGatherer::gather_render_commands(Scene& scene) {
   auto drawable_manager = scene.get_manager<DrawableManager>();
@@ -44,4 +44,4 @@ std::vector<RenderQuadCommand> RenderGatherer::gather_render_commands(Scene& sce
   return commands;
 }
 
-} // bird
+} // mole

@@ -10,7 +10,7 @@
 #include <resources/asset_handle.hpp>
 #include <utils/result.hpp>
 
-namespace bird {
+namespace mole {
 
 namespace {
 Result<EShLanguage> detect_glslang_stage(const std::string& stage) {
@@ -21,7 +21,7 @@ Result<EShLanguage> detect_glslang_stage(const std::string& stage) {
     if (stage == "tesc" || stage == "tesscontrol") return EShLangTessControl;
     if (stage == "tese" || stage == "tessevaluation") return EShLangTessEvaluation;
 
-    return bird::fail("Unknown shader stage: " + stage);
+    return mole::fail("Unknown shader stage: " + stage);
 }
 
 std::string extract_stage(std::string_view filepath) {
@@ -43,19 +43,19 @@ std::string extract_stage(std::string_view filepath) {
 Result<std::unique_ptr<ShaderCompiler>> ShaderCompiler::create(EditorContext& editor_context) {
     auto compiler = std::unique_ptr<ShaderCompiler>(new ShaderCompiler());
     auto r_init = compiler->init(editor_context);
-    if (!r_init) return bird::fail(r_init.error());
+    if (!r_init) return mole::fail(r_init.error());
     return std::move(compiler);
 }
 
 Result<void> ShaderCompiler::init(EditorContext& editor_context) {
     file_system = editor_context.os_context->file_system;
     asset_manager = editor_context.resources_context->asset_manager;
-    return bird::ok();
+    return mole::ok();
 }
 
 Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_source_to_spirv(const std::string& glsl_source, const std::string& stage) {
     auto r_glslang_stage = detect_glslang_stage(stage);
-    if (!r_glslang_stage) return bird::fail(r_glslang_stage.error());
+    if (!r_glslang_stage) return mole::fail(r_glslang_stage.error());
 
     EShLanguage glslang_stage = r_glslang_stage.value();
     glslang::TShader shader(glslang_stage);
@@ -69,14 +69,14 @@ Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_source_to_spirv(const
 
     const TBuiltInResource* resources = GetDefaultResources();
     if (!shader.parse(resources, 450, false, EShMsgDefault)) {
-        return bird::fail(std::string("GLSL compilation failed: ") + shader.getInfoLog());
+        return mole::fail(std::string("GLSL compilation failed: ") + shader.getInfoLog());
     }
 
     glslang::TProgram program;
     program.addShader(&shader);
 
     if (!program.link(EShMsgDefault)) {
-        return bird::fail(std::string("GLSL linking failed: ") + program.getInfoLog());
+        return mole::fail(std::string("GLSL linking failed: ") + program.getInfoLog());
     }
 
     std::vector<uint32_t> spirv;
@@ -89,13 +89,13 @@ Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_source_to_spirv(const
 Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_file_to_spirv(std::string_view glsl_filepath, std::string_view spv_output_filepath) {
   // Read
   auto r_acquire_glsl = asset_manager->acquire<TextAsset>(glsl_filepath);
-  if (!r_acquire_glsl) return bird::fail(r_acquire_glsl.error());
+  if (!r_acquire_glsl) return mole::fail(r_acquire_glsl.error());
   std::string source_str = r_acquire_glsl.value()->as_string();
   std::string stage = extract_stage(glsl_filepath);
 
   // Compile
   auto r_spirv = compile_glsl_source_to_spirv(source_str, stage);
-  if (!r_spirv) return bird::fail(r_spirv.error());
+  if (!r_spirv) return mole::fail(r_spirv.error());
 
   // Write
   auto& spirv = r_spirv.value(); // Get mutable reference to move from later
@@ -105,7 +105,7 @@ Result<std::vector<uint32_t>> ShaderCompiler::compile_glsl_file_to_spirv(std::st
   std::vector<uint8_t> binary(byte_ptr, byte_ptr + byte_size);
 
   auto r_write_spv = file_system->write_bytes(spv_output_filepath, std::move(binary));
-  if (!r_write_spv) return bird::fail(r_write_spv.error());
+  if (!r_write_spv) return mole::fail(r_write_spv.error());
 
   // Return the SPIR-V data directly to the caller using std::move
   return std::move(spirv);
@@ -121,18 +121,18 @@ Result<std::string> ShaderCompiler::translate_spirv_to_msl(const std::vector<uin
 
         return compiler.compile();
     } catch (const std::exception& e) {
-        return bird::fail(std::string("SPIR-V to MSL translation error: ") + e.what());
+        return mole::fail(std::string("SPIR-V to MSL translation error: ") + e.what());
     }
 }
 
 Result<std::string> ShaderCompiler::compile_glsl_source_to_msl(const std::string& glsl_source, const std::string& stage) {
     auto r_spirv = compile_glsl_source_to_spirv(glsl_source, stage);
-    if (!r_spirv) return bird::fail(r_spirv.error());
+    if (!r_spirv) return mole::fail(r_spirv.error());
 
     auto r_msl = translate_spirv_to_msl(r_spirv.value());
-    if (!r_msl) return bird::fail(r_msl.error());
+    if (!r_msl) return mole::fail(r_msl.error());
 
     return r_msl.value();
 }
 
-} // namespace bird
+} // namespace mole

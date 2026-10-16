@@ -4,7 +4,7 @@
 #include <string_view>
 #include <cstdint>
 
-namespace bird {
+namespace mole {
 
 [[nodiscard]] const uint32_t* ShaderAsset::as_32bit_words() const noexcept {
   return reinterpret_cast<const uint32_t*>(data.data());
@@ -20,4 +20,4 @@ namespace bird {
   return std::string(as_string_view());
 }
 
-} // bird
+} // mole

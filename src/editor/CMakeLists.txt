@@ -1,6 +1,6 @@
-add_executable(BirdEditor)
+add_executable(MoleEditor)
 
-target_sources(BirdEditor
+target_sources(MoleEditor
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include/editor/editor.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/editor/editor_context.hpp
@@ -11,16 +11,16 @@ target_sources(BirdEditor
         ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
 
-target_link_libraries(BirdEditor
+target_link_libraries(MoleEditor
         PRIVATE
-        BirdCore
+        MoleCore
         glfw
 )
 
-target_include_directories(BirdEditor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(MoleEditor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 if(APPLE)
-    target_link_libraries(BirdEditor
+    target_link_libraries(MoleEditor
             PRIVATE
             "-framework Cocoa"
             "-framework QuartzCore"
@@ -29,7 +29,7 @@ if(APPLE)
             "-framework CoreGraphics"
     )
 
-    target_include_directories(BirdEditor PRIVATE
+    target_include_directories(MoleEditor PRIVATE
             "${CMAKE_SOURCE_DIR}/external/metal-cpp"
     )
 endif()

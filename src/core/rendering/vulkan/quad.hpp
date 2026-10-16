@@ -4,7 +4,7 @@
 
 #include <glm/glm.hpp>
 
-namespace bird {
+namespace mole {
 
 struct alignas(16) Quad {
   glm::mat3x2 transform;
@@ -13,4 +13,4 @@ struct alignas(16) Quad {
   uint32_t _padding = 0; // so the last 4 bytes are zeroed out
 };
 
-} // bird
+} // mole

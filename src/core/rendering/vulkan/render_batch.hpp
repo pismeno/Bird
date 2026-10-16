@@ -4,7 +4,7 @@
 
 #include "combined_shader_key.hpp"
 
-namespace bird {
+namespace mole {
 
 struct RenderBatch {
   CombinedShaderKey shader_key;
@@ -14,4 +14,4 @@ struct RenderBatch {
   uint32_t material_count;
 };
 
-} // bird
+} // mole

@@ -4,7 +4,7 @@
 
   #include "resources/material_types.hpp"
 
-  namespace bird {
+  namespace mole {
 
   struct RenderQuadCommand {
     glm::mat3x3 transform;
@@ -13,4 +13,4 @@
     uint32_t z_index;
   };
 
-  } // bird
+  } // mole

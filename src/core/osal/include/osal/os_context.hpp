@@ -1,6 +1,6 @@
 #pragma once
 
-namespace bird {
+namespace mole {
 
 class IFileSystem;
 
@@ -11,4 +11,4 @@ struct OSContext {
   IFileSystem* file_system;
 };
 
-} // bird
+} // mole

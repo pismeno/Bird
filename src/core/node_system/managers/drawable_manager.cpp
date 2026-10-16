@@ -7,7 +7,7 @@
 #include <utils/result.hpp>
 #include "glm/vec4.hpp"
 
-namespace bird {
+namespace mole {
 
 void DrawableManager::on_node_destroyed(NodeID node_id) noexcept {
   drawables[node_id.index()].is_visible = false;
@@ -41,12 +41,12 @@ Result<void> DrawableManager::on_serialize_scene(nlohmann::json &json) const {
     json["nodes"].push_back(drawable_json);
   }
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> DrawableManager::on_deserialize_scene(const nlohmann::json &json) {
   if (!json.contains("nodes") || !json["nodes"].is_array()) {
-    return bird::ok();
+    return mole::ok();
   }
 
   for (const auto& drawable_json : json["nodes"]) {
@@ -69,31 +69,31 @@ Result<void> DrawableManager::on_deserialize_scene(const nlohmann::json &json) {
     drawables[node_idx].is_visible = true;
   }
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> DrawableManager::set_node_visible(NodeID node_id, bool visible) {
-  if (!has_drawable(node_id)) return bird::fail("Node has no drawable");
+  if (!has_drawable(node_id)) return mole::fail("Node has no drawable");
   drawables[node_id.index()].is_visible = visible;
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> DrawableManager::set_node_size(NodeID node_id, glm::vec2 size) {
-  if (!has_drawable(node_id)) return bird::fail("Node has no drawable");
+  if (!has_drawable(node_id)) return mole::fail("Node has no drawable");
   drawables[node_id.index()].size = size;
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> DrawableManager::set_node_material(NodeID node_id, MaterialID material_id) {
-  if (!has_drawable(node_id)) return bird::fail("Node has no drawable");
+  if (!has_drawable(node_id)) return mole::fail("Node has no drawable");
   drawables[node_id.index()].material_id = material_id;
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> DrawableManager::set_node_z_index(NodeID node_id, uint32_t z_index) {
-  if (!has_drawable(node_id)) return bird::fail("Node has no drawable");
+  if (!has_drawable(node_id)) return mole::fail("Node has no drawable");
   drawables[node_id.index()].z_index = z_index;
-  return bird::ok();
+  return mole::ok();
 }
 
-} // bird
+} // mole

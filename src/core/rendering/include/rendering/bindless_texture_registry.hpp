@@ -7,7 +7,7 @@
 #include "resources/asset_types.hpp"
 #include "utils/result.hpp"
 
-namespace bird {
+namespace mole {
 
 class BindlessTextureRegistry {
  public:
@@ -47,4 +47,4 @@ class BindlessTextureRegistry {
   std::unordered_map<uint64_t, AssetHandle<ImageAsset>> pending_texture_uploads;
 };
 
-} // bird
+} // mole

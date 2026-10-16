@@ -1,3 +1,3 @@
-# Bird Core
-Source code for the bird core.
+# Mole Core
+Source code for the mole core.
 Includes rendering, sounds, ECS, and more.

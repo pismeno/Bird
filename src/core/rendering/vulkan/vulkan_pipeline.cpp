@@ -7,13 +7,13 @@
 #include "resources/asset_handle.hpp"
 #include "resources/asset_types.hpp"
 
-namespace bird {
+namespace mole {
 
 Result<std::unique_ptr<VulkanPipeline>> VulkanPipeline::create(const VulkanPipelineOptions& options) {
   std::unique_ptr<VulkanPipeline> pipeline(new VulkanPipeline());
 
   auto r_create_graphics_pipeline = pipeline->create_graphics_pipeline(options);
-  if (!r_create_graphics_pipeline) return bird::fail(r_create_graphics_pipeline.error());
+  if (!r_create_graphics_pipeline) return mole::fail(r_create_graphics_pipeline.error());
 
   return std::move(pipeline);
 }
@@ -27,7 +27,7 @@ Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const AssetHa
 
   auto vkr_create_shader_module = vk_context.get_logical_device().createShaderModule(create_info);
   if (vkr_create_shader_module.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create Vulkan shader module for");
+    return mole::fail("Failed to create Vulkan shader module for");
   }
 
   return std::make_unique<vk::raii::ShaderModule>(std::move(vkr_create_shader_module.value));
@@ -36,10 +36,10 @@ Result<std::unique_ptr<vk::raii::ShaderModule>> load_shader_module(const AssetHa
 Result<void> VulkanPipeline::create_graphics_pipeline(const VulkanPipelineOptions& options) {
   // loading the shaders from files
   auto r_load_vert_shader_module = load_shader_module(options.vert_shader, options.vk_context);
-  if (!r_load_vert_shader_module) return bird::fail(r_load_vert_shader_module.error());
+  if (!r_load_vert_shader_module) return mole::fail(r_load_vert_shader_module.error());
 
   auto r_load_frag_shader_module = load_shader_module(options.frag_shader, options.vk_context);
-  if (!r_load_frag_shader_module) return bird::fail(r_load_frag_shader_module.error());
+  if (!r_load_frag_shader_module) return mole::fail(r_load_frag_shader_module.error());
 
   std::unique_ptr<vk::raii::ShaderModule> vert_shader_module = std::move(r_load_vert_shader_module).value();
   std::unique_ptr<vk::raii::ShaderModule> frag_shader_module = std::move(r_load_frag_shader_module).value();
@@ -144,7 +144,7 @@ Result<void> VulkanPipeline::create_graphics_pipeline(const VulkanPipelineOption
   // creating the pipeline layout
   auto vkr_create_pipeline_layout = logical_device.createPipelineLayout(pipeline_layout_info);
   if (vkr_create_pipeline_layout.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create pipeline layout");
+    return mole::fail("Failed to create pipeline layout");
   }
 
   pipeline_layout = std::move(vkr_create_pipeline_layout.value);
@@ -172,15 +172,15 @@ Result<void> VulkanPipeline::create_graphics_pipeline(const VulkanPipelineOption
 
   auto vkr_create_graphics_pipeline = logical_device.createGraphicsPipeline(nullptr, pipeline_create_info_chain.get<vk::GraphicsPipelineCreateInfo>());
   if (vkr_create_graphics_pipeline.result != vk::Result::eSuccess) {
-    return bird::fail("Failed to create graphics pipeline");
+    return mole::fail("Failed to create graphics pipeline");
   }
   graphics_pipeline = std::move(vkr_create_graphics_pipeline.value);
 
-  return bird::ok();
+  return mole::ok();
 }
 
 void VulkanPipeline::bind(const vk::raii::CommandBuffer& command_buffer) const {
   command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *graphics_pipeline);
 }
 
-} // bird
+} // mole

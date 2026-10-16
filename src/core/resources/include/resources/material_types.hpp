@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-namespace bird {
+namespace mole {
 
 /**
  * @brief Unique identifier for a material. It consists of a 32-bit index and a 32-bit generation-counter.
@@ -35,13 +35,13 @@ struct MaterialID {
 
 inline constexpr MaterialID MaterialID::INVALID{ std::numeric_limits<uint64_t>::max() };
 
-} // bird
+} // mole
 
 namespace std {
 
 template <>
-struct hash<bird::MaterialID> {
-  std::size_t operator()(const bird::MaterialID& m) const noexcept {
+struct hash<mole::MaterialID> {
+  std::size_t operator()(const mole::MaterialID& m) const noexcept {
     return std::hash<int>{}(m.id);
   }
 };

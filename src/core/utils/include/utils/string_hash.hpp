@@ -3,7 +3,7 @@
 #include <string_view>
 #include <functional>
 
-namespace bird {
+namespace mole {
 
 struct StringHash {
   using is_transparent = void; // enables C++20 heterogeneous lookup

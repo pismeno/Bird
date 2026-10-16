@@ -4,18 +4,18 @@
 
 #include <osal/inputs.hpp>
 
-namespace bird {
+namespace mole {
 class GlfwWindow;
 }
 
-namespace bird::inputs {
+namespace mole::inputs {
 
 /**
  * @brief Class for handling GLFW inputs
  */
 class GlfwInputs : public Inputs {
 
-  friend class ::bird::GlfwWindow;
+  friend class ::mole::GlfwWindow;
 
  public:
   explicit GlfwInputs() = default;
@@ -76,4 +76,4 @@ class GlfwInputs : public Inputs {
   inline void endFrameMouse() noexcept;
 };
 
-} // bird::inputs
+} // mole::inputs

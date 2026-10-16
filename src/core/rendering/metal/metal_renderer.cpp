@@ -16,7 +16,7 @@
 #include "rendering/shader_compiler.hpp"
 #include "node_system/render_gatherer.hpp"
 
-namespace bird {
+namespace mole {
 
 struct QuadTransformUniform {
   glm::vec2 local_position;
@@ -71,7 +71,7 @@ Result<void> MetalRenderer::init() {
   create_command_queue();
   create_render_pipeline();
 
-  return bird::ok();
+  return mole::ok();
 }
 
 void MetalRenderer::render() {
@@ -154,7 +154,7 @@ void MetalRenderer::submit_quad(const RenderCommand render_command) {
   };
 
   std::memcpy(metal_backend_->transform_buffer->contents(), &quad_transform_uniform, sizeof(quad_transform_uniform));
-  texture = new Texture2D("src/bird_core/rendering/alpha_test.png", metal_backend_->metal_device);
+  texture = new Texture2D("src/mole_core/rendering/alpha_test.png", metal_backend_->metal_device);
 }
 
 Result<void> MetalRenderer::shutdown() {
@@ -178,12 +178,12 @@ Result<void> MetalRenderer::shutdown() {
   delete metal_backend_;
   metal_backend_ = nullptr;
 
-  return bird::ok();
+  return mole::ok();
 }
 
 Result<void> MetalRenderer::resize_framebuffer(uint32_t width, uint32_t height) {
   //resize_frame_buffer(width, height);
-  return bird::ok();
+  return mole::ok();
 }
 
 void MetalRenderer::create_default_library() {
@@ -192,8 +192,8 @@ void MetalRenderer::create_default_library() {
   try {
   ShaderCompiler compiler;
 
-  std::string vert_msl = compiler.compile_glsl_file_to_msl("src/bird_core/rendering/shaders/forward_2d.vert.glsl");
-  std::string frag_msl = compiler.compile_glsl_file_to_msl("src/bird_core/rendering/shaders/forward_2d.frag.glsl");
+  std::string vert_msl = compiler.compile_glsl_file_to_msl("src/mole_core/rendering/shaders/forward_2d.vert.glsl");
+  std::string frag_msl = compiler.compile_glsl_file_to_msl("src/mole_core/rendering/shaders/forward_2d.frag.glsl");
 
   metal_backend_->metal_vertex_library = metal_backend_->metal_device->newLibrary(
     NS::String::string(vert_msl.c_str(), NS::UTF8StringEncoding),
@@ -274,7 +274,7 @@ void MetalRenderer::create_render_pipeline() {
   vertex_descriptor->layouts()->object(1)->setStepFunction(MTL::VertexStepFunctionPerVertex);
 
   MTL::RenderPipelineDescriptor* render_pipeline_descriptor = MTL::RenderPipelineDescriptor::alloc()->init();
-  render_pipeline_descriptor->setLabel(NS::String::string("Bird Triangle Pipeline", NS::ASCIIStringEncoding));
+  render_pipeline_descriptor->setLabel(NS::String::string("Mole Triangle Pipeline", NS::ASCIIStringEncoding));
   render_pipeline_descriptor->setVertexFunction(vertex_shader);
   render_pipeline_descriptor->setFragmentFunction(fragment_shader);
   render_pipeline_descriptor->setVertexDescriptor(vertex_descriptor);
@@ -356,5 +356,5 @@ void MetalRenderer::resize_frame_buffer(int width, int height) {
   metal_backend_->metal_layer->setDrawableSize(CGSizeMake(width, height));
 }
 
-} // namespace bird
+} // namespace mole
 

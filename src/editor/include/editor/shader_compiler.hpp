@@ -10,7 +10,7 @@
 #include <resources/resources_context.hpp>
 #include <editor/editor_context.hpp>
 
-namespace bird {
+namespace mole {
 
 class ShaderCompiler {
  public:
@@ -44,4 +44,4 @@ class ShaderCompiler {
   IFileSystem* file_system;
 };
 
-} // bird
+} // mole

@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <limits>
 
-namespace bird {
+namespace mole {
 
 template <typename T> class AssetPool;
 
@@ -48,4 +48,4 @@ class AssetHandle {
   uint32_t generation = 0;
 };
 
-} // namespace bird
+} // namespace mole

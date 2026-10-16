@@ -1,6 +1,6 @@
 #pragma once
 
-namespace bird {
+namespace mole {
 
 struct ResourcesContext;
 class MaterialShaderLayoutReflector;
@@ -21,4 +21,4 @@ struct RenderingContext {
   IRenderer* renderer;
 };
 
-} // bird
+} // mole

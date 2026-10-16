@@ -8,19 +8,19 @@ endif()
 
 add_compile_definitions(SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS=1)
 
-add_library(BirdUtils INTERFACE)
+add_library(MoleUtils INTERFACE)
 
-target_sources(BirdUtils INTERFACE
+target_sources(MoleUtils INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/include/utils/result.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/include/utils/string_hash.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/include/utils/counter.hpp
 )
 
-target_include_directories(BirdUtils INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/utils/include)
+target_include_directories(MoleUtils INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/utils/include)
 
-add_library(BirdOSAL STATIC)
+add_library(MoleOSAL STATIC)
 
-target_sources(BirdOSAL
+target_sources(MoleOSAL
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/osal/windowing/glfw/glfw_window.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/osal/windowing/glfw/glfw_window.hpp
@@ -38,24 +38,24 @@ target_sources(BirdOSAL
         ${CMAKE_CURRENT_SOURCE_DIR}/osal/include/osal/os_context.hpp
 )
 
-target_include_directories(BirdOSAL PUBLIC 
+target_include_directories(MoleOSAL PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/osal/include
         "${CMAKE_SOURCE_DIR}/external/json/include"
 )
-target_include_directories(BirdOSAL PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(MoleOSAL PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(BirdOSAL PUBLIC
+target_link_libraries(MoleOSAL PUBLIC
         glm::glm
 )
 
-target_link_libraries(BirdOSAL PRIVATE
+target_link_libraries(MoleOSAL PRIVATE
         glfw
-        BirdUtils
+        MoleUtils
 )
 
-add_library(BirdResources STATIC)
+add_library(MoleResources STATIC)
 
-target_sources(BirdResources
+target_sources(MoleResources
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_pool.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/asset_pool.cpp
@@ -75,20 +75,20 @@ target_sources(BirdResources
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/include/resources/material_pool.hpp
 )
 
-target_include_directories(BirdResources PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/resources/include)
-target_include_directories(BirdResources PRIVATE
+target_include_directories(MoleResources PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/resources/include)
+target_include_directories(MoleResources PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         "${CMAKE_SOURCE_DIR}/external/stb"
 )
 
-target_link_libraries(BirdResources PUBLIC
-        BirdOSAL
-        BirdUtils
+target_link_libraries(MoleResources PUBLIC
+        MoleOSAL
+        MoleUtils
 )
 
-add_library(BirdNodeSystem STATIC)
+add_library(MoleNodeSystem STATIC)
 
-target_sources(BirdNodeSystem
+target_sources(MoleNodeSystem
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/render_gatherer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/scene.cpp
@@ -107,21 +107,21 @@ target_sources(BirdNodeSystem
         ${CMAKE_CURRENT_SOURCE_DIR}/node_system/include/node_system/managers/transform_manager.hpp
 )
 
-target_include_directories(BirdNodeSystem PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/node_system/include)
-target_include_directories(BirdNodeSystem PRIVATE
+target_include_directories(MoleNodeSystem PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/node_system/include)
+target_include_directories(MoleNodeSystem PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         "${CMAKE_SOURCE_DIR}/external/json/include"
 )
 
-target_link_libraries(BirdNodeSystem PUBLIC BirdResources)
+target_link_libraries(MoleNodeSystem PUBLIC MoleResources)
 
-target_link_libraries(BirdNodeSystem PRIVATE
+target_link_libraries(MoleNodeSystem PRIVATE
         glm::glm
 )
 
-add_library(BirdRendering STATIC)
+add_library(MoleRendering STATIC)
 
-target_sources(BirdRendering
+target_sources(MoleRendering
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/irenderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/metal/texture.cpp
@@ -159,29 +159,29 @@ target_sources(BirdRendering
         ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include/rendering/vertex.hpp
 )
 
-target_compile_definitions(BirdRendering PRIVATE
+target_compile_definitions(MoleRendering PRIVATE
         VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
         VULKAN_HPP_NO_EXCEPTIONS
         VULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS
 )
 
 if(WIN32)
-    target_compile_definitions(BirdRendering PRIVATE
+    target_compile_definitions(MoleRendering PRIVATE
             NOMINMAX
             VK_USE_PLATFORM_WIN32_KHR
     )
 endif()
 
-target_include_directories(BirdRendering PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include)
-target_include_directories(BirdRendering PRIVATE
+target_include_directories(MoleRendering PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/rendering/include)
+target_include_directories(MoleRendering PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         "${CMAKE_SOURCE_DIR}/external/stb"
         "${CMAKE_SOURCE_DIR}/external/Vulkan-Headers/include"
 )
 
-target_link_libraries(BirdRendering PUBLIC BirdResources)
+target_link_libraries(MoleRendering PUBLIC MoleResources)
 
-target_link_libraries(BirdRendering PRIVATE
+target_link_libraries(MoleRendering PRIVATE
         glm::glm
         spirv-cross-core
         spirv-cross-glsl
@@ -193,30 +193,30 @@ target_link_libraries(BirdRendering PRIVATE
         VulkanMemoryAllocator-Hpp::VulkanMemoryAllocator-Hpp
 )
 
-add_library(BirdCore INTERFACE)
+add_library(MoleCore INTERFACE)
 
-target_link_libraries(BirdCore INTERFACE
-        BirdNodeSystem
-        BirdRendering
-        BirdResources
-        BirdOSAL
+target_link_libraries(MoleCore INTERFACE
+        MoleNodeSystem
+        MoleRendering
+        MoleResources
+        MoleOSAL
 )
 
 if (WIN32)
     find_package(Vulkan REQUIRED)
 endif()
 
-target_link_libraries(BirdCore
+target_link_libraries(MoleCore
         INTERFACE
         glm::glm
 )
 
 if (Vulkan_FOUND)
-    target_link_libraries(BirdCore INTERFACE Vulkan::Vulkan)
+    target_link_libraries(MoleCore INTERFACE Vulkan::Vulkan)
 endif()
 
 if (APPLE)
-    target_link_libraries(BirdCore INTERFACE
+    target_link_libraries(MoleCore INTERFACE
             "-framework Metal"
             "-framework Foundation"
             "-framework QuartzCore"
@@ -224,7 +224,7 @@ if (APPLE)
     )
 endif()
 
-target_include_directories(BirdCore INTERFACE
+target_include_directories(MoleCore INTERFACE
         "${CMAKE_SOURCE_DIR}/external/metal-cpp"
         "${CMAKE_SOURCE_DIR}/external/glslang"
         "${CMAKE_SOURCE_DIR}/external/spirv-cross"

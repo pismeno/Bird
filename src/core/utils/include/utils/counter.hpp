@@ -2,10 +2,10 @@
 
 #include <cstdint>
 
-namespace bird {
+namespace mole {
 
 struct Counter {
   uint64_t count = 0;
 };
 
-} // bird
+} // mole

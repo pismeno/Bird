@@ -17,7 +17,7 @@
 #include <utils/string_hash.hpp>
 #include <node_system/inode_manager.hpp>
 
-namespace bird {
+namespace mole {
 
 class Scene {
 
@@ -87,4 +87,4 @@ class Scene {
   std::unordered_map<std::string, NodeDefinition, StringHash, std::equal_to<>> node_type_definitions;
 };
 
-} // bird
+} // mole

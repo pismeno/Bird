@@ -1,6 +1,6 @@
 #include "vulkan_pipeline_cache.hpp"
 
-namespace bird {
+namespace mole {
 
 Result<VulkanPipeline*> VulkanPipelineCache::get(const AssetHandle<VertexShaderAsset>& vert, const AssetHandle<FragmentShaderAsset>& frag) {
   CombinedShaderKey key{vert.get_packed_id(), frag.get_packed_id()};
@@ -19,10 +19,10 @@ Result<VulkanPipeline*> VulkanPipelineCache::get(const AssetHandle<VertexShaderA
   };
 
   auto r_pipeline = VulkanPipeline::create(create_options);
-  if (!r_pipeline) return bird::fail(r_pipeline.error());
+  if (!r_pipeline) return mole::fail(r_pipeline.error());
   pipelines[key] = std::move(r_pipeline).value();
 
   return pipelines[key].get();
 }
 
-} // bird
+} // mole

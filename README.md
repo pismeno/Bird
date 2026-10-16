@@ -1,5 +1,5 @@
 # About
-Bird Engine is a specialized 2d game engine.   
+Mole Engine is a specialized 2d game engine.   
 **Project Status:** Early Development
 
 # Goals
@@ -25,7 +25,7 @@ Bird Engine is a specialized 2d game engine.
 ## Layers
 This engine uses relaxed layered architecture, meaning that the layers are not strictly separated, but the layers on top can communicate with every layer bellow it.
 
-![BirdEngine Architecture](docs/assets/architecture.drawio.svg)
+![MoleEngine Architecture](docs/assets/architecture.drawio.svg)
 
 ## Systems
 Each layer has it's own systems, like the `AssetManager` of the Resources layer. 
@@ -43,7 +43,7 @@ The engine's api is designed to never throw exceptions. Instead, it relies on th
 
 ## Node System
 ### General idea
-- The node system is a powerful tool for creating complex behaviors and interactions in the Bird Engine.
+- The node system is a powerful tool for creating complex behaviors and interactions in the Mole Engine.
 - It allows developers to work in OOP style, while using Data-Oriented Design (DOD) principles under the hood.
 - The node system is built on top of ECS-like architecture.
 ### Architecture

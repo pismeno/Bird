@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <concepts>
 
-namespace bird {
+namespace mole {
 
 struct Failure {
   std::string message;
@@ -26,7 +26,7 @@ class [[nodiscard]] Result {
  public:
   Result(T value) : data(std::in_place_index<0>, std::move(value)) {}
 
-  Result(bird::Failure failure) : data(std::in_place_index<1>, std::move(failure.message)) {}
+  Result(mole::Failure failure) : data(std::in_place_index<1>, std::move(failure.message)) {}
 
   template <typename U>
   requires std::convertible_to<U, T> && (!std::same_as<std::decay_t<U>, Result<T>>)
@@ -91,4 +91,4 @@ class [[nodiscard]] Result<void> {
 
 static inline Result<void> ok() { return Result<void>(); }
 static inline Failure fail(std::string error_message) { return Failure{std::move(error_message)}; }
-} // bird
+} // mole

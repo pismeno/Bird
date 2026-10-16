@@ -6,7 +6,7 @@
 
 #include "node_types.hpp"
 
-namespace bird {
+namespace mole {
 
 class Scene;
 
@@ -27,4 +27,4 @@ class Node {
   std::vector<NodeID> children_ids;
 };
 
-} // bird
+} // mole

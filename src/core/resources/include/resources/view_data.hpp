@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-namespace bird {
+namespace mole {
 
 /**
  * @brief Contains view and projection matrices. Can be used as a camera.
@@ -15,4 +15,4 @@ struct alignas(16) ViewData {
   glm::mat4 viewProjection;
 };
 
-} // bird
+} // mole

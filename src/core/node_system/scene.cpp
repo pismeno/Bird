@@ -11,7 +11,7 @@
 #include <node_system/managers/transform_manager.hpp>
 #include <node_system/managers/drawable_manager.hpp>
 
-namespace bird {
+namespace mole {
 
 [[nodiscard]] NodeID Scene::generate_id() {
   if (!recycled_ids.empty()) {
@@ -224,4 +224,4 @@ void Scene::add_node_type(std::string_view node_type, std::span<const std::strin
   node_type_definitions.emplace(node_type, std::move(node_definition));
 }
 
-} // bird
+} // mole

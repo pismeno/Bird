@@ -3,7 +3,7 @@
 #include <resources/asset_handle.hpp>
 #include "resources/asset_types.hpp"
 
-namespace bird {
+namespace mole {
 
 PackedMaterial MaterialPacker::pack(const Material& material, const MaterialShaderLayout& layout) const {
   std::vector<std::byte> buffer(layout.total_size, std::byte{0});
@@ -39,4 +39,4 @@ PackedMaterial MaterialPacker::pack(const Material& material, const MaterialShad
   return { buffer };
 }
 
-} // bird
+} // mole

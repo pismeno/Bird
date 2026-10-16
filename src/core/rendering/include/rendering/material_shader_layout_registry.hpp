@@ -11,7 +11,7 @@
 #include "resources/material_types.hpp"
 #include "utils/result.hpp"
 
-namespace bird {
+namespace mole {
 
 class MaterialShaderLayoutRegistry {
  public:
@@ -41,4 +41,4 @@ class MaterialShaderLayoutRegistry {
   MaterialShaderLayoutReflector* material_shader_layout_reflector;
 };
 
-} // bird
+} // mole

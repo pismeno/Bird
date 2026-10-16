@@ -4,7 +4,7 @@
 
 #include "resources/asset_types.hpp"
 
-namespace bird {
+namespace mole {
 
 template <>
 Result<ImageAsset> AssetPool<ImageAsset>::parse_asset(std::string_view filepath, std::vector<uint8_t> raw_bytes) {
@@ -18,7 +18,7 @@ Result<ImageAsset> AssetPool<ImageAsset>::parse_asset(std::string_view filepath,
   );
 
   if (!raw_pixels) {
-    return bird::fail("Failed to decode image data");
+    return mole::fail("Failed to decode image data");
   }
 
   ImageAsset asset;
@@ -34,4 +34,4 @@ Result<ImageAsset> AssetPool<ImageAsset>::parse_asset(std::string_view filepath,
   return asset;
 }
 
-} // bird
+} // mole

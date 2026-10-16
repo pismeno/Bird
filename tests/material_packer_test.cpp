@@ -8,7 +8,7 @@
 #include "rendering/bindless_texture_registry.hpp"
 #include "resources/material.hpp"
 
-namespace bird {
+namespace mole {
 
 TEST_CASE("MaterialPacker serializes properties to correct byte offsets") {
   // 1. Setup dependencies
@@ -86,4 +86,4 @@ TEST_CASE("MaterialPacker handles missing properties safely") {
   CHECK(zero_check == 0);
 }
 
-} // bird
+} // mole

@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-namespace bird {
+namespace mole {
 
 /**
  * @brief Unique identifier for a node. It consists of a 32-bit index and a 32-bit generation-counter.
@@ -40,4 +40,4 @@ inline constexpr NodeID NodeID::INVALID{ std::numeric_limits<uint64_t>::max() };
 */
 static inline constexpr uint32_t MAX_ACTIVE_NODES = 50000;
 
-} // bird
+} // mole

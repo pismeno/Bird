@@ -12,7 +12,7 @@
 #include "resources/asset_types.hpp"
 #include "resources/asset_handle.hpp"
 
-namespace bird {
+namespace mole {
 
 struct VulkanPipelineOptions {
   VulkanSwapchain& swapchain;
@@ -42,4 +42,4 @@ class VulkanPipeline {
   vk::raii::Pipeline graphics_pipeline = nullptr;
 };
 
-} // bird
+} // mole

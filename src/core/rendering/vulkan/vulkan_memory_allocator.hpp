@@ -8,7 +8,7 @@
 #include "utils/result.hpp"
 #include "rendering/vulkan/vulkan_context.hpp"
 
-namespace bird {
+namespace mole {
 
 class VulkanMemoryAllocator {
  public:
@@ -32,4 +32,4 @@ class VulkanMemoryAllocator {
   vma::raii::Allocator vma_allocator = nullptr;
 };
 
-} // bird
+} // mole
