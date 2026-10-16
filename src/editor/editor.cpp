@@ -71,6 +71,9 @@ Result<void> Editor::init() {
   scene_factory = std::move(r_create_sf).value();
   node_system_context.scene_factory = scene_factory.get();
 
+  render_gatherer = std::make_unique<RenderGatherer>();
+  node_system_context.render_gatherer = render_gatherer.get();
+
   scene_factory->register_manager<TransformManager>();
   scene_factory->register_manager<DrawableManager>();
 
@@ -180,67 +183,95 @@ Result<void> Editor::init() {
 }
 
 Result<void> Editor::run() {
+  auto r_get_texture = asset_manager->acquire<ImageAsset>("editor://test_img.png");
+  if (!r_get_texture) return bird::fail(r_get_texture.error());
+  AssetHandle<ImageAsset> texture = std::move(r_get_texture).value();
+
   MaterialID test_mat_id = MaterialID::from(0, 0);
   MaterialID test_mat_id2 = MaterialID::from(1, 0);
 
-  uint64_t frames = 0;
-  while (!window->should_close()) {
-    frames++;
+  auto r_scene = scene_factory->create_scene("scene_2d");
+  if (!r_scene) return bird::fail(r_scene.error());
+  scene = std::move(r_scene).value();
+  auto* transform_manager = scene->get_manager<TransformManager>();
+  auto* drawable_manager = scene->get_manager<DrawableManager>();
 
+  NodeID root_node = scene->create_node(NodeID::INVALID, "sprite_2d");
+  NodeID child_node1 = scene->create_node(root_node, "sprite_2d");
+  NodeID child_node2 = scene->create_node(root_node, "sprite_2d");
+
+  auto t_1 = transform_manager->set_node_position(root_node, glm::vec2(0.0f, 0.0f));
+  if (!t_1) return t_1;
+  auto t_2 = transform_manager->set_node_position(child_node1, glm::vec2(1.0f, 1.0f));
+  if (!t_2) return t_2;
+  auto t_3 = transform_manager->set_node_position(child_node2, glm::vec2(1.0f, 1.5f));
+  if (!t_3) return t_3;
+
+  auto r_scale = transform_manager->set_node_scale(root_node, glm::vec2(8.0f, 8.0f));
+  if (!r_scale) return r_scale;
+  auto r_scale2 = transform_manager->set_node_scale(child_node1, glm::vec2(1.0f, 1.0f));
+  if (!r_scale2) return r_scale2;
+  auto r_scale3 = transform_manager->set_node_scale(child_node2, glm::vec2(1.0f, 1.0f));
+  if (!r_scale3) return r_scale3;
+
+  glm::vec2 world_size = glm::vec2(
+      (float)texture->width / PPU,
+      (float)texture->height / PPU
+  );
+
+  auto r_s_1 = drawable_manager->set_node_size(root_node, world_size);
+  if (!r_s_1) return r_s_1;
+  auto r_s_2 = drawable_manager->set_node_size(child_node1, world_size);
+  if (!r_s_2) return r_s_2;
+  auto r_s_3 = drawable_manager->set_node_size(child_node2, world_size);
+  if (!r_s_3) return r_s_3;
+
+  auto r_mat_1 = drawable_manager->set_node_material(root_node, test_mat_id);
+  if (!r_mat_1) return r_mat_1;
+  auto r_mat_2 = drawable_manager->set_node_material(child_node1, test_mat_id);
+  if (!r_mat_2) return r_mat_2;
+  auto r_mat_3 = drawable_manager->set_node_material(child_node2, test_mat_id2);
+  if (!r_mat_3) return r_mat_3;
+
+  auto r_z_1 = drawable_manager->set_node_z_index(root_node, 0);
+  if (!r_z_1) return r_z_1;
+  auto r_z_2 = drawable_manager->set_node_z_index(child_node1, 1);
+  if (!r_z_2) return r_z_2;
+  auto r_z_3 = drawable_manager->set_node_z_index(child_node2, 2);
+  if (!r_z_3) return r_z_3;
+
+  Inputs& inputs = window->get_inputs();
+  while (!window->should_close()) {
     bird::ViewData view_data{};
+
 
     float width = static_cast<float>(window->get_framebuffer_width());
     float height = static_cast<float>(window->get_framebuffer_height());
 
-    view_data.projection = glm::ortho(0.0f, width, height, 0.0f, -1.0f, 1.0f);
+    // FIX 3: Divide screen dimensions by PPU so projection maps to World Units.
+    // (Preserving your top-left 0,0 origin style)
+    float world_width = width / PPU;
+    float world_height = height / PPU;
+
+    auto r_move_to_mouse =  transform_manager->set_node_position(root_node, { inputs.get_mouse_x() / PPU, inputs.get_mouse_y() / PPU });
+    if (!r_move_to_mouse) return r_move_to_mouse;
+
+    view_data.projection = glm::ortho(0.0f, world_width, world_height, 0.0f, -1.0f, 1.0f);
     view_data.view = glm::mat4(1.0f);
     view_data.viewProjection = view_data.projection * view_data.view;
 
     window->update();
+    scene->update();
 
     renderer->begin_frame();
     renderer->begin_pass(view_data);
 
-    // --- TEST COMMANDS ---
-    std::vector<RenderQuadCommand> test_commands;
-
-    // Helper lambda to create a 2D affine transform matrix (Scale + Translation)
-    auto make_transform = [](float x, float y, float w, float h) {
-      glm::mat3 m(1.0f);
-      m[0][0] = w; // Scale X
-      m[1][1] = h; // Scale Y
-      m[2][0] = x; // Translation X
-      m[2][1] = y; // Translation Y
-      return m;
-    };
-
-    // Quad 1: Large background quad
-    RenderQuadCommand cmd1;
-    cmd1.material_id = test_mat_id2;
-    cmd1.z_index = 0;
-    cmd1.transform = make_transform(100.0f, 100.0f, 400.0f, 400.0f);
-    if (frames < 4000 || frames > 30000) test_commands.push_back(cmd1);
-
-    // Quad 2: Smaller quad, overlapping Quad 1 (higher Z-index draws on top)
-    RenderQuadCommand cmd2;
-    cmd2.material_id = test_mat_id;
-    cmd2.z_index = 1;
-    cmd2.transform = make_transform(300.0f, 300.0f, 200.0f, 200.0f);
-    test_commands.push_back(cmd2);
-
-    // Quad 3: Another quad, overlapping Quad 2 (highest Z-index)
-    RenderQuadCommand cmd3;
-    cmd3.material_id = test_mat_id;
-    cmd3.z_index = 2;
-    cmd3.transform = make_transform(200.0f, 400.0f, 150.0f, 150.0f);
-    test_commands.push_back(cmd3);
-
-    // Submit the commands to the queue
-    renderer->submit(test_commands);
-    // ---------------------
+    renderer->submit(node_system_context.render_gatherer->gather_render_commands(*scene));
 
     renderer->end_pass();
     renderer->end_frame();
+
+    scene->end_frame();
 
     if (renderer->needs_framebuffer_resize()) {
       auto r_resize_framebuffer = renderer->resize_framebuffer(

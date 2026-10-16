@@ -19,12 +19,15 @@
 #include <rendering/material_packer.hpp>
 #include <rendering/packed_material_cache.hpp>
 #include <node_system/scene_factory.hpp>
+#include <node_system/render_gatherer.hpp>
 #include <editor/shader_compiler.hpp>
 
 namespace bird {
 
 class Editor {
  public:
+  static constexpr float PPU = 32.0f; // TODO move into some sort of settings
+
   explicit Editor() = default;
   ~Editor() = default;
 
@@ -40,6 +43,7 @@ class Editor {
   RenderingContext rendering_context;
 
   std::unique_ptr<IWindow> window;
+  std::unique_ptr<Scene> scene;
 
   std::unique_ptr<IFileSystem> file_system;
   std::unique_ptr<AssetManager> asset_manager;
@@ -51,6 +55,7 @@ class Editor {
   std::unique_ptr<PackedMaterialCache> packed_material_cache;
   std::unique_ptr<IRenderer> renderer;
   std::unique_ptr<SceneFactory> scene_factory;
+  std::unique_ptr<RenderGatherer> render_gatherer;
   std::unique_ptr<ShaderCompiler> shader_compiler;
 };
 
