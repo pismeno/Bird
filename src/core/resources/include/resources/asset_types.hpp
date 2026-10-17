@@ -4,20 +4,44 @@
 #include <vector>
 #include <string_view>
 #include <string>
+#include <cstdint>
 
 namespace mole {
 
-namespace {
+enum class AssetType : uint32_t {
+  Unkown = 0,
+  Text = 1,
+  GenericBinary = 2,
+  VertexShader = 3,
+  FragmentShader = 4,
+  ComputeShader = 5,
+  GeometryShader = 6,
+  TessControlShader = 7,
+  TessEvaluationShader = 8,
+  Image = 9,
+};
+
+struct AssetHeader {
+  char magic[4];           // "MOLE"
+  uint32_t version;
+  AssetType asset_type;    // Enum backing type is uint32_t
+  uint32_t payload_size;   // Size of the actual cooked data
+};
+
+constexpr std::string_view ASSET_MAGIC = "MOLE";
+constexpr uint32_t ASSET_CURRENT_VERSION = 1;
+
 /**
  * @brief Base class for all assets.
+ *
+ * All asset structs have to contain ASSET_TYPE
  */
 struct Asset {
   virtual ~Asset() = default;
 };
-}
 
 struct ImageAsset : Asset {
-  static constexpr const char* TYPE_ID = "image_asset";
+  static constexpr const AssetType ASSET_TYPE = AssetType::Image;
 
   uint32_t width = 0;
   uint32_t height = 0;
@@ -30,11 +54,9 @@ struct ImageAsset : Asset {
 
 /**
  * @brief Base class for all binary assets.
- *
- * All asset structs have to contain TYPE_ID
  */
 struct BinaryAsset : Asset {
-  static constexpr const char* TYPE_ID = "generic_binary_asset";
+  static constexpr const AssetType ASSET_TYPE = AssetType::GenericBinary;
 
   std::vector<uint8_t> data;
 
@@ -45,7 +67,7 @@ struct BinaryAsset : Asset {
  * @brief Base class for all text assets.
  */
 struct TextAsset : public BinaryAsset {
-  static constexpr const char* TYPE_ID = "text_asset";
+  static constexpr const AssetType ASSET_TYPE = AssetType::Text;
 
   [[nodiscard]] std::string_view as_string_view() const noexcept;
   [[nodiscard]] std::string as_string() const;
@@ -59,33 +81,27 @@ struct ShaderAsset : public BinaryAsset {
 };
 
 struct VertexShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "vertex_shader_asset";
-  static constexpr const char* EXTENSION = "vert";
+  static constexpr const AssetType ASSET_TYPE = AssetType::VertexShader;
 };
 
 struct FragmentShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "fragment_shader_asset";
-  static constexpr const char* EXTENSION = "frag";
+  static constexpr const AssetType ASSET_TYPE = AssetType::FragmentShader;
 };
 
 struct ComputeShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "compute_shader_asset";
-  static constexpr const char* EXTENSION = "comp";
+  static constexpr const AssetType ASSET_TYPE = AssetType::ComputeShader;
 };
 
 struct GeometryShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "geometry_shader_asset";
-  static constexpr const char* EXTENSION = "geom";
+  static constexpr const AssetType ASSET_TYPE = AssetType::GeometryShader;
 };
 
 struct TessControlShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "tess_control_shader_asset";
-  static constexpr const char* EXTENSION = "tesc";
+  static constexpr const AssetType ASSET_TYPE = AssetType::TessControlShader;
 };
 
 struct TessEvaluationShaderAsset : public ShaderAsset {
-  static constexpr const char* TYPE_ID = "tess_evaluation_shader_asset";
-  static constexpr const char* EXTENSION = "tese";
+  static constexpr const AssetType ASSET_TYPE = AssetType::TessEvaluationShader;
 };
 
 }

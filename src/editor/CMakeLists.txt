@@ -4,9 +4,7 @@ target_sources(MoleEditor
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include/editor/editor.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/include/editor/editor_context.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/editor/shader_compiler.hpp
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/shader_compiler.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/editor.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
@@ -33,3 +31,5 @@ if(APPLE)
             "${CMAKE_SOURCE_DIR}/external/metal-cpp"
     )
 endif()
+
+include(${CMAKE_SOURCE_DIR}/cmake/SetupPython.cmake)

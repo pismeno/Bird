@@ -7,7 +7,6 @@ struct RenderingContext;
 struct OSContext;
 struct ResourcesContext;
 
-class ShaderCompiler;
 
 /**
  * @brief Context for the editor Application layer.
@@ -17,8 +16,6 @@ struct EditorContext {
   RenderingContext* rendering_context;
   OSContext* os_context;
   ResourcesContext* resources_context;
-
-  ShaderCompiler* shader_compiler;
 };
 
 } // mole
