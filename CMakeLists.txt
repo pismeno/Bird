@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 # set the project name and languages
-project(Bird LANGUAGES CXX)
+project(Mole LANGUAGES CXX)
 
 # set the C++ standard to C++20
 set(CMAKE_CXX_STANDARD 20)
@@ -31,8 +31,9 @@ add_subdirectory(external/glm)
 add_subdirectory(external/spirv-cross)
 add_subdirectory(external/glslang)
 add_subdirectory(external/doctest)
+add_subdirectory(external/vma-hpp)
 
 # project subdirectories
-add_subdirectory(src/bird_core)
-add_subdirectory(src/bird_editor)
+add_subdirectory(src/core)
+add_subdirectory(src/editor)
 add_subdirectory(tests/)

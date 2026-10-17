@@ -3,7 +3,7 @@
 #include "utils/result.hpp"
 
 TEST_CASE("Result utility successfully handles values") {
-  bird::Result<void> res = bird::ok();
+  mole::Result<void> res = mole::ok();
 
   CHECK(res.is_ok());
 }

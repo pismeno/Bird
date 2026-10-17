@@ -1,5 +1,5 @@
 # About
-Bird Engine is a specialized 2d game engine.   
+Mole Engine is a specialized 2d game engine.   
 **Project Status:** Early Development
 
 # Goals
@@ -25,7 +25,7 @@ Bird Engine is a specialized 2d game engine.
 ## Layers
 This engine uses relaxed layered architecture, meaning that the layers are not strictly separated, but the layers on top can communicate with every layer bellow it.
 
-![BirdEngine Architecture](docs/assets/architecture.drawio.svg)
+![MoleEngine Architecture](docs/assets/architecture.drawio.svg)
 
 ## Systems
 Each layer has it's own systems, like the `AssetManager` of the Resources layer. 
@@ -43,7 +43,7 @@ The engine's api is designed to never throw exceptions. Instead, it relies on th
 
 ## Node System
 ### General idea
-- The node system is a powerful tool for creating complex behaviors and interactions in the Bird Engine.
+- The node system is a powerful tool for creating complex behaviors and interactions in the Mole Engine.
 - It allows developers to work in OOP style, while using Data-Oriented Design (DOD) principles under the hood.
 - The node system is built on top of ECS-like architecture.
 ### Architecture
@@ -64,21 +64,20 @@ The engine's api is designed to never throw exceptions. Instead, it relies on th
 ## Rendering
 There's an abstract `IRenderer` class, which has different implementation, for now mainly Vulkan.
 ### What should the renderer be able to do?
-- **It should render to Framebuffers**, which allows to render to different targets, like Window, ImGui component, or images
-- It should be able to **draw Images, Text (High-Quality), Shapes (Rectangles, Circles, Polygons, Lines)**
-- Accepts **Materials**, which can contain: shaders, textures, colors, normal maps
-- **Work with lights**: Directional, Point, Highlights based on normal maps, casting shadows
+- **Targets & Passes:** Render to custom Framebuffers to support multiple viewports (Window, ImGui panels, off-screen textures) and a Post-Processing pipeline.
+- **Primitives:** High-quality batched rendering of Sprites, Text (MSDF/SDF), and primitives (Rectangles, Circles, Polygons, Lines).
+- **Camera & Culling:** Support World-Space and Screen-Space rendering via View/Projection matrices, with automated AABB frustum culling for off-screen objects.
+- **Sorting & Batching:** Automatically sort drawables by Z-Index/Y-Position, and dynamically batch draw calls by Material/Texture to minimize state changes.
+- **Material System:** Accept flexible Materials supporting custom shaders, textures, and normal maps, utilizing SSBOs for highly efficient per-object data overrides.
+- **Lighting Environment:** Support 2D lighting (Directional, Point), normal-mapped specular highlights, and 2D shadow casting.
 ### Renderer frame lifecycle
-- `Renderer::BeginFrame(target_texture)` - Begins frame with a target texture to draw onto
-- `Renderer::BeginPass()` - Begin Render pass
-- `Renderer::Submit(RenderCommand)` - Submits a render command to be rendered
-- `Renderer::EndPass()` - End Render pass, creates a new clear Command Queue
-- `Renderer::EndFrame()` - Ends the frame, draws onto the target texture
+- `Renderer::begin_frame(target_texture)` - Begins frame with a target texture to draw onto
+- `Renderer::begin_pass()` - Begin Render pass
+- `Renderer::submit(RenderCommand)` - Submits a render command to be rendered
+- `Renderer::end_pass()` - End Render pass, creates a new clear Command Queue
+- `Renderer::end_frame()` - Ends the frame, draws onto the target texture
 
 # Used libraries
-- FlatBuffers
-- AngelScript
-- Dear ImGui
 - nlohmann/json
 - GLM
 - Vulkan
@@ -88,6 +87,10 @@ There's an abstract `IRenderer` class, which has different implementation, for n
 - SPIRV-Cross
 - stb_image
 - glslang
+- Vulkan Memory Allocator 
+- FlatBuffers (not yet)
+- AngelScript (not yet)
+- Dear ImGui (not yet)
 
 # About the Repository
 this repository uses the conventional commits format: https://www.conventionalcommits.org/en/v1.0.0/  

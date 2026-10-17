@@ -1,0 +1,35 @@
+add_executable(MoleEditor)
+
+target_sources(MoleEditor
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/editor/editor.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/editor/editor_context.hpp
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/editor.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+)
+
+target_link_libraries(MoleEditor
+        PRIVATE
+        MoleCore
+        glfw
+)
+
+target_include_directories(MoleEditor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+if(APPLE)
+    target_link_libraries(MoleEditor
+            PRIVATE
+            "-framework Cocoa"
+            "-framework QuartzCore"
+            "-framework Metal"
+            "-framework MetalKit"
+            "-framework CoreGraphics"
+    )
+
+    target_include_directories(MoleEditor PRIVATE
+            "${CMAKE_SOURCE_DIR}/external/metal-cpp"
+    )
+endif()
+
+include(${CMAKE_SOURCE_DIR}/cmake/SetupPython.cmake)

@@ -1,16 +1,18 @@
 # Enables CTest
 enable_testing()
 
-add_executable(BirdTests
+add_executable(MoleTests
         test_main.cpp
         test_test.cpp
         transform_manager_test.cpp
+        material_pool_test.cpp
+        material_packer_test.cpp
 )
 
-target_link_libraries(BirdTests
+target_link_libraries(MoleTests
         PRIVATE
-        BirdCore
+        MoleCore
         doctest::doctest
 )
 
-add_test(NAME BirdTestSuite COMMAND BirdTests)
+add_test(NAME MoleTestSuite COMMAND MoleTests)
