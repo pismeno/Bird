@@ -1,0 +1,50 @@
+from pathlib import Path
+import argparse
+import uuid
+import json
+
+import puremagic
+
+from utils.assets.meta_utils import get_meta_file_path
+
+def append_type(processed_asset_list: list[dict], type: str) -> None:
+    processed_asset_list.append({
+         "uuid" : str(uuid.uuid4()),
+        "type" : type
+    })
+
+parser = argparse.ArgumentParser(
+    description="Batch process text or log files."
+)
+
+parser.add_argument(
+    "files",
+    nargs="+",
+    type=Path,
+    help="One or more file paths to process",
+)
+
+args = parser.parse_args()
+
+for file_path_str in args.files:
+    file_path = Path(file_path_str)
+    try:
+        mime_type = puremagic.from_file(str(file_path), mime=True)
+    except puremagic.PureError:
+        print("Could not identify file type for " + str(file_path))
+        continue
+
+    cooked_assets: list[dict] = []
+
+    match mime_type.split("/"):        
+        case ["image", "png" | "jpeg" | "jpg"]:
+            append_type(cooked_assets, "image_asset")
+        case ["text", _] | ["application", "json"]:
+            append_type(cooked_assets, "text_asset")
+        case _:
+            print("Unknown type by Mole engine")
+
+    meta_content = { "cooked_assets" : cooked_assets }
+
+    with open(get_meta_file_path(file_path), "w") as mf:
+        mf.write(json.dumps(meta_content))

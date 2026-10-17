@@ -6,7 +6,8 @@ if(WIN32)
     set(PORTABLE_PYTHON_EXE "${PORTABLE_PYTHON_DIR}/python.exe")
     set(PORTABLE_SITE_PACKAGES "${PORTABLE_PYTHON_DIR}/Lib/site-packages")
     set(PYTHON_SETUP_STAMP "${PORTABLE_PYTHON_DIR}/.setup_done")
-    set(EDITOR_TOOLS_REQUIREMENTS "${CMAKE_SOURCE_DIR}/src/editor/tools/py_requirements.txt")
+    set(EDITOR_TOOLS_DIR "${CMAKE_SOURCE_DIR}/src/editor/tools")
+    set(EDITOR_TOOLS_REQUIREMENTS "${EDITOR_TOOLS_DIR}/py_requirements.txt")
 
     # Tell CMake to re-run configuration if the requirements file changes
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${EDITOR_TOOLS_REQUIREMENTS}")
@@ -31,11 +32,17 @@ if(WIN32)
     if(REQUIRES_INSTALL)
         message(STATUS "Configuring embedded Python environment...")
 
-        # 1. Ensure Lib/site-packages is listed in the ._pth file
-        file(READ "${PORTABLE_PYTHON_DIR}/python312._pth" PTH_CONTENT)
-        if(NOT PTH_CONTENT MATCHES "Lib/site-packages")
-            file(APPEND "${PORTABLE_PYTHON_DIR}/python312._pth" "\nLib/site-packages\n")
-        endif()
+        # 1. Write the tools path directly into the ._pth file
+        file(WRITE "${PORTABLE_PYTHON_DIR}/python312._pth"
+                "python312.zip
+                .
+                ${EDITOR_TOOLS_DIR}
+                # Uncomment to run site.main() automatically
+                #import site
+
+                Lib/site-packages
+                "
+        )
 
         # 2. Clean the existing site-packages BEFORE bootstrapping pip
         if(EXISTS "${PORTABLE_SITE_PACKAGES}")
