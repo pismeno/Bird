@@ -1,10 +1,26 @@
 from pathlib import Path
 from collections.abc import Callable
+from typing import BinaryIO
 import argparse
 import json
+import struct
 
-from utils.assets.meta_utils import get_meta_file_path
-from utils.assets import cooking
+from utils.assets import AssetType, cooking, get_meta_file_path
+
+HEADER_FORMAT = "<4sIII"
+HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
+CURRENT_VERSION = 1
+MAGIC = b"MOLE"
+
+def write_asset_header(out_file: BinaryIO, asset_type: AssetType, payload_size: int) -> None:
+    header = struct.pack(
+        HEADER_FORMAT,
+        MAGIC,
+        CURRENT_VERSION,
+        int(asset_type),
+        payload_size
+    )
+    out_file.write(header)
 
 parser = argparse.ArgumentParser(
     description="Batch process text or log files."
@@ -25,9 +41,9 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-cook_funcs: dict[str, Callable[[Path, Path], None]] = {
-    "text_asset" : cooking.copy_file,
-    "image_asset" : cooking.copy_file
+cook_funcs: dict[AssetType, Callable[[Path], bytes]] = {
+    AssetType.IMAGE : cooking.stream_file,
+    AssetType.TEXT : cooking.stream_file
 }
 
 for file_path_str in args.files:
@@ -36,11 +52,36 @@ for file_path_str in args.files:
 
     if not file_path.is_file():
         print(str(file_path) + " is not a file")
+        continue
     if not meta_file_path.is_file():
         print(str(file_path) + " does not have a .meta file")
+        continue
 
     with open(meta_file_path, "r") as mf:
         mf_json = json.loads(mf.read())
+        
         for cooked_asset in mf_json["cooked_assets"]:
+            asset_type = AssetType(cooked_asset["type"])
+            if asset_type == AssetType.UNKNOWN:
+                print(f"Invalid asset type: {cooked_asset['type']}")
+                continue
+
+            cook_fn = cook_funcs.get(asset_type)
+            if not cook_fn:
+                print(f"No cook function for {asset_type.name}")
+                continue
+
             dst_path = args.destination / (cooked_asset['uuid'] + ".asset")
-            cook_funcs[cooked_asset["type"]](file_path, dst_path)
+
+            with open(dst_path, "wb") as f_out:
+                
+                # Write dummy bytes to reserve space for the header
+                f_out.write(b'\x00' * HEADER_SIZE)
+                
+                cook_fn(file_path, f_out)
+                total_size = f_out.tell()
+                payload_size = total_size - HEADER_SIZE
+                
+                # Go back to the very beginning of the file and write the real header
+                f_out.seek(0)
+                write_asset_header(f_out, asset_type, payload_size)

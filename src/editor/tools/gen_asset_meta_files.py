@@ -5,12 +5,12 @@ import json
 
 import puremagic
 
-from utils.assets.meta_utils import get_meta_file_path
+from utils.assets import AssetType, get_meta_file_path
 
-def append_type(processed_asset_list: list[dict], type: str) -> None:
+def append_type(processed_asset_list: list[dict], type: AssetType) -> None:
     processed_asset_list.append({
          "uuid" : str(uuid.uuid4()),
-        "type" : type
+        "type" : str(type)
     })
 
 parser = argparse.ArgumentParser(
@@ -38,9 +38,9 @@ for file_path_str in args.files:
 
     match mime_type.split("/"):        
         case ["image", "png" | "jpeg" | "jpg"]:
-            append_type(cooked_assets, "image_asset")
+            append_type(cooked_assets, AssetType.IMAGE)
         case ["text", _] | ["application", "json"]:
-            append_type(cooked_assets, "text_asset")
+            append_type(cooked_assets, AssetType.TEXT)
         case _:
             print("Unknown type by Mole engine")
 
