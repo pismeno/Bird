@@ -33,3 +33,5 @@ if(APPLE)
             "${CMAKE_SOURCE_DIR}/external/metal-cpp"
     )
 endif()
+
+include(${CMAKE_SOURCE_DIR}/cmake/SetupPython.cmake)
