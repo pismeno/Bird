@@ -15,7 +15,6 @@
 #include <node_system/scene_factory.hpp>
 #include <node_system/managers/drawable_manager.hpp>
 #include <node_system/managers/transform_manager.hpp>
-#include <editor/shader_compiler.hpp>
 #include <resources/asset_types.hpp>
 #include "resources/material_pool.hpp"
 
@@ -30,6 +29,7 @@ Result<void> Editor::init() {
 
   file_system->mount("core", "../../../engine_data/core");
   file_system->mount("editor", "../../../engine_data/editor");
+  file_system->mount("project_cache", "../../../project_cache");
 
   glslang::InitializeProcess();
 
@@ -77,9 +77,16 @@ Result<void> Editor::init() {
   scene_factory->register_manager<TransformManager>();
   scene_factory->register_manager<DrawableManager>();
 
-  auto r_load_scene_defs = scene_factory->load_scene_definitions_from_file("editor://scene_definitions.json");
+  auto r_get_scene_defs = asset_manager->acquire<TextAsset>(UUID::from_string("83ff4a11-e2af-4609-8c97-9c5b5b508dcb"));
+  if (!r_get_scene_defs) return mole::fail(r_get_scene_defs.error());
+  AssetHandle<TextAsset> scene_defs = std::move(r_get_scene_defs).value();
+  auto r_get_node_defs = asset_manager->acquire<TextAsset>(UUID::from_string("f29fc194-ac5b-4c7e-975e-05b6e4fe971a"));
+  if (!r_get_node_defs) return mole::fail(r_get_node_defs.error());
+  AssetHandle<TextAsset> node_defs = std::move(r_get_node_defs).value();
+
+  auto r_load_scene_defs = scene_factory->load_scene_definitions_from(scene_defs->as_string_view());
   if (!r_load_scene_defs) return mole::fail(r_load_scene_defs.error());
-  auto r_load_node_defs = scene_factory->load_node_definitions_from_file("editor://node_definitions.json");
+  auto r_load_node_defs = scene_factory->load_node_definitions_from(node_defs->as_string_view());
   if (!r_load_node_defs) return mole::fail(r_load_node_defs.error());
 
   rendering_context = {
@@ -104,45 +111,22 @@ Result<void> Editor::init() {
       .resources_context = &resources_context
   };
 
-  auto r_create_sc = ShaderCompiler::create(context);
-  if (!r_create_sc) return mole::fail(r_create_sc.error());
-
-  shader_compiler = std::move(r_create_sc).value();
-
-  context.shader_compiler = shader_compiler.get();
-
-  auto r_s_c1 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_a.vert.glsl",
-                                                            "core://shaders/mat_a.vert.spv");
-  if (!r_s_c1) return mole::fail(r_s_c1.error());
-
-  auto r_s_c2 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_a.frag.glsl",
-                                                            "core://shaders/mat_a.frag.spv");
-  if (!r_s_c2) return mole::fail(r_s_c2.error());
-
-  auto r_s_c3 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_b.vert.glsl",
-                                                            "core://shaders/mat_b.vert.spv");
-  if (!r_s_c3) return mole::fail(r_s_c3.error());
-
-  auto r_s_c4 = shader_compiler->compile_glsl_file_to_spirv("core://shaders/mat_b.frag.glsl",
-                                                            "core://shaders/mat_b.frag.spv");
-  if (!r_s_c4) return mole::fail(r_s_c4.error());
-
-  auto r_get_texture = asset_manager->acquire<ImageAsset>("editor://test_img.png");
+  auto r_get_texture = asset_manager->acquire<ImageAsset>(UUID::from_string("fd311be5-2c22-47c3-8296-2d35bb926ae7"));
   if (!r_get_texture) return mole::fail(r_get_texture.error());
   AssetHandle<ImageAsset> texture = std::move(r_get_texture).value();
   std::cout << bindless_texture_registry->get_index(texture) << " - Tex index" << std::endl;;
 
-  auto r_get_vert_shader_a = asset_manager->acquire<VertexShaderAsset>("core://shaders/mat_a.vert.spv");
+  auto r_get_vert_shader_a = asset_manager->acquire<VertexShaderAsset>(UUID::from_string("4c5999b0-d344-42f9-b588-5a886afa4476"));
   if (!r_get_vert_shader_a) return mole::fail(r_get_vert_shader_a.error());
   AssetHandle<VertexShaderAsset> vert_shader_a = std::move(r_get_vert_shader_a).value();
-  auto r_get_frag_shader_a = asset_manager->acquire<FragmentShaderAsset>("core://shaders/mat_a.frag.spv");
+  auto r_get_frag_shader_a = asset_manager->acquire<FragmentShaderAsset>(UUID::from_string("1780d1ff-552b-4138-8b34-59348152743e"));
   if (!r_get_frag_shader_a) return mole::fail(r_get_frag_shader_a.error());
   AssetHandle<FragmentShaderAsset> frag_shader_a = std::move(r_get_frag_shader_a).value();
 
-  auto r_get_vert_shader = asset_manager->acquire<VertexShaderAsset>("core://shaders/mat_b.vert.spv");
+  auto r_get_vert_shader = asset_manager->acquire<VertexShaderAsset>(UUID::from_string("3c108d0e-3555-4b6f-95b5-2d721d4595b5"));
   if (!r_get_vert_shader) return mole::fail(r_get_vert_shader.error());
   AssetHandle<VertexShaderAsset> vert_shader_b = std::move(r_get_vert_shader).value();
-  auto r_get_frag_shader = asset_manager->acquire<FragmentShaderAsset>("core://shaders/mat_b.frag.spv");
+  auto r_get_frag_shader = asset_manager->acquire<FragmentShaderAsset>(UUID::from_string("c790946f-58f0-4d32-8c06-3327a10c47a5"));
   if (!r_get_frag_shader) return mole::fail(r_get_frag_shader.error());
   AssetHandle<FragmentShaderAsset> frag_shader_b = std::move(r_get_frag_shader).value();
 
@@ -183,7 +167,7 @@ Result<void> Editor::init() {
 }
 
 Result<void> Editor::run() {
-  auto r_get_texture = asset_manager->acquire<ImageAsset>("editor://test_img.png");
+  auto r_get_texture = asset_manager->acquire<ImageAsset>(UUID::from_string("fd311be5-2c22-47c3-8296-2d35bb926ae7"));
   if (!r_get_texture) return mole::fail(r_get_texture.error());
   AssetHandle<ImageAsset> texture = std::move(r_get_texture).value();
 

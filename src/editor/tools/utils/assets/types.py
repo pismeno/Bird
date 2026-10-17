@@ -3,7 +3,14 @@ import enum
 class AssetType(enum.IntEnum):
     UNKNOWN = 0
     TEXT = 1
-    IMAGE = 2
+    GENERIC_BINARY = 2
+    VERTEX_SHADER = 3
+    FRAGMENT_SHADER = 4
+    COMPUTE_SHADER = 5
+    GEOMETRY_SHADER = 6
+    TESS_CONTROL_SHADER = 7
+    TESS_EVALUATION_SHADER = 8
+    IMAGE = 9
 
     @classmethod
     def _missing_(cls, value):

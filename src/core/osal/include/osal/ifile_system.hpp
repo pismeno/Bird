@@ -41,6 +41,14 @@ class IFileSystem {
   virtual Result<void> write_bytes(std::string_view virtual_path, const std::vector<uint8_t>& data) = 0;
 
   /**
+ * Reads a specific chunk of bytes from the file.
+ * @param offset Byte offset from the start of the file.
+ * @param size Number of bytes to read.
+ * @return Result, failed if the file could not be written to.
+ */
+  virtual Result<std::vector<uint8_t>> read_chunk(std::string_view virtual_path, uint64_t offset, uint64_t size) = 0;
+
+  /**
    * @return true if the file exists, false otherwise.
    */
   virtual Result<bool> exists(std::string_view virtual_path) const = 0;

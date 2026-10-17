@@ -10,6 +10,7 @@
 #include <osal/os_context.hpp>
 #include <utils/result.hpp>
 #include <utils/string_hash.hpp>
+#include "utils/uuid.hpp"
 
 namespace mole {
 
@@ -20,17 +21,27 @@ class AssetPool : public IAssetPool {
  public:
   AssetPool(IFileSystem* file_system) : file_system(file_system) {};
 
-  Result<AssetHandle<T>> load(std::string_view filepath) {
+  Result<AssetHandle<T>> load(UUID uuid) {
     // Check if the asset is already loaded
-    auto it = cache.find(filepath);
+    auto it = cache.find(uuid);
     if (it != cache.end()) {
       uint32_t index = it->second;
       ref_counts[index]++;
       return AssetHandle<T>(this, index, generations[index]);
     }
 
+    std::string filepath = "project_cache://assets/" + uuid.to_string() + ".asset";
+
+    auto r_file_size = file_system->get_file_size(filepath);
+    if (!r_file_size) {
+      return mole::fail(r_file_size.error());
+    }
+
+    uint64_t header_size = sizeof(AssetHeader);
+    uint64_t payload_size = r_file_size.value() - header_size;
+
     // Perform I/O before touching any internal index state
-    auto r_read_bytes = file_system->read_bytes(filepath);
+    auto r_read_bytes = file_system->read_chunk(filepath, header_size, payload_size);
     if (!r_read_bytes) {
       return mole::fail(r_read_bytes.error());
     }
@@ -54,7 +65,7 @@ class AssetPool : public IAssetPool {
     }
 
     data[index] = std::move(r_asset).value();
-    filepaths[index] = std::string(filepath);
+    filepaths[index] = uuid;
     cache.try_emplace(filepaths[index], index);
     ref_counts[index] = 1;
 
@@ -94,9 +105,9 @@ class AssetPool : public IAssetPool {
   std::vector<T> data;
   std::vector<uint32_t> generations;
   std::vector<uint32_t> ref_counts;
-  std::vector<std::string> filepaths;
+  std::vector<UUID> filepaths;
   std::vector<uint32_t> free_indices;
-  std::unordered_map<std::string, uint32_t, StringHash, std::equal_to<>> cache;
+  std::unordered_map<UUID, uint32_t> cache;
 
   IFileSystem* file_system;
 };

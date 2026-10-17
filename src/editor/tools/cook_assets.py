@@ -43,7 +43,14 @@ args = parser.parse_args()
 
 cook_funcs: dict[AssetType, Callable[[Path], bytes]] = {
     AssetType.IMAGE : cooking.stream_file,
-    AssetType.TEXT : cooking.stream_file
+    AssetType.TEXT : cooking.stream_file,
+    AssetType.GENERIC_BINARY : cooking.stream_file,
+    AssetType.VERTEX_SHADER : cooking.compile_glsl_to_spirv,
+    AssetType.FRAGMENT_SHADER : cooking.compile_glsl_to_spirv,
+    AssetType.COMPUTE_SHADER : cooking.compile_glsl_to_spirv,
+    AssetType.GEOMETRY_SHADER : cooking.compile_glsl_to_spirv,
+    AssetType.TESS_CONTROL_SHADER : cooking.compile_glsl_to_spirv,
+    AssetType.TESS_EVALUATION_SHADER : cooking.compile_glsl_to_spirv,
 }
 
 for file_path_str in args.files:
@@ -72,6 +79,8 @@ for file_path_str in args.files:
                 continue
 
             dst_path = args.destination / (cooked_asset['uuid'] + ".asset")
+
+            args.destination.mkdir(parents=True, exist_ok=True)
 
             with open(dst_path, "wb") as f_out:
                 

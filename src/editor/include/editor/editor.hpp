@@ -20,7 +20,6 @@
 #include <rendering/packed_material_cache.hpp>
 #include <node_system/scene_factory.hpp>
 #include <node_system/render_gatherer.hpp>
-#include <editor/shader_compiler.hpp>
 
 namespace mole {
 
@@ -56,7 +55,6 @@ class Editor {
   std::unique_ptr<IRenderer> renderer;
   std::unique_ptr<SceneFactory> scene_factory;
   std::unique_ptr<RenderGatherer> render_gatherer;
-  std::unique_ptr<ShaderCompiler> shader_compiler;
 };
 
 } // mole

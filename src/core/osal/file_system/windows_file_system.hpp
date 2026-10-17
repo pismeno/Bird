@@ -21,6 +21,7 @@ class WindowsFileSystem : public IFileSystem {
 
   Result<std::vector<uint8_t>> read_bytes(std::string_view path) override;
   Result<void> write_bytes(std::string_view path, const std::vector<uint8_t>& data) override;
+  Result<std::vector<uint8_t>> read_chunk(std::string_view path, uint64_t offset, uint64_t size) override;
   [[nodiscard]] Result<bool> exists(std::string_view path) const override;
   [[nodiscard]] Result<uint64_t> get_file_size(std::string_view path) const override;
  private:

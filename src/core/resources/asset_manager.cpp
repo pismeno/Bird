@@ -21,4 +21,29 @@ Result<void> AssetManager::init(ResourcesContext& context) {
   return mole::ok();
 }
 
+Result<AssetHeader> AssetManager::read_asset_header(const std::string_view virtual_path) {
+  auto r_chunk = file_system->read_chunk(virtual_path, 0, sizeof(AssetHeader));
+  if (!r_chunk) {
+    return mole::fail("Failed to read header from virtual path: " + r_chunk.error());
+  }
+
+  const auto& bytes = r_chunk.value();
+  if (bytes.size() < sizeof(AssetHeader)) {
+    return mole::fail("Failed to read header, file might be too small");
+  }
+
+  AssetHeader header{};
+  std::memcpy(&header, bytes.data(), sizeof(AssetHeader));
+
+  if (std::string_view(header.magic, 4) != ASSET_MAGIC) {
+    return mole::fail("Invalid magic number");
+  }
+
+  if (header.version != ASSET_CURRENT_VERSION) {
+    return mole::fail("Unsupported asset version");
+  }
+
+  return header;
+}
+
 } // mole

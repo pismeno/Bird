@@ -114,13 +114,6 @@ Result<void> SceneFactory::load_scene_definitions_from(const std::string_view de
   return mole::ok();
 }
 
-Result<void> SceneFactory::load_scene_definitions_from_file(const std::string_view path) {
-  auto r_get_json = asset_manager->acquire<TextAsset>(path);
-  if (!r_get_json) return mole::fail(r_get_json.error());
-
-  return load_scene_definitions_from(r_get_json.value()->as_string_view());
-}
-
 Result<void> SceneFactory::load_node_definitions_from(const std::string_view definitions_source) {
   nlohmann::json data = nlohmann::json::parse(definitions_source, nullptr, false);
 
@@ -161,13 +154,6 @@ Result<void> SceneFactory::load_node_definitions_from(const std::string_view def
   }
 
   return mole::ok();
-}
-
-Result<void> SceneFactory::load_node_definitions_from_file(const std::string_view path) {
-  auto r_get_json = asset_manager->acquire<TextAsset>(path);
-  if (!r_get_json) return mole::fail(r_get_json.error());
-
-  return load_node_definitions_from(r_get_json.value()->as_string_view());
 }
 
 Result<void> SceneFactory::save_scene_to(const Scene &scene, std::string_view path) const {
@@ -222,8 +208,8 @@ Result<std::unique_ptr<Scene>> SceneFactory::load_scene_from(const std::string_v
   return std::move(scene);
 }
 
-Result<std::unique_ptr<Scene>> SceneFactory::load_scene_from_file(const std::string_view path) const {
-   auto r_get_json = asset_manager->acquire<TextAsset>(path);
+Result<std::unique_ptr<Scene>> SceneFactory::load_scene_from_asset(UUID uuid) const {
+   auto r_get_json = asset_manager->acquire<TextAsset>(uuid);
    if (!r_get_json) return mole::fail(r_get_json.error());
 
    return load_scene_from(r_get_json.value()->as_string_view());

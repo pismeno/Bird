@@ -135,6 +135,56 @@ Result<void> WindowsFileSystem::write_bytes(std::string_view path, const std::ve
   return ok();
 }
 
+Result<std::vector<uint8_t>> WindowsFileSystem::read_chunk(std::string_view path, uint64_t offset, uint64_t size) {
+  auto resolved = resolve(path);
+  if (!resolved) {
+    return fail("Failed to resolve virtual path: " + std::string(path));
+  }
+
+  std::wstring wpath = utf8_to_utf16(resolved.value().string());
+
+  scoped_win32_handle file(CreateFileW(
+      wpath.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr,
+      OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS, nullptr
+  ));
+
+  if (!file.is_valid()) {
+    return fail("Failed to open file for chunk reading: " + resolved.value().string());
+  }
+
+  // Windows ReadFile takes a DWORD (32-bit unsigned int) for the number of bytes to read
+  if (size > UINT32_MAX) {
+    return fail("Chunk size too large for single-pass read: " + resolved.value().string());
+  }
+
+  // Seek to the specified offset
+  LARGE_INTEGER li_offset;
+  li_offset.QuadPart = static_cast<LONGLONG>(offset);
+  if (!SetFilePointerEx(file.get(), li_offset, nullptr, FILE_BEGIN)) {
+    return fail("Failed to seek to offset in file: " + resolved.value().string());
+  }
+
+  std::vector<uint8_t> buffer;
+  // If size is 0, we can return empty buffer early
+  if (size == 0) {
+    return buffer;
+  }
+
+  buffer.resize(static_cast<size_t>(size));
+
+  DWORD bytes_read = 0;
+  if (!ReadFile(file.get(), buffer.data(), static_cast<DWORD>(buffer.size()), &bytes_read, nullptr)) {
+    return fail("Failed to read chunk from file: " + resolved.value().string());
+  }
+
+  // If we read past the end of the file, shrink the buffer to the actual bytes read
+  if (bytes_read != buffer.size()) {
+    buffer.resize(bytes_read);
+  }
+
+  return buffer;
+}
+
 Result<bool> WindowsFileSystem::exists(std::string_view path) const {
   auto resolved = resolve(path);
   if (!resolved) {

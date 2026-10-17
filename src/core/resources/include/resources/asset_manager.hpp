@@ -13,6 +13,7 @@
 #include <resources/asset_handle.hpp>
 #include <utils/string_hash.hpp>
 #include <utils/result.hpp>
+#include "utils/uuid.hpp"
 
 #include "resources/asset_pool.hpp"
 
@@ -26,32 +27,20 @@ class AssetManager {
   template <typename> friend class AssetHandle;
 
  public:
-  /**
-   * @brief Acquires a shader asset, enforcing strict file suffix matching based on the specific shader type.
-   * @param args Additional arguments to pass to the shader asset constructor.
-   * @return Result containing a handle to the loaded shader, or an error message.
-   */
-  template <std::derived_from<ShaderAsset> T, typename... Args>
-  Result<AssetHandle<T>> acquire(const std::string_view filepath, Args&&... args) { // acquire implementation for shader assets
+  template <std::derived_from<Asset> T, typename... Args>
+  Result<AssetHandle<T>> acquire(UUID uuid) {
 
-    std::string expected_suffix = std::string(".") + T::EXTENSION + ".spv";
+    auto r_asset_header = read_asset_header("project_cache://assets/" + uuid.to_string() + ".asset");
+    if (!r_asset_header) {
+      return mole::fail(r_asset_header.error());
+    };
+    AssetHeader header = std::move(r_asset_header).value();
 
-    if (!filepath.ends_with(expected_suffix)) {
-      return mole::fail("Requested shader type's file must have the suffix '" + expected_suffix + "'");
+    if (header.asset_type != T::ASSET_TYPE) {
+      return mole::fail("Requested asset type does not match the asset type stored in the physical asset header");;
     }
 
-    return get_pool<T>()->load(filepath, std::forward<Args>(args)...);
-  }
-
-  /**
-   * @brief Acquires a standard binary (non-shader) asset.
-   * @param args Additional arguments to pass to the asset constructor.
-   * @return Result containing a handle to the loaded asset, or an error message.
-   */
-  template <typename T, typename... Args>
-  requires (!std::derived_from<T, ShaderAsset> && std::derived_from<T, Asset>)
-  Result<AssetHandle<T>> acquire(const std::string_view filepath, Args&&... args) {
-    return get_pool<T>()->load(filepath, std::forward<Args>(args)...);
+    return get_pool<T>()->load(uuid);
   }
 
   /**
@@ -68,16 +57,18 @@ class AssetManager {
    */
   template <typename T>
   AssetPool<T>* get_pool() {
-    auto it = asset_pools.find(T::TYPE_ID);
+    auto it = asset_pools.find(T::ASSET_TYPE);
 
     if (it == asset_pools.end()) {
-      it = asset_pools.emplace(T::TYPE_ID, std::make_unique<AssetPool<T>>(file_system)).first;
+      it = asset_pools.emplace(T::ASSET_TYPE, std::make_unique<AssetPool<T>>(file_system)).first;
     }
 
     return static_cast<AssetPool<T>*>(it->second.get());
   }
 
-  std::unordered_map<std::string, std::unique_ptr<IAssetPool>, StringHash, std::equal_to<>> asset_pools;
+  Result<AssetHeader> read_asset_header(std::string_view virtual_path);
+
+  std::unordered_map<AssetType, std::unique_ptr<IAssetPool>> asset_pools;
 
   IFileSystem* file_system = nullptr;
 };

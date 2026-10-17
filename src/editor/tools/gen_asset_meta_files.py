@@ -40,7 +40,22 @@ for file_path_str in args.files:
         case ["image", "png" | "jpeg" | "jpg"]:
             append_type(cooked_assets, AssetType.IMAGE)
         case ["text", _] | ["application", "json"]:
-            append_type(cooked_assets, AssetType.TEXT)
+            if file_path.name.endswith(".glsl"):
+                file_name_ns = file_path.name.removesuffix(".glsl")
+                if file_name_ns.endswith(".vert"):
+                    append_type(cooked_assets, AssetType.VERTEX_SHADER)
+                elif file_name_ns.endswith(".frag"):
+                    append_type(cooked_assets, AssetType.FRAGMENT_SHADER)
+                elif file_name_ns.endswith(".comp"):
+                    append_type(cooked_assets, AssetType.COMPUTE_SHADER)
+                elif file_name_ns.endswith(".geom"):
+                    append_type(cooked_assets, AssetType.GEOMETRY_SHADER)
+                elif file_name_ns.endswith(".tesc"):
+                    append_type(cooked_assets, AssetType.TESS_CONTROL_SHADER)
+                elif file_name_ns.endswith(".tese"):
+                    append_type(cooked_assets, AssetType.TESS_EVALUATION_SHADER)
+            else:            
+                append_type(cooked_assets, AssetType.TEXT)
         case _:
             print("Unknown type by Mole engine")
 
